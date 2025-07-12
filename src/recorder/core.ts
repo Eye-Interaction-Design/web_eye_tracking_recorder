@@ -135,7 +135,7 @@ export const startRecording = async (): Promise<void> => {
 	}
 
 	try {
-		// Request screen capture
+		// Request screen capture - prefer current tab
 		const constraints = {
 			video: {
 				frameRate: state.currentSession.config.frameRate || 30,
@@ -143,7 +143,21 @@ export const startRecording = async (): Promise<void> => {
 			audio: false,
 		};
 
-		recordingStream = await navigator.mediaDevices.getDisplayMedia(constraints);
+		// Try to get current tab first, fallback to display media
+		try {
+			// Use getDisplayMedia but with preference for current tab
+			const extendedConstraints = {
+				...constraints,
+				// Chrome-specific hints (ignored in other browsers)
+				preferCurrentTab: true,
+				selfBrowserSurface: "include",
+				surfaceSwitching: "exclude",
+			} as any; // Chrome-specific properties not in standard types
+			recordingStream = await navigator.mediaDevices.getDisplayMedia(extendedConstraints);
+		} catch (error) {
+			// Fallback to standard display media
+			recordingStream = await navigator.mediaDevices.getDisplayMedia(constraints);
+		}
 
 		// Setup MediaRecorder
 		const options: MediaRecorderOptions = {

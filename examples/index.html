@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Browser Eye Tracking - Simple Demo</title>
+    <title>Web Eye Tracking Recorder - Demo</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -152,13 +152,17 @@
 </head>
 <body>
     <div class="container">
-        <h1>Browser Eye Tracking - Simple Demo</h1>
-        <p>This demo shows the simplified browser-eye-tracking library with mock gaze data.</p>
+        <h1>Web Eye Tracking Recorder - Demo</h1>
+        <p>This demo shows the Web Eye Tracking Recorder library with mock gaze data.</p>
+        <div style="background-color: #e3f2fd; padding: 10px; border-radius: 5px; margin: 10px 0;">
+            <strong>📹 Recording Target:</strong> When prompted to share your screen, please select "This tab" to record the current demo page. The system will automatically prefer recording this tab where supported.
+        </div>
         
         <div id="status" class="status idle">Status: Ready to initialize</div>
         
         <div class="config-section">
             <h3>Configuration</h3>
+            <p><em>Recording will capture the selected screen source. Please choose "This tab" when prompted.</em></p>
             <div class="form-group">
                 <label for="participantId">Participant ID:</label>
                 <input type="text" id="participantId" value="demo-participant-001">
@@ -229,7 +233,7 @@
             getCurrentState,
             isRecording,
             getCurrentSession
-        } from './browser-eye-tracking.js';
+        } from './web-eye-tracking-recorder.js';
 
         // DOM elements
         const statusEl = document.getElementById('status');
@@ -539,7 +543,7 @@ Position Data: L(${gazePointInput.leftEye.positionX?.toFixed(1)}, ${gazePointInp
         });
         
         // Initialize
-        log('Browser Eye Tracking Demo loaded');
+        log('Web Eye Tracking Recorder Demo loaded');
         log('This demo uses mock gaze data generated from mouse movements');
         updateButtons('initial');
     </script>

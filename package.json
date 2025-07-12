@@ -1,7 +1,7 @@
 {
-  "name": "browser-eye-tracking",
+  "name": "web-eye-tracking-recorder",
   "version": "1.0.0",
-  "description": "Simple browser-based screen recording and eye tracking library",
+  "description": "Web Eye Tracking Recorder - Browser-based screen recording and eye tracking library",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "module": "dist/index.js",
