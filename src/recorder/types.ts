@@ -68,6 +68,8 @@ export interface RecordingConfig {
 	quality?: "low" | "medium" | "high";
 	chunkDuration?: number; // seconds
 	captureEntireScreen?: boolean;
+	videoFormat?: "webm" | "mp4";
+	videoCodec?: "vp8" | "vp9" | "h264";
 }
 
 export interface RecorderState {

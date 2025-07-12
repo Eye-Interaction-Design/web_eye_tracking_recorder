@@ -55,6 +55,11 @@ export {
 	saveVideoChunk,
 	getSessionData,
 	getVideoChunkData,
+	getStorageUsage,
+	cleanupOldVideoChunks,
+	autoCleanupStorage,
+	getAllSessions,
+	deleteSession,
 } from "./recorder/storage";
 
 // Export utilities
@@ -68,7 +73,20 @@ export {
 	getSessionComponents,
 	downloadSessionComponents,
 	downloadSessionAsZip,
+	saveExperimentData,
+	exportExperimentDataset,
 } from "./recorder/export";
+
+// SSR utilities
+export {
+	isBrowser,
+	isNode,
+	isSSR,
+	requireBrowser,
+	safeExecute,
+	createSSRSafeAPI,
+	getEnvironmentInfo,
+} from "./recorder/ssr-guard";
 
 // Export types for download options
 export type { DownloadOptions } from "./recorder/export";

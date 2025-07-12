@@ -325,3 +325,149 @@ export const getVideoChunkData = (chunkId: string): Promise<Blob | null> => {
 		request.onerror = () => reject(new Error("Failed to get video chunk data"));
 	});
 };
+
+/**
+ * Get database storage usage estimate
+ */
+export const getStorageUsage = async (): Promise<{ used: number; available: number; percentage: number }> => {
+	if ('storage' in navigator && 'estimate' in navigator.storage) {
+		const estimate = await navigator.storage.estimate();
+		const used = estimate.usage || 0;
+		const available = estimate.quota || 0;
+		const percentage = available > 0 ? (used / available) * 100 : 0;
+		
+		return { used, available, percentage };
+	}
+	
+	// Fallback for browsers without storage API
+	return { used: 0, available: 0, percentage: 0 };
+};
+
+/**
+ * Clean up old video chunks to free space
+ */
+export const cleanupOldVideoChunks = async (keepRecentHours: number = 24): Promise<number> => {
+	if (!db) {
+		throw new Error("Database not initialized");
+	}
+
+	const cutoffTime = Date.now() - (keepRecentHours * 60 * 60 * 1000);
+	let deletedCount = 0;
+
+	return new Promise((resolve, reject) => {
+		const transaction = db.transaction(["videoChunks"], "readwrite");
+		const store = transaction.objectStore("videoChunks");
+		const index = store.index("timestamp");
+		const request = index.openCursor(IDBKeyRange.upperBound(cutoffTime));
+
+		request.onsuccess = () => {
+			const cursor = request.result;
+			if (cursor) {
+				cursor.delete();
+				deletedCount++;
+				cursor.continue();
+			}
+		};
+
+		transaction.oncomplete = () => resolve(deletedCount);
+		transaction.onerror = () => reject(new Error("Failed to cleanup video chunks"));
+	});
+};
+
+/**
+ * Auto-cleanup when storage is getting full
+ */
+export const autoCleanupStorage = async (triggerPercentage: number = 80): Promise<void> => {
+	const usage = await getStorageUsage();
+	
+	if (usage.percentage >= triggerPercentage) {
+		console.warn(`Storage usage at ${usage.percentage.toFixed(1)}%, starting cleanup...`);
+		
+		// Clean up old video chunks (keep recent 12 hours)
+		const deletedChunks = await cleanupOldVideoChunks(12);
+		console.log(`Cleaned up ${deletedChunks} old video chunks`);
+		
+		// Check if we need more aggressive cleanup
+		const newUsage = await getStorageUsage();
+		if (newUsage.percentage >= triggerPercentage) {
+			// More aggressive cleanup - keep only 6 hours
+			const moreDeleted = await cleanupOldVideoChunks(6);
+			console.log(`Performed aggressive cleanup, deleted ${moreDeleted} more chunks`);
+		}
+	}
+};
+
+/**
+ * Get list of all sessions for cleanup/export
+ */
+export const getAllSessions = (): Promise<SessionInfo[]> => {
+	return new Promise((resolve, reject) => {
+		if (!db) {
+			reject(new Error("Database not initialized"));
+			return;
+		}
+		
+		const transaction = db.transaction(["sessions"], "readonly");
+		const store = transaction.objectStore("sessions");
+		const request = store.getAll();
+		
+		request.onsuccess = () => resolve(request.result);
+		request.onerror = () => reject(new Error("Failed to get sessions"));
+	});
+};
+
+/**
+ * Delete a complete session and all its data
+ */
+export const deleteSession = async (sessionId: string): Promise<void> => {
+	if (!db) {
+		throw new Error("Database not initialized");
+	}
+
+	const transaction = db!.transaction(["sessions", "events", "gazeData", "videoChunks"], "readwrite");
+	
+	// Delete session
+	const sessionStore = transaction.objectStore("sessions");
+	sessionStore.delete(sessionId);
+	
+	// Delete events
+	const eventStore = transaction.objectStore("events");
+	const eventIndex = eventStore.index("sessionId");
+	const eventRequest = eventIndex.openCursor(IDBKeyRange.only(sessionId));
+	eventRequest.onsuccess = () => {
+		const cursor = eventRequest.result;
+		if (cursor) {
+			cursor.delete();
+			cursor.continue();
+		}
+	};
+	
+	// Delete gaze data
+	const gazeStore = transaction.objectStore("gazeData");
+	const gazeIndex = gazeStore.index("sessionId");
+	const gazeRequest = gazeIndex.openCursor(IDBKeyRange.only(sessionId));
+	gazeRequest.onsuccess = () => {
+		const cursor = gazeRequest.result;
+		if (cursor) {
+			cursor.delete();
+			cursor.continue();
+		}
+	};
+	
+	// Delete video chunks
+	const videoStore = transaction.objectStore("videoChunks");
+	const videoIndex = videoStore.index("sessionId");
+	const videoRequest = videoIndex.openCursor(IDBKeyRange.only(sessionId));
+	videoRequest.onsuccess = () => {
+		const cursor = videoRequest.result;
+		if (cursor) {
+			cursor.delete();
+			cursor.continue();
+		}
+	};
+	
+	return new Promise((resolve, reject) => {
+		transaction.oncomplete = () => resolve();
+		transaction.onerror = () => reject(new Error("Failed to delete session"));
+	});
+};

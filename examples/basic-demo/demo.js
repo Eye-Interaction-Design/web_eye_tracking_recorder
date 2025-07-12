@@ -9,6 +9,7 @@ import {
     downloadCompleteSession,
     downloadSessionComponents,
     downloadSessionAsZip,
+    saveExperimentData,
     subscribe,
     getCurrentState,
     isRecording,
@@ -311,7 +312,9 @@ Position Data: L(${gazePointInput.leftEye.positionX?.toFixed(1)}, ${gazePointInp
                 frameRate: 30,
                 quality: 'medium',
                 chunkDuration: 5,
-                captureEntireScreen: false
+                captureEntireScreen: false,
+                videoFormat: 'webm',
+                videoCodec: 'vp9'
             };
             
             const sessionId = await createSession(config, recordingConfig);
@@ -375,6 +378,19 @@ Position Data: L(${gazePointInput.leftEye.positionX?.toFixed(1)}, ${gazePointInp
             this.stopDurationTimer();
             
             await addEvent('recording_stop', { note: 'User stopped recording' });
+            
+            // Auto-save experiment data
+            try {
+                this.log('Auto-saving experiment data...');
+                await saveExperimentData(session.sessionId, {
+                    completedAt: new Date().toISOString(),
+                    participantId: this.elements.participantId.value,
+                    experimentType: this.elements.experimentType.value
+                });
+                this.log('Experiment data auto-saved successfully');
+            } catch (error) {
+                this.log(`Auto-save failed: ${error.message}`);
+            }
             
         } catch (error) {
             this.log(`Failed to stop recording: ${error.message}`);

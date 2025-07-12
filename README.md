@@ -1,223 +1,271 @@
-# Browser Eye Tracking
+# Web Eye Tracking Recorder
 
-[\![CI](https://github.com/your-org/browser-eye-tracking/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/browser-eye-tracking/actions/workflows/ci.yml)
-
-An experimental browser library for integrating screen recording and eye tracking functionality in web applications.
+A lightweight, browser-based library for recording eye tracking data along with screen recordings for research and usability studies.
 
 ## Features
 
-- 🎥 **Screen Recording** - High-quality screen capture using MediaRecorder API
-- 👁️ **Eye Tracking** - WebSocket-based eye tracking integration
-- 💾 **Data Storage** - IndexedDB for persistent data storage
-- ⏱️ **Synchronization** - High-precision timestamp synchronization (±16ms accuracy)
-- 🧪 **Testing** - Comprehensive test suite with browser API mocking
-- 🏗️ **TypeScript** - Full TypeScript support with type definitions
+- 🎯 **Eye Tracking Data Collection**: Record gaze points with detailed metadata
+- 📹 **Screen Recording**: Capture user interactions with WebM/MP4 support
+- 📊 **Flexible Data Export**: JSON metadata, CSV time-series data, and video files
+- 📦 **ZIP Download**: Package all session data into convenient archives
+- 🛡️ **SSR Compatible**: Safe to use in Next.js, Nuxt.js and other SSR frameworks
+- 🔄 **Real-time State Management**: Subscribe to recording state changes
+- 💾 **IndexedDB Storage**: Client-side data persistence with automatic cleanup
+- 🎨 **Framework Agnostic**: Works with vanilla JS, React, Vue, and more
 
 ## Installation
 
+Install directly from this Git repository:
+
 ```bash
-bun add browser-eye-tracking
+npm install git+https://github.com/shikibu9419/web-eye-tracking-recorder.git
 ```
 
-Or with npm:
+Or using other package managers:
+
 ```bash
-npm install browser-eye-tracking
+# Yarn
+yarn add git+https://github.com/shikibu9419/web-eye-tracking-recorder.git
+
+# pnpm
+pnpm add git+https://github.com/shikibu9419/web-eye-tracking-recorder.git
+
+# Bun
+bun add git+https://github.com/shikibu9419/web-eye-tracking-recorder.git
 ```
 
 ## Quick Start
 
 ```javascript
 import {
-  initializeExperiment,
+  initialize,
   createSession,
-  startExperiment,
-  stopExperiment,
-  calibrateEyeTracking,
-  onGazeData,
-  onSessionEvent
-} from 'browser-eye-tracking';
+  startRecording,
+  stopRecording,
+  addGazeData,
+  downloadSessionAsZip
+} from 'web-eye-tracking-recorder';
 
-// Initialize the system
-await initializeExperiment({
-  eyeTrackingServerUrl: 'ws://localhost:8080', // Base URL, /eye_tracking is added automatically
-  enableEyeTracking: true // Set to false for screen recording only
-});
+// 1. Initialize the system
+await initialize();
 
-// Create a session
+// 2. Create a session
 const sessionId = await createSession({
   participantId: 'participant-001',
-  experimentType: 'user-study',
-  recording: {
-    frameRate: 30,
-    quality: 'high',
-    chunkDuration: 10
-  },
-  eyeTracking: {
-    samplingRate: 60,
-    calibrationPoints: 9
-  }
+  experimentType: 'usability-test'
+}, {
+  frameRate: 30,
+  quality: 'high',
+  videoFormat: 'webm'
 });
 
-// Set up event listeners
-onGazeData((gazePoint) => {
-  console.log('Gaze position:', gazePoint.screenX, gazePoint.screenY);
+// 3. Start recording
+await startRecording();
+
+// 4. Add gaze data points
+await addGazeData({
+  screenX: 500,
+  screenY: 300,
+  confidence: 0.9,
+  leftEye: { screenX: 495, screenY: 298 },
+  rightEye: { screenX: 505, screenY: 302 }
 });
 
-onSessionEvent((event) => {
-  console.log('Session event:', event.type, event.data);
-});
-
-// Calibrate eye tracking (if enabled)
-await calibrateEyeTracking();
-
-// Start recording
-await startExperiment();
-
-// Stop recording
-const result = await stopExperiment();
-console.log('Session completed:', result.sessionId);
+// 5. Stop recording and download
+await stopRecording();
+await downloadSessionAsZip(sessionId);
 ```
 
-## Screen Recording Only
+## API Reference
 
-For screen recording without eye tracking:
+### Core Functions
+
+#### `initialize(): Promise<void>`
+Initialize the recording system and set up IndexedDB storage.
+
+#### `createSession(config, recordingConfig): Promise<string>`
+Create a new recording session.
+
+**Parameters:**
+- `config`: Session configuration
+  - `participantId`: Unique identifier for the participant
+  - `experimentType`: Type of experiment being conducted
+  - `sessionId?`: Optional custom session ID
+- `recordingConfig`: Recording settings
+  - `frameRate?`: Video frame rate (default: 30)
+  - `quality?`: Video quality - 'low' | 'medium' | 'high'
+  - `chunkDuration?`: Video chunk duration in seconds (default: 5)
+  - `videoFormat?`: Video format - 'webm' | 'mp4'
+  - `videoCodec?`: Video codec - 'vp8' | 'vp9' | 'h264'
+
+#### `startRecording(): Promise<void>`
+Start screen recording and data collection.
+
+#### `stopRecording(): Promise<void>`
+Stop recording and finalize the session.
+
+#### `addGazeData(gazePoint): Promise<void>`
+Add a gaze data point to the current session.
+
+**Parameters:**
+- `gazePoint`: Gaze point data
+  - `screenX`, `screenY`: Screen coordinates
+  - `confidence`: Tracking confidence (0-1)
+  - `leftEye`, `rightEye`: Eye-specific data with screen coordinates
+  - `systemTimestamp?`: Optional timestamp (auto-generated if not provided)
+
+### Export Functions
+
+#### `downloadSessionAsZip(sessionId, options): Promise<void>`
+Download session data as a ZIP file.
+
+**Options:**
+- `includeMetadata?`: Include JSON metadata (default: true)
+- `includeGazeData?`: Include gaze data CSV (default: true)
+- `includeEvents?`: Include events CSV (default: true)
+- `includeVideo?`: Include video recording (default: true)
+
+#### `downloadSessionComponents(sessionId, options): Promise<void>`
+Download individual session files separately.
+
+#### `saveExperimentData(sessionId, metadata): Promise<void>`
+Save experiment data and automatically download as ZIP.
+
+### State Management
+
+#### `subscribe(callback): () => void`
+Subscribe to state changes. Returns an unsubscribe function.
 
 ```javascript
-import {
-  initializeExperiment,
-  createSession,
-  startExperiment,
-  stopExperiment
-} from 'browser-eye-tracking';
-
-// Initialize without eye tracking
-await initializeExperiment({
-  enableEyeTracking: false
+const unsubscribe = subscribe((state) => {
+  console.log('Recording state:', state.isRecording);
+  console.log('Gaze points collected:', state.gazeDataCount);
 });
 
-// Create session with recording config only
-const sessionId = await createSession({
-  participantId: 'recording-test',
-  recording: {
-    frameRate: 30,
-    quality: 'high'
-  }
-});
-
-await startExperiment();
-// ... recording happens ...
-await stopExperiment();
+// Later...
+unsubscribe();
 ```
 
-## Development
+#### `getCurrentState(): RecorderState`
+Get the current recorder state.
 
-### Setup
+#### `isRecording(): boolean`
+Check if recording is currently active.
 
-```bash
-bun install
-```
+#### `getCurrentSession(): SessionInfo | null`
+Get information about the current session.
 
-### Build
+### SSR Utilities
 
-```bash
-bun run build
-```
+#### `isBrowser(): boolean`
+Check if running in a browser environment.
 
-### Test
+#### `requireBrowser(functionName): void`
+Throw an error if not in a browser environment.
 
-```bash
-bun test
-```
+#### `createSSRSafeAPI(browserAPI, fallbackAPI): T`
+Create a version of your API that works safely in SSR environments.
 
-### Lint
+## Data Structure
 
-```bash
-bun run lint
-```
+### Exported Data Files
 
-### Examples
+When you download session data, you get:
 
-Start the development server for examples:
+1. **`metadata.json`**: Session information and summary statistics
+2. **`gaze-data.csv`**: Time-series gaze tracking data
+3. **`events.csv`**: User interaction events
+4. **`recording.webm`**: Screen recording video
 
-```bash
-cd examples
-bun run serve
-```
+### CSV Format
 
-Available demos:
-- **Full Demo**: `http://localhost:3000` - Complete eye tracking and screen recording
-- **Screen Recording Only**: `http://localhost:3000/screen-recording` - Recording without eye tracking
+**Gaze Data CSV** includes columns for:
+- Timestamps (system and browser)
+- Screen and window coordinates
+- Eye-specific data (left/right eye positions, pupil size)
+- Browser window information
+- Screen dimensions
 
-For testing with eye tracking, start the mock server:
+**Events CSV** includes:
+- Event ID, session ID, type, timestamp
+- Event-specific data (JSON encoded)
 
-```bash
-cd examples
-bun run mock-eye-server
-```
+## Examples
 
-## API Documentation
+Check the `examples/` directory for complete implementations:
 
-See [docs/API.md](docs/API.md) for complete API documentation.
+- **Basic Demo** (`examples/basic-demo/`): Comprehensive vanilla JavaScript example
+- **React Example** (coming soon): React hooks and components
 
-## Browser Support
+## Browser Compatibility
 
-- Chrome/Chromium 88+
-- Firefox 87+
-- Safari 14+
-- Edge 88+
-
-Requires support for:
-- MediaRecorder API
-- IndexedDB
-- WebSocket (for eye tracking)
-- Screen Capture API
-
-## Architecture
-
-The library is designed with modular architecture:
-
-- **Screen Recording** (`src/services/screen-recording.ts`) - Independent recording functionality
-- **Eye Tracking** (`src/services/eye-tracking.ts`) - WebSocket-based eye tracking integration
-- **Database** (`src/services/database.ts`) - IndexedDB data persistence
-- **Synchronization** (`src/services/synchronization.ts`) - Timestamp management
-- **Main API** (`src/experiment-recorder.ts`) - Unified interface
-
-## Data Storage
-
-Data is stored locally in IndexedDB with the following structure:
-
-- **Sessions** - Experiment session metadata
-- **Events** - Session events and markers
-- **VideoChunks** - Recording data in time-ordered chunks
-- **GazeData** - Eye tracking data points (if enabled)
+- **Chrome/Chromium**: Full support with automatic tab selection
+- **Firefox**: Full support (manual tab selection required)
+- **Safari**: Limited support (WebM recording may have issues)
+- **Edge**: Full support (manual tab selection required)
 
 ## Contributing
 
-1. Fork the repository
-2. Create your feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Ensure all tests pass: `bun test`
-6. Check linting: `bun run lint`
-7. Submit a pull request
+### Development Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/shikibu9419/web-eye-tracking-recorder.git
+cd web-eye-tracking-recorder
+
+# Install dependencies
+bun install
+
+# Build the library
+bun run build
+
+# Run tests
+bun test
+
+# Run linting
+bun run lint
+```
+
+### Testing
+
+The library uses Vitest with happy-dom for browser simulation:
+
+```bash
+# Run all tests
+bun test
+
+# Run tests in watch mode
+bun test --watch
+
+# Run tests with coverage
+bun test --coverage
+```
+
+### Code Quality
+
+```bash
+# Format code
+bun run format
+
+# Lint code
+bun run lint
+```
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Security
+## Security Considerations
 
-This library is designed for research purposes. Be aware that:
+- This library records screen content and user interactions
+- Ensure compliance with privacy regulations (GDPR, CCPA, etc.)
+- Always obtain proper consent before recording
+- Data is stored locally in IndexedDB - implement your own server upload if needed
+- Consider implementing data anonymization for sensitive applications
 
-- Screen recording requires user permission
-- Eye tracking data should be handled according to privacy regulations
-- Data is stored locally in browser IndexedDB
-- WebSocket connections should be secured (wss://) in production
+## Performance Notes
 
-## Support
-
-For issues and questions:
-- Check the [examples](examples/) directory
-- Review the [API documentation](docs/API.md)
-- Open an issue on GitHub
-EOF < /dev/null
+- IndexedDB storage has browser-specific quotas (typically ~50% of available disk space)
+- Video recording can consume significant storage - use cleanup functions for long sessions
+- The library automatically manages storage with configurable cleanup thresholds
+- For production use, implement server-side data collection to avoid storage limits

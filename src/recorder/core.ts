@@ -24,17 +24,7 @@ import {
 } from "./browser-info";
 
 // SSR Detection
-const isBrowser = (): boolean => {
-	return typeof window !== "undefined" && typeof navigator !== "undefined";
-};
-
-const checkBrowserEnvironment = (): void => {
-	if (!isBrowser()) {
-		throw new Error(
-			"browser-eye-tracking library requires a browser environment. SSR is not supported.",
-		);
-	}
-};
+import { requireBrowser } from './ssr-guard';
 
 // Current MediaRecorder instance
 let mediaRecorder: MediaRecorder | null = null;
@@ -50,7 +40,7 @@ const generateId = (): string => {
  * Initialize the recording system
  */
 export const initialize = async (): Promise<void> => {
-	checkBrowserEnvironment();
+	requireBrowser('initialize');
 
 	try {
 		await initializeStorage();
@@ -70,7 +60,7 @@ export const createSession = async (
 	config: SessionConfig,
 	recordingConfig?: RecordingConfig,
 ): Promise<string> => {
-	checkBrowserEnvironment();
+	requireBrowser('createSession');
 
 	const state = getState();
 	if (state.status !== "initialized") {
@@ -124,7 +114,7 @@ export const createSession = async (
  * Start screen recording
  */
 export const startRecording = async (): Promise<void> => {
-	checkBrowserEnvironment();
+	requireBrowser('startRecording');
 
 	const state = getState();
 	if (!state.currentSession) {
@@ -159,9 +149,26 @@ export const startRecording = async (): Promise<void> => {
 			recordingStream = await navigator.mediaDevices.getDisplayMedia(constraints);
 		}
 
-		// Setup MediaRecorder
+		// Setup MediaRecorder with format selection
+		const videoFormat = state.currentSession.config.videoFormat || 'webm'
+		const videoCodec = state.currentSession.config.videoCodec || 'vp9'
+		
+		// Determine MIME type based on format and codec
+		let mimeType = 'video/webm;codecs=vp9'
+		if (videoFormat === 'mp4') {
+			mimeType = videoCodec === 'h264' ? 'video/mp4;codecs=avc1' : 'video/mp4'
+		} else if (videoFormat === 'webm') {
+			mimeType = videoCodec === 'vp8' ? 'video/webm;codecs=vp8' : 'video/webm;codecs=vp9'
+		}
+		
+		// Check if format is supported
+		if (!MediaRecorder.isTypeSupported(mimeType)) {
+			console.warn(`Format ${mimeType} not supported, falling back to default`)
+			mimeType = 'video/webm;codecs=vp9'
+		}
+
 		const options: MediaRecorderOptions = {
-			mimeType: "video/webm;codecs=vp9",
+			mimeType,
 			videoBitsPerSecond:
 				state.currentSession.config.quality === "high"
 					? 2500000
@@ -235,7 +242,7 @@ export const startRecording = async (): Promise<void> => {
  * Stop screen recording
  */
 export const stopRecording = async (): Promise<void> => {
-	checkBrowserEnvironment();
+	requireBrowser('stopRecording');
 
 	const state = getState();
 	if (!state.isRecording || !mediaRecorder) {
@@ -279,7 +286,7 @@ export const stopRecording = async (): Promise<void> => {
  * Add gaze data point with automatic browser/screen info collection
  */
 export const addGazeData = async (gazeInput: GazePointInput): Promise<void> => {
-	checkBrowserEnvironment();
+	requireBrowser('addGazeData');
 
 	const state = getState();
 	if (!state.currentSession) {
@@ -361,7 +368,7 @@ export const addEvent = async (
 	type: string,
 	data?: Record<string, unknown>,
 ): Promise<void> => {
-	checkBrowserEnvironment();
+	requireBrowser('addEvent');
 
 	const state = getState();
 	if (!state.currentSession) {
@@ -391,7 +398,7 @@ export const addEvent = async (
  * Export session data as ZIP
  */
 export const exportSessionData = async (sessionId?: string): Promise<Blob> => {
-	checkBrowserEnvironment();
+	requireBrowser('exportSessionData');
 
 	const state = getState();
 	const targetSessionId = sessionId || state.currentSession?.sessionId;
@@ -433,7 +440,7 @@ export const downloadSessionData = async (
 	sessionId?: string,
 	filename?: string,
 ): Promise<void> => {
-	checkBrowserEnvironment();
+	requireBrowser('downloadSessionData');
 
 	try {
 		const blob = await exportSessionData(sessionId);
@@ -466,7 +473,7 @@ export const downloadSessionData = async (
  * Download complete session data as multiple files (JSON + CSV + Video)
  */
 export const downloadCompleteSession = async (sessionId?: string): Promise<void> => {
-	checkBrowserEnvironment();
+	requireBrowser('downloadCompleteSession');
 	
 	const state = getState();
 	const targetSessionId = sessionId || state.currentSession?.sessionId;
