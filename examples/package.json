@@ -1,15 +1,14 @@
 {
-  "name": "browser-eye-tracking-examples",
+  "name": "web-eye-tracking-recorder-examples",
   "version": "1.0.0",
-  "description": "Examples for browser-eye-tracking library",
+  "description": "Examples for web-eye-tracking-recorder library",
   "type": "module",
   "scripts": {
-    "serve": "bun run --hot server.ts",
-    "dev": "bun run --hot server.ts",
-    "mock-eye-server": "bun run --hot mock-eye-tracking-server.ts"
+    "build-lib": "cd .. && bun run build && cp dist/index.js examples/web-eye-tracking-recorder.js",
+    "serve": "bun run build-lib && bun run --hot server.ts",
+    "dev": "bun run build-lib && bun run --hot server.ts"
   },
   "dependencies": {
-    "browser-eye-tracking": "file:../",
     "typescript": "^5"
   },
   "devDependencies": {

@@ -32,3 +32,7 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # Finder (MacOS) folder config
 .DS_Store
+
+# Generated library files for examples
+examples/web-eye-tracking-recorder.js
+examples/browser-eye-tracking.js
