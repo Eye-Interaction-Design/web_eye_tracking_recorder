@@ -5,7 +5,7 @@ const server = Bun.serve({
 		
 		// HTMLファイルを提供
 		if (url.pathname === "/" || url.pathname === "/index.html") {
-			const file = Bun.file("./browser-example.html");
+			const file = Bun.file("./index.html");
 			return new Response(file, {
 				headers: { "Content-Type": "text/html" },
 			});

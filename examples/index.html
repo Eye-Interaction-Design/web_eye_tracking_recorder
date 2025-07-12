@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browser Eye Tracking - Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .status.idle { background-color: #e3f2fd; color: #1976d2; }
+        .status.recording { background-color: #ffebee; color: #d32f2f; }
+        .status.completed { background-color: #e8f5e8; color: #388e3c; }
+        .status.error { background-color: #fff3e0; color: #f57c00; }
+        
+        .button {
+            background-color: #1976d2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .button:hover {
+            background-color: #1565c0;
+        }
+        .button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .button.danger {
+            background-color: #d32f2f;
+        }
+        .button.danger:hover {
+            background-color: #c62828;
+        }
+        
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        
+        .config-section {
+            background-color: #f8f9fa;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            border-left: 4px solid #1976d2;
+        }
+        
+        .form-group {
+            margin: 10px 0;
+        }
+        
+        .form-group label {
+            display: inline-block;
+            width: 150px;
+            font-weight: bold;
+        }
+        
+        .form-group input, .form-group select {
+            padding: 5px;
+            margin-left: 10px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+        
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        
+        .metric-card {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1976d2;
+        }
+        
+        .metric-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .eye-tracking-data {
+            background-color: #e8f5e8;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Browser Eye Tracking Demo</h1>
+        <p>This demo uses the actual browser-eye-tracking library with real browser APIs.</p>
+        
+        <div id="status" class="status idle">Status: Ready to initialize</div>
+        
+        <div class="config-section">
+            <h3>Configuration</h3>
+            <div class="form-group">
+                <label for="participantId">Participant ID:</label>
+                <input type="text" id="participantId" value="demo-participant-001">
+            </div>
+            <div class="form-group">
+                <label for="experimentType">Experiment Type:</label>
+                <select id="experimentType">
+                    <option value="eye-tracking-demo">Eye Tracking Demo</option>
+                    <option value="screen-recording-test">Screen Recording Test</option>
+                    <option value="full-integration">Full Integration</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="frameRate">Frame Rate:</label>
+                <input type="number" id="frameRate" value="30" min="15" max="60">
+            </div>
+            <div class="form-group">
+                <label for="samplingRate">Eye Tracking Rate:</label>
+                <input type="number" id="samplingRate" value="60" min="30" max="120">
+            </div>
+            <div class="form-group">
+                <label for="websocketUrl">WebSocket URL:</label>
+                <input type="text" id="websocketUrl" value="ws://localhost:8080" style="width: 200px;">
+            </div>
+        </div>
+        
+        <div>
+            <button id="initBtn" class="button">Initialize System</button>
+            <button id="createBtn" class="button" disabled>Create Session</button>
+            <button id="calibrateBtn" class="button" disabled>Calibrate Eye Tracking</button>
+            <button id="startBtn" class="button" disabled>Start Recording</button>
+            <button id="stopBtn" class="button danger" disabled>Stop Recording</button>
+            <button id="disconnectBtn" class="button" disabled>Disconnect</button>
+        </div>
+        
+        <div class="metrics">
+            <div class="metric-card">
+                <div id="sessionDuration" class="metric-value">0s</div>
+                <div class="metric-label">Session Duration</div>
+            </div>
+            <div class="metric-card">
+                <div id="gazeDataCount" class="metric-value">0</div>
+                <div class="metric-label">Gaze Data Points</div>
+            </div>
+            <div class="metric-card">
+                <div id="eventsCount" class="metric-value">0</div>
+                <div class="metric-label">Events Recorded</div>
+            </div>
+            <div class="metric-card">
+                <div id="connectionStatus" class="metric-value">Disconnected</div>
+                <div class="metric-label">Eye Tracker Status</div>
+            </div>
+        </div>
+        
+        <div>
+            <h3>Latest Gaze Data:</h3>
+            <div id="gazeData" class="eye-tracking-data">No gaze data yet...</div>
+        </div>
+        
+        <div>
+            <h3>System Log:</h3>
+            <div id="log" class="log">Ready to start...</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import {
+            initializeExperiment,
+            createSession,
+            startExperiment,
+            stopExperiment,
+            calibrateEyeTracking,
+            onGazeData,
+            onSessionEvent,
+            onCalibration,
+            getCurrentSession,
+            isCurrentlyRecording,
+            getQualityMetrics,
+            disconnect
+        } from './browser-eye-tracking.js';
+
+        // DOM elements
+        const statusEl = document.getElementById('status');
+        const logEl = document.getElementById('log');
+        const gazeDataEl = document.getElementById('gazeData');
+        
+        const initBtn = document.getElementById('initBtn');
+        const createBtn = document.getElementById('createBtn');
+        const calibrateBtn = document.getElementById('calibrateBtn');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+        
+        // Metric elements
+        const sessionDurationEl = document.getElementById('sessionDuration');
+        const gazeDataCountEl = document.getElementById('gazeDataCount');
+        const eventsCountEl = document.getElementById('eventsCount');
+        const connectionStatusEl = document.getElementById('connectionStatus');
+        
+        // State
+        let sessionStartTime = null;
+        let gazeDataCount = 0;
+        let eventsCount = 0;
+        let durationInterval = null;
+        
+        // Utility functions
+        function log(message) {
+            const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+            logEl.textContent += `[${timestamp}] ${message}\n`;
+            logEl.scrollTop = logEl.scrollHeight;
+            console.log(message);
+        }
+        
+        function updateStatus(message, className = 'idle') {
+            statusEl.textContent = `Status: ${message}`;
+            statusEl.className = `status ${className}`;
+        }
+        
+        function updateButtons(state) {
+            const states = {
+                initial: [true, false, false, false, false, false],
+                initialized: [false, true, false, false, false, true],
+                session_created: [false, false, true, false, false, true],
+                calibrated: [false, false, true, true, false, true],
+                recording: [false, false, false, false, true, true],
+                stopped: [false, false, true, false, false, true]
+            };
+            
+            const buttons = [initBtn, createBtn, calibrateBtn, startBtn, stopBtn, disconnectBtn];
+            const buttonStates = states[state] || states.initial;
+            
+            buttons.forEach((btn, i) => {
+                btn.disabled = !buttonStates[i];
+            });
+        }
+        
+        function startDurationTimer() {
+            sessionStartTime = Date.now();
+            durationInterval = setInterval(() => {
+                if (sessionStartTime) {
+                    const duration = Math.floor((Date.now() - sessionStartTime) / 1000);
+                    sessionDurationEl.textContent = `${duration}s`;
+                }
+            }, 1000);
+        }
+        
+        function stopDurationTimer() {
+            if (durationInterval) {
+                clearInterval(durationInterval);
+                durationInterval = null;
+            }
+        }
+        
+        // Setup event listeners
+        onGazeData((gazePoint) => {
+            gazeDataCount++;
+            gazeDataCountEl.textContent = gazeDataCount.toString();
+            
+            gazeDataEl.textContent = `Screen: (${gazePoint.screenX.toFixed(1)}, ${gazePoint.screenY.toFixed(1)})
+Window: (${gazePoint.windowX?.toFixed(1) || 'N/A'}, ${gazePoint.windowY?.toFixed(1) || 'N/A'})
+Confidence: ${gazePoint.confidence.toFixed(2)}
+Left Eye: (${gazePoint.leftEye.screenX.toFixed(1)}, ${gazePoint.leftEye.screenY.toFixed(1)})
+Right Eye: (${gazePoint.rightEye.screenX.toFixed(1)}, ${gazePoint.rightEye.screenY.toFixed(1)})
+Timestamp: ${new Date(gazePoint.systemTimestamp).toISOString()}`;
+            
+            connectionStatusEl.textContent = 'Connected';
+        });
+        
+        onSessionEvent((event) => {
+            eventsCount++;
+            eventsCountEl.textContent = eventsCount.toString();
+            log(`Event: ${event.type} - ${JSON.stringify(event.data || {})}`);
+        });
+        
+        onCalibration((result) => {
+            log(`Calibration completed: ${result.success ? 'Success' : 'Failed'} (Accuracy: ${result.accuracy})`);
+            if (result.success) {
+                updateButtons('calibrated');
+                updateStatus('Calibrated successfully', 'completed');
+            } else {
+                updateStatus(`Calibration failed: ${result.errorMessage}`, 'error');
+            }
+        });
+        
+        // Button handlers
+        initBtn.addEventListener('click', async () => {
+            try {
+                updateStatus('Initializing...', 'recording');
+                log('Initializing experiment system...');
+                
+                const websocketUrl = document.getElementById('websocketUrl').value;
+                await initializeExperiment({
+                    eyeTrackingServerUrl: websocketUrl
+                });
+                
+                log('System initialized successfully');
+                updateStatus('System initialized', 'completed');
+                updateButtons('initialized');
+                
+            } catch (error) {
+                log(`Initialization failed: ${error.message}`);
+                updateStatus('Initialization failed', 'error');
+                updateButtons('initial');
+            }
+        });
+        
+        createBtn.addEventListener('click', async () => {
+            try {
+                updateStatus('Creating session...', 'recording');
+                log('Creating experiment session...');
+                
+                const config = {
+                    participantId: document.getElementById('participantId').value,
+                    experimentType: document.getElementById('experimentType').value,
+                    recording: {
+                        frameRate: parseInt(document.getElementById('frameRate').value),
+                        captureEntireScreen: true,
+                        quality: 'high'
+                    },
+                    eyeTracking: {
+                        samplingRate: parseInt(document.getElementById('samplingRate').value),
+                        calibrationPoints: 9,
+                        deviceType: 'eyetracker'
+                    }
+                };
+                
+                const sessionId = await createSession(config);
+                log(`Session created with ID: ${sessionId}`);
+                updateStatus('Session created', 'completed');
+                updateButtons('session_created');
+                
+            } catch (error) {
+                log(`Session creation failed: ${error.message}`);
+                updateStatus('Session creation failed', 'error');
+            }
+        });
+        
+        calibrateBtn.addEventListener('click', async () => {
+            try {
+                updateStatus('Calibrating eye tracking...', 'recording');
+                log('Starting eye tracking calibration...');
+                
+                // Note: Actual calibration will depend on eye tracking hardware
+                await calibrateEyeTracking();
+                
+            } catch (error) {
+                log(`Calibration failed: ${error.message}`);
+                updateStatus('Calibration failed', 'error');
+            }
+        });
+        
+        startBtn.addEventListener('click', async () => {
+            try {
+                updateStatus('Starting recording...', 'recording');
+                log('Starting experiment recording...');
+                
+                await startExperiment();
+                
+                log('Recording started successfully');
+                updateStatus('Recording in progress', 'recording');
+                updateButtons('recording');
+                startDurationTimer();
+                
+            } catch (error) {
+                log(`Failed to start recording: ${error.message}`);
+                updateStatus('Failed to start recording', 'error');
+            }
+        });
+        
+        stopBtn.addEventListener('click', async () => {
+            try {
+                updateStatus('Stopping recording...', 'recording');
+                log('Stopping experiment recording...');
+                
+                const result = await stopExperiment();
+                
+                log(`Recording stopped. Session ID: ${result.sessionId}`);
+                log('Export data available in result.exportData');
+                
+                updateStatus('Recording completed', 'completed');
+                updateButtons('stopped');
+                stopDurationTimer();
+                
+                // Display quality metrics
+                try {
+                    const metrics = await getQualityMetrics();
+                    log(`Quality Metrics:
+Recording: ${metrics.recordingQuality.averageFrameRate} fps, ${metrics.recordingQuality.frameDrops} drops
+Eye Tracking: ${metrics.gazeTrackingQuality.averageSamplingRate} Hz, ${metrics.gazeTrackingQuality.dataLossRate}% loss
+Sync Quality: ${metrics.syncQuality.quality} (${metrics.syncQuality.averageOffset}ms avg offset)`);
+                } catch (metricsError) {
+                    log(`Could not retrieve quality metrics: ${metricsError.message}`);
+                }
+                
+            } catch (error) {
+                log(`Failed to stop recording: ${error.message}`);
+                updateStatus('Failed to stop recording', 'error');
+            }
+        });
+        
+        disconnectBtn.addEventListener('click', () => {
+            try {
+                log('Disconnecting from eye tracking system...');
+                disconnect();
+                log('Disconnected successfully');
+                updateStatus('Disconnected', 'idle');
+                updateButtons('initial');
+                stopDurationTimer();
+                connectionStatusEl.textContent = 'Disconnected';
+                
+                // Reset counters
+                gazeDataCount = 0;
+                eventsCount = 0;
+                gazeDataCountEl.textContent = '0';
+                eventsCountEl.textContent = '0';
+                sessionDurationEl.textContent = '0s';
+                gazeDataEl.textContent = 'No gaze data yet...';
+                
+            } catch (error) {
+                log(`Disconnect failed: ${error.message}`);
+            }
+        });
+        
+        // Initialize
+        log('Browser Eye Tracking Demo loaded');
+        log('Note: Eye tracking requires WebSocket server at the configured URL');
+        log('Screen recording will request permission when started');
+        updateButtons('initial');
+    </script>
+</body>
+</html>

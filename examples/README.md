@@ -30,7 +30,7 @@ This directory contains examples for the `browser-eye-tracking` library.
 
 ### Files
 
-- `browser-example.html` - Complete browser demo with mock implementation
+- `index.html` - Complete browser demo using the actual library
 - `server.ts` - Development server that serves the HTML demo
 - `package.json` - Package configuration for examples
 
