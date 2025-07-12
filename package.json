@@ -8,14 +8,16 @@
   "type": "module",
   "scripts": {
     "build": "bun build ./src/index.ts --outdir ./dist --target node",
-    "dev": "bun --hot ./src/index.ts", 
-    "test": "bun test",
+    "dev": "bun --hot ./src/index.ts",
+    "test": "vitest",
     "lint": "bunx @biomejs/biome lint src",
     "format": "bunx @biomejs/biome format src --write"
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "@biomejs/biome": "latest"
+    "@biomejs/biome": "latest",
+    "vitest": "^3.2.4",
+    "happy-dom": "^18.0.1"
   },
   "peerDependencies": {
     "typescript": "^5"

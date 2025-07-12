@@ -1,117 +1,124 @@
-import type { SyncMarker } from '../types';
+import type { SyncMarker } from "../types";
 
 export class SyncSystem {
-  private sessionStartTime: number = 0;
-  private syncMarkers: SyncMarker[] = [];
-  private syncIntervalId: number | null = null;
-  private sessionId: string = '';
+	private sessionStartTime: number = 0;
+	private syncMarkers: SyncMarker[] = [];
+	private syncIntervalId: number | null = null;
+	private sessionId: string = "";
 
-  initializeSync(sessionId: string): void {
-    this.sessionId = sessionId;
-    this.sessionStartTime = performance.now();
-    this.syncMarkers = [];
-    this.startAutoSyncMarkers();
-  }
+	initializeSync(sessionId: string): void {
+		this.sessionId = sessionId;
+		this.sessionStartTime = performance.now();
+		this.syncMarkers = [];
+		this.startAutoSyncMarkers();
+	}
 
-  getRelativeTimestamp(): number {
-    return performance.now() - this.sessionStartTime;
-  }
+	getRelativeTimestamp(): number {
+		return performance.now() - this.sessionStartTime;
+	}
 
-  addSyncMarker(type: string, data?: any): SyncMarker {
-    const marker: SyncMarker = {
-      id: this.generateMarkerId(),
-      sessionId: this.sessionId,
-      type,
-      timestamp: this.getRelativeTimestamp(),
-      systemTimestamp: Date.now(),
-      browserTimestamp: performance.now(),
-      data
-    };
+	addSyncMarker(type: string, data?: Record<string, unknown>): SyncMarker {
+		const marker: SyncMarker = {
+			id: this.generateMarkerId(),
+			sessionId: this.sessionId,
+			type,
+			timestamp: this.getRelativeTimestamp(),
+			systemTimestamp: Date.now(),
+			browserTimestamp: performance.now(),
+			data,
+		};
 
-    this.syncMarkers.push(marker);
-    return marker;
-  }
+		this.syncMarkers.push(marker);
+		return marker;
+	}
 
-  syncTimestamps(systemTime: number, browserTime: number): { offset: number; drift: number } {
-    const currentBrowserTime = performance.now();
-    const currentSystemTime = Date.now();
-    
-    const browserTimeDiff = currentBrowserTime - browserTime;
-    const systemTimeDiff = currentSystemTime - systemTime;
-    
-    const offset = systemTimeDiff - browserTimeDiff;
-    const drift = Math.abs(offset);
+	syncTimestamps(
+		systemTime: number,
+		browserTime: number,
+	): { offset: number; drift: number } {
+		const currentBrowserTime = performance.now();
+		const currentSystemTime = Date.now();
 
-    if (drift > 16) {
-      console.warn(`Time drift detected: ${drift}ms`);
-    }
+		const browserTimeDiff = currentBrowserTime - browserTime;
+		const systemTimeDiff = currentSystemTime - systemTime;
 
-    return { offset, drift };
-  }
+		const offset = systemTimeDiff - browserTimeDiff;
+		const drift = Math.abs(offset);
 
-  validateDataSync(gazeTimestamp: number, videoTimestamp: number): boolean {
-    const timeDiff = Math.abs(gazeTimestamp - videoTimestamp);
-    return timeDiff <= 16; // 1フレーム以内
-  }
+		if (drift > 16) {
+			console.warn(`Time drift detected: ${drift}ms`);
+		}
 
-  getSyncMarkers(): SyncMarker[] {
-    return [...this.syncMarkers];
-  }
+		return { offset, drift };
+	}
 
-  private startAutoSyncMarkers(): void {
-    this.syncIntervalId = setInterval(() => {
-      this.addSyncMarker('auto_sync', {
-        markerId: `sync_${Date.now()}`,
-        timestamp: this.getRelativeTimestamp()
-      });
-    }, 1000); // 1秒ごと
-  }
+	validateDataSync(gazeTimestamp: number, videoTimestamp: number): boolean {
+		const timeDiff = Math.abs(gazeTimestamp - videoTimestamp);
+		return timeDiff <= 16; // 1フレーム以内
+	}
 
-  private generateMarkerId(): string {
-    return `sync_${this.sessionId}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-  }
+	getSyncMarkers(): SyncMarker[] {
+		return [...this.syncMarkers];
+	}
 
-  stopSync(): void {
-    if (this.syncIntervalId) {
-      clearInterval(this.syncIntervalId);
-      this.syncIntervalId = null;
-    }
-  }
+	private startAutoSyncMarkers(): void {
+		this.syncIntervalId = setInterval(() => {
+			this.addSyncMarker("auto_sync", {
+				markerId: `sync_${Date.now()}`,
+				timestamp: this.getRelativeTimestamp(),
+			});
+		}, 1000) as unknown as number; // 1秒ごと
+	}
 
-  getSessionStartTime(): number {
-    return this.sessionStartTime;
-  }
+	private generateMarkerId(): string {
+		return `sync_${this.sessionId}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+	}
 
-  calculateSyncQuality(): { maxTimeOffset: number; averageOffset: number; quality: 'excellent' | 'good' | 'fair' | 'poor' } {
-    if (this.syncMarkers.length <= 1) {
-      return { maxTimeOffset: 0, averageOffset: 0, quality: 'poor' };
-    }
+	stopSync(): void {
+		if (this.syncIntervalId) {
+			clearInterval(this.syncIntervalId);
+			this.syncIntervalId = null;
+		}
+	}
 
-    let totalOffset = 0;
-    let maxOffset = 0;
+	getSessionStartTime(): number {
+		return this.sessionStartTime;
+	}
 
-    for (let i = 1; i < this.syncMarkers.length; i++) {
-      const prev = this.syncMarkers[i - 1];
-      const curr = this.syncMarkers[i];
-      
-      if (prev && curr) {
-        const expectedDiff = curr.timestamp - prev.timestamp;
-        const actualDiff = curr.browserTimestamp - prev.browserTimestamp;
-        const offset = Math.abs(expectedDiff - actualDiff);
-        
-        totalOffset += offset;
-        maxOffset = Math.max(maxOffset, offset);
-      }
-    }
+	calculateSyncQuality(): {
+		maxTimeOffset: number;
+		averageOffset: number;
+		quality: "excellent" | "good" | "fair" | "poor";
+	} {
+		if (this.syncMarkers.length <= 1) {
+			return { maxTimeOffset: 0, averageOffset: 0, quality: "poor" };
+		}
 
-    const averageOffset = totalOffset / (this.syncMarkers.length - 1);
-    
-    let quality: 'excellent' | 'good' | 'fair' | 'poor';
-    if (maxOffset <= 5) quality = 'excellent';
-    else if (maxOffset <= 16) quality = 'good';
-    else if (maxOffset <= 33) quality = 'fair';
-    else quality = 'poor';
+		let totalOffset = 0;
+		let maxOffset = 0;
 
-    return { maxTimeOffset: maxOffset, averageOffset, quality };
-  }
+		for (let i = 1; i < this.syncMarkers.length; i++) {
+			const prev = this.syncMarkers[i - 1];
+			const curr = this.syncMarkers[i];
+
+			if (prev && curr) {
+				const expectedDiff = curr.timestamp - prev.timestamp;
+				const actualDiff = curr.browserTimestamp - prev.browserTimestamp;
+				const offset = Math.abs(expectedDiff - actualDiff);
+
+				totalOffset += offset;
+				maxOffset = Math.max(maxOffset, offset);
+			}
+		}
+
+		const averageOffset = totalOffset / (this.syncMarkers.length - 1);
+
+		let quality: "excellent" | "good" | "fair" | "poor";
+		if (maxOffset <= 5) quality = "excellent";
+		else if (maxOffset <= 16) quality = "good";
+		else if (maxOffset <= 33) quality = "fair";
+		else quality = "poor";
+
+		return { maxTimeOffset: maxOffset, averageOffset, quality };
+	}
 }
