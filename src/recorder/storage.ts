@@ -355,7 +355,7 @@ export const cleanupOldVideoChunks = async (keepRecentHours: number = 24): Promi
 	let deletedCount = 0;
 
 	return new Promise((resolve, reject) => {
-		const transaction = db.transaction(["videoChunks"], "readwrite");
+		const transaction = db!.transaction(["videoChunks"], "readwrite");
 		const store = transaction.objectStore("videoChunks");
 		const index = store.index("timestamp");
 		const request = index.openCursor(IDBKeyRange.upperBound(cutoffTime));
