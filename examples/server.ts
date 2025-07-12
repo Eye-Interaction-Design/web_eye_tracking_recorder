@@ -1,5 +1,3 @@
-import indexHTML from "./browser-example.html";
-
 const server = Bun.serve({
 	port: 3000,
 	fetch(req) {
@@ -7,7 +5,8 @@ const server = Bun.serve({
 		
 		// HTMLファイルを提供
 		if (url.pathname === "/" || url.pathname === "/index.html") {
-			return new Response(indexHTML.toString(), {
+			const file = Bun.file("./browser-example.html");
+			return new Response(file, {
 				headers: { "Content-Type": "text/html" },
 			});
 		}
