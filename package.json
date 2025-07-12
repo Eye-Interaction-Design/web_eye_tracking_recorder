@@ -1,0 +1,26 @@
+{
+  "name": "experiment-recorder",
+  "version": "1.0.0",
+  "description": "Experimental screen recording and eye tracking integration system",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "build": "bun build ./src/index.ts --outdir ./dist --target node",
+    "dev": "bun --hot ./src/index.ts", 
+    "test": "bun test",
+    "lint": "bunx @biomejs/biome lint src",
+    "format": "bunx @biomejs/biome format src --write"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@biomejs/biome": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "keywords": ["eye-tracking", "screen-recording", "experiment", "research"],
+  "author": "System Design Team",
+  "license": "MIT"
+}
