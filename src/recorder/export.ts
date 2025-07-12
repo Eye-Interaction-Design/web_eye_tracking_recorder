@@ -2,6 +2,7 @@
 
 import type { SessionData, GazePoint, SessionEvent } from './types'
 import { getSessionData, getVideoChunkData } from './storage'
+import { zipSync, strToU8 } from 'fflate'
 
 /**
  * Convert gaze data to CSV format
@@ -152,6 +153,168 @@ export const downloadFile = (content: string | Blob, filename: string, mimeType:
   a.click()
   document.body.removeChild(a)
   URL.revokeObjectURL(url)
+}
+
+/**
+ * Download options for selective file download
+ */
+export interface DownloadOptions {
+  includeMetadata?: boolean
+  includeGazeData?: boolean
+  includeEvents?: boolean
+  includeVideo?: boolean
+  videoFormat?: 'webm' | 'mp4'
+}
+
+/**
+ * Get session data as individual downloadable components
+ */
+export const getSessionComponents = async (sessionId: string): Promise<{
+  metadata: string
+  gazeDataCSV: string | null
+  eventsCSV: string | null
+  videoBlob: Blob | null
+  sessionName: string
+}> => {
+  const sessionData = await getSessionData(sessionId)
+  const sessionName = `session-${sessionId}-${new Date().toISOString().split('T')[0]}`
+  
+  // 1. Metadata JSON
+  const metadata = createMetadataJSON(sessionData)
+  const metadataString = JSON.stringify(metadata, null, 2)
+
+  // 2. Gaze data CSV
+  const gazeDataCSV = sessionData.gazeData.length > 0 ? gazeDataToCSV(sessionData.gazeData) : null
+
+  // 3. Events CSV
+  const eventsCSV = sessionData.events.length > 0 ? eventsToCSV(sessionData.events) : null
+
+  // 4. Video blob
+  let videoBlob: Blob | null = null
+  if (sessionData.videoChunks.length > 0) {
+    try {
+      const videoBlobs: Blob[] = []
+      
+      for (const chunk of sessionData.videoChunks) {
+        const chunkData = await getVideoChunkData(chunk.id)
+        if (chunkData) {
+          videoBlobs.push(chunkData)
+        }
+      }
+      
+      if (videoBlobs.length > 0) {
+        videoBlob = new Blob(videoBlobs, { type: 'video/webm' })
+      }
+    } catch (error) {
+      console.error('Failed to prepare video data:', error)
+    }
+  }
+
+  return {
+    metadata: metadataString,
+    gazeDataCSV,
+    eventsCSV,
+    videoBlob,
+    sessionName
+  }
+}
+
+/**
+ * Download individual components based on options
+ */
+export const downloadSessionComponents = async (sessionId: string, options: DownloadOptions = {}): Promise<void> => {
+  const {
+    includeMetadata = true,
+    includeGazeData = true,
+    includeEvents = true,
+    includeVideo = true,
+    videoFormat = 'webm'
+  } = options
+
+  const components = await getSessionComponents(sessionId)
+
+  // Download metadata JSON
+  if (includeMetadata) {
+    downloadFile(
+      components.metadata,
+      `${components.sessionName}-metadata.json`,
+      'application/json'
+    )
+  }
+
+  // Download gaze data CSV
+  if (includeGazeData && components.gazeDataCSV) {
+    downloadFile(
+      components.gazeDataCSV,
+      `${components.sessionName}-gaze-data.csv`,
+      'text/csv'
+    )
+  }
+
+  // Download events CSV
+  if (includeEvents && components.eventsCSV) {
+    downloadFile(
+      components.eventsCSV,
+      `${components.sessionName}-events.csv`,
+      'text/csv'
+    )
+  }
+
+  // Download video
+  if (includeVideo && components.videoBlob) {
+    const videoExtension = videoFormat === 'mp4' ? 'mp4' : 'webm'
+    const videoMimeType = videoFormat === 'mp4' ? 'video/mp4' : 'video/webm'
+    
+    downloadFile(
+      components.videoBlob,
+      `${components.sessionName}-recording.${videoExtension}`,
+      videoMimeType
+    )
+  }
+}
+
+/**
+ * Download session data as ZIP file
+ */
+export const downloadSessionAsZip = async (sessionId: string, options: DownloadOptions = {}): Promise<void> => {
+  const {
+    includeMetadata = true,
+    includeGazeData = true,
+    includeEvents = true,
+    includeVideo = true,
+    videoFormat = 'webm'
+  } = options
+
+  const components = await getSessionComponents(sessionId)
+  const files: Record<string, Uint8Array> = {}
+
+  // Add metadata JSON
+  if (includeMetadata) {
+    files['metadata.json'] = strToU8(components.metadata)
+  }
+
+  // Add gaze data CSV
+  if (includeGazeData && components.gazeDataCSV) {
+    files['gaze-data.csv'] = strToU8(components.gazeDataCSV)
+  }
+
+  // Add events CSV
+  if (includeEvents && components.eventsCSV) {
+    files['events.csv'] = strToU8(components.eventsCSV)
+  }
+
+  // Add video
+  if (includeVideo && components.videoBlob) {
+    const videoExtension = videoFormat === 'mp4' ? 'mp4' : 'webm'
+    const videoData = new Uint8Array(await components.videoBlob.arrayBuffer())
+    files[`recording.${videoExtension}`] = videoData
+  }
+
+  // Create ZIP
+  const zipped = zipSync(files)
+  const zipBlob = new Blob([zipped], { type: 'application/zip' })
+  
+  downloadFile(zipBlob, `${components.sessionName}.zip`, 'application/zip')
 }
 
 /**

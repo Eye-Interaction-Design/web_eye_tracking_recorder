@@ -27,5 +27,8 @@
   },
   "keywords": ["eye-tracking", "screen-recording", "experiment", "research", "browser", "indexeddb"],
   "author": "shikibu9419",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "fflate": "^0.8.2"
+  }
 }

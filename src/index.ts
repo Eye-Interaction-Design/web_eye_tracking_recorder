@@ -57,6 +57,22 @@ export {
 	getVideoChunkData,
 } from "./recorder/storage";
 
+// Export utilities
+export {
+	gazeDataToCSV,
+	eventsToCSV,
+	createMetadataJSON,
+	downloadFile,
+	downloadCompleteSessionData,
+	createSessionSummaryText,
+	getSessionComponents,
+	downloadSessionComponents,
+	downloadSessionAsZip,
+} from "./recorder/export";
+
+// Export types for download options
+export type { DownloadOptions } from "./recorder/export";
+
 // Browser utilities
 export {
 	getBrowserWindowInfo,
