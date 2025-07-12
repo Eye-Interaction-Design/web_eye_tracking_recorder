@@ -47,6 +47,7 @@ export type {
 // Storage (for advanced users)
 export {
 	initializeStorage,
+	resetDatabase,
 	saveSession,
 	getSession,
 	saveEvent,

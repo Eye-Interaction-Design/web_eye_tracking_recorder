@@ -9,7 +9,7 @@ import type {
 } from "./types";
 
 const DB_NAME = "RecorderDB";
-const DB_VERSION = 2;
+const DB_VERSION = 4;
 
 let db: IDBDatabase | null = null;
 
@@ -20,8 +20,20 @@ export const initializeStorage = (): Promise<void> => {
 			return;
 		}
 
-		const request = indexedDB.open(DB_NAME, DB_VERSION);
+		// Force delete existing database to ensure clean schema
+		const deleteRequest = indexedDB.deleteDatabase(DB_NAME);
+		deleteRequest.onsuccess = () => {
+			const request = indexedDB.open(DB_NAME, DB_VERSION);
+			setupDatabase(request, resolve, reject);
+		};
+		deleteRequest.onerror = () => {
+			const request = indexedDB.open(DB_NAME, DB_VERSION);
+			setupDatabase(request, resolve, reject);
+		};
+	});
+};
 
+const setupDatabase = (request: IDBOpenDBRequest, resolve: () => void, reject: (error: Error) => void) => {
 		request.onerror = () => {
 			reject(new Error("Failed to open database"));
 		};
@@ -57,7 +69,7 @@ export const initializeStorage = (): Promise<void> => {
 			// Gaze data store
 			if (!database.objectStoreNames.contains("gazeData")) {
 				const gazeStore = database.createObjectStore("gazeData", {
-					keyPath: ["sessionId", "systemTimestamp"],
+					keyPath: "id",
 				});
 				gazeStore.createIndex("sessionId", "sessionId", { unique: false });
 				gazeStore.createIndex("systemTimestamp", "systemTimestamp", { unique: false });
@@ -71,6 +83,25 @@ export const initializeStorage = (): Promise<void> => {
 				videoStore.createIndex("sessionId", "sessionId", { unique: false });
 				videoStore.createIndex("timestamp", "timestamp", { unique: false });
 			}
+		};
+};
+
+// Database management
+export const resetDatabase = (): Promise<void> => {
+	return new Promise((resolve, reject) => {
+		// Close existing connection
+		if (db) {
+			db.close();
+			db = null;
+		}
+		
+		// Delete the database
+		const deleteRequest = indexedDB.deleteDatabase(DB_NAME);
+		deleteRequest.onsuccess = () => {
+			resolve();
+		};
+		deleteRequest.onerror = () => {
+			reject(new Error("Failed to reset database"));
 		};
 	});
 };
@@ -136,7 +167,12 @@ export const saveGazeData = (
 			return;
 		}
 
-		const dataWithSession = { sessionId, ...gazePoint };
+		const dataWithSession = { 
+			id: `${sessionId}-${gazePoint.systemTimestamp}-${Math.random()}`,
+			sessionId, 
+			...gazePoint 
+		};
+		
 		const transaction = db.transaction(["gazeData"], "readwrite");
 		const store = transaction.objectStore("gazeData");
 		const request = store.add(dataWithSession);
