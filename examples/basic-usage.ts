@@ -3,7 +3,7 @@ import {
 	createSession,
 	startExperiment,
 	stopExperiment,
-	calibrateGazeTracking,
+	calibrateEyeTracking,
 	onGazeData,
 	onSessionEvent,
 	getCurrentSession,
@@ -60,7 +60,7 @@ async function basicUsage() {
 
 		// キャリブレーションの実行
 		console.log("Starting calibration...");
-		const calibrationResult = await calibrateGazeTracking();
+		const calibrationResult = await calibrateEyeTracking();
 		console.log(`Calibration accuracy: ${calibrationResult.accuracy}`);
 
 		// 実験の開始

@@ -3,7 +3,7 @@ import {
 	createSession,
 	startExperiment,
 	stopExperiment,
-	calibrateGazeTracking,
+	calibrateEyeTracking,
 	onGazeData,
 	onSessionEvent,
 	onCalibration,
@@ -82,7 +82,7 @@ async function advancedUsage() {
 				});
 
 				// キャリブレーションの実行
-				const calibrationResult = await calibrateGazeTracking();
+				const calibrationResult = await calibrateEyeTracking();
 				if (calibrationResult.accuracy < 0.8) {
 					console.warn(`Low calibration accuracy: ${calibrationResult.accuracy}`);
 				}

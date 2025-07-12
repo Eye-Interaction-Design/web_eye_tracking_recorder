@@ -1,28 +1,34 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { SyncSystem } from '../src/core/SyncSystem';
+import { 
+  initializeSynchronization, 
+  getRelativeTimestamp, 
+  addSyncMarker, 
+  stopSynchronization,
+  resetSynchronizationState,
+  validateDataSync,
+  calculateSyncQuality
+} from '../src/services/synchronization';
 
-describe('SyncSystem', () => {
-  let syncSystem: SyncSystem;
-
+describe('Synchronization', () => {
   beforeEach(() => {
-    syncSystem = new SyncSystem();
+    resetSynchronizationState();
     vi.clearAllMocks();
   });
 
-  describe('initializeSync', () => {
+  describe('initializeSynchronization', () => {
     it('should initialize sync with session ID', () => {
       const sessionId = 'test-session';
-      syncSystem.initializeSync(sessionId);
+      initializeSynchronization(sessionId);
       
-      expect(syncSystem.getSessionStartTime()).toBeGreaterThan(0);
+      expect(getRelativeTimestamp()).toBeGreaterThanOrEqual(0);
     });
   });
 
   describe('addSyncMarker', () => {
     it('should add a sync marker', () => {
-      syncSystem.initializeSync('test-session');
+      initializeSynchronization('test-session');
       
-      const marker = syncSystem.addSyncMarker('test_marker', { test: 'data' });
+      const marker = addSyncMarker('test_marker', { test: 'data' });
       
       expect(marker).toHaveProperty('id');
       expect(marker.sessionId).toBe('test-session');
@@ -33,55 +39,55 @@ describe('SyncSystem', () => {
 
   describe('getRelativeTimestamp', () => {
     it('should return relative timestamp', () => {
-      syncSystem.initializeSync('test-session');
+      initializeSynchronization('test-session');
       
-      const timestamp = syncSystem.getRelativeTimestamp();
+      const timestamp = getRelativeTimestamp();
       expect(timestamp).toBeGreaterThanOrEqual(0);
     });
   });
 
   describe('validateDataSync', () => {
     it('should validate data sync within threshold', () => {
-      const result = syncSystem.validateDataSync(1000, 1010);
+      const result = validateDataSync(1000, 1010);
       expect(result).toBe(true);
     });
 
     it('should reject data sync outside threshold', () => {
-      const result = syncSystem.validateDataSync(1000, 1020);
+      const result = validateDataSync(1000, 1020);
       expect(result).toBe(false);
     });
   });
 
   describe('calculateSyncQuality', () => {
     it('should return poor quality with insufficient markers', () => {
-      syncSystem.initializeSync('test-session');
+      initializeSynchronization('test-session');
       
-      const quality = syncSystem.calculateSyncQuality();
+      const quality = calculateSyncQuality();
       expect(quality.quality).toBe('poor');
     });
 
     it('should calculate sync quality with multiple markers', () => {
-      syncSystem.initializeSync('test-session');
+      initializeSynchronization('test-session');
       
       // Add multiple markers
-      syncSystem.addSyncMarker('marker1');
-      syncSystem.addSyncMarker('marker2');
-      syncSystem.addSyncMarker('marker3');
+      addSyncMarker('marker1');
+      addSyncMarker('marker2');
+      addSyncMarker('marker3');
       
-      const quality = syncSystem.calculateSyncQuality();
+      const quality = calculateSyncQuality();
       expect(quality).toHaveProperty('maxTimeOffset');
       expect(quality).toHaveProperty('averageOffset');
       expect(quality).toHaveProperty('quality');
     });
   });
 
-  describe('stopSync', () => {
+  describe('stopSynchronization', () => {
     it('should stop sync system', () => {
-      syncSystem.initializeSync('test-session');
-      syncSystem.stopSync();
+      initializeSynchronization('test-session');
+      stopSynchronization();
       
       // Should not throw error
-      expect(() => syncSystem.stopSync()).not.toThrow();
+      expect(() => stopSynchronization()).not.toThrow();
     });
   });
 });

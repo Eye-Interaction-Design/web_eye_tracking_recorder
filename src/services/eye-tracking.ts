@@ -1,6 +1,6 @@
 import type {
 	GazePoint,
-	GazeConfig,
+	EyeTrackingConfig,
 	CalibrationResult,
 	WindowInfo,
 	EyeData,
@@ -16,7 +16,7 @@ import { getStore, addToGazeBuffer, clearGazeBuffer, emitGazeData, emitCalibrati
 interface GazeTrackingState {
 	websocket: WebSocket | null;
 	sessionId: string;
-	config: GazeConfig;
+	config: EyeTrackingConfig;
 	isTracking: boolean;
 	bufferFlushInterval: number | null;
 	websocketUrl: string;
@@ -37,7 +37,7 @@ let gazeState: GazeTrackingState = {
 
 export const initializeEyeTracking = (
 	websocketUrl: string = "ws://localhost:8080",
-	config?: GazeConfig,
+	config?: EyeTrackingConfig,
 ): Promise<void> => {
 	gazeState.websocketUrl = websocketUrl;
 	gazeState.config = {

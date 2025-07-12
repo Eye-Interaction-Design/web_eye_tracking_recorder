@@ -8,7 +8,7 @@
   "browser": "dist/index.js",
   "type": "module",
   "scripts": {
-    "build": "bun build ./src/index.ts --outdir ./dist --target browser --format esm",
+    "build": "bun build ./src/index.ts --outdir ./dist --target browser --format esm && bunx tsc --emitDeclarationOnly --outDir ./dist",
     "build:node": "bun build ./src/index.ts --outdir ./dist --target node",
     "dev": "bun --hot ./src/index.ts",
     "test": "vitest",

@@ -46,7 +46,7 @@ export const startRecording = async (sessionId: string): Promise<void> => {
 		recordingState.stream = await captureScreen();
 		setupMediaRecorder();
 		recordingState.mediaRecorder?.start(
-			recordingState.config.chunkDuration * 1000,
+			(recordingState.config.chunkDuration || 10) * 1000,
 		);
 		recordingState.isRecording = true;
 	} catch (error) {
@@ -77,7 +77,7 @@ export const stopRecording = async (): Promise<void> => {
 };
 
 const captureScreen = async (): Promise<MediaStream> => {
-	const constraints: DisplayMediaStreamConstraints = {
+	const constraints = {
 		video: {
 			frameRate: recordingState.config.frameRate,
 			...getVideoConstraints(),
