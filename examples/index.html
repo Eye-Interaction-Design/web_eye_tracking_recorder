@@ -131,11 +131,15 @@
     <div class="container">
         <h1>Browser Eye Tracking Demo</h1>
         <p>This demo uses the actual browser-eye-tracking library with real browser APIs.</p>
+        <div class="warning">
+            <strong>Auto-Recording:</strong> After successful calibration, screen recording will start automatically without requiring target selection.
+        </div>
         
         <div id="status" class="status idle">Status: Ready to initialize</div>
         
         <div class="config-section">
             <h3>Configuration</h3>
+            <p><em>Recording will automatically capture the current browser tab after calibration.</em></p>
             <div class="form-group">
                 <label for="participantId">Participant ID:</label>
                 <input type="text" id="participantId" value="demo-participant-001">
@@ -158,15 +162,14 @@
             </div>
             <div class="form-group">
                 <label for="websocketUrl">WebSocket URL:</label>
-                <input type="text" id="websocketUrl" value="ws://localhost:8080" style="width: 200px;">
+                <input type="text" id="websocketUrl" value="ws://localhost:8080/eye_tracking" style="width: 250px;">
             </div>
         </div>
         
         <div>
             <button id="initBtn" class="button">Initialize System</button>
             <button id="createBtn" class="button" disabled>Create Session</button>
-            <button id="calibrateBtn" class="button" disabled>Calibrate Eye Tracking</button>
-            <button id="startBtn" class="button" disabled>Start Recording</button>
+            <button id="calibrateBtn" class="button" disabled>Calibrate & Start Recording</button>
             <button id="stopBtn" class="button danger" disabled>Stop Recording</button>
             <button id="downloadBtn" class="button" disabled>Download Data</button>
             <button id="disconnectBtn" class="button" disabled>Disconnect</button>
@@ -226,8 +229,8 @@
         const initBtn = document.getElementById('initBtn');
         const createBtn = document.getElementById('createBtn');
         const calibrateBtn = document.getElementById('calibrateBtn');
-        const startBtn = document.getElementById('startBtn');
         const stopBtn = document.getElementById('stopBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
         const disconnectBtn = document.getElementById('disconnectBtn');
         
         // Metric elements
@@ -260,12 +263,12 @@
                 initial: [true, false, false, false, false, false],
                 initialized: [false, true, false, false, false, true],
                 session_created: [false, false, true, false, false, true],
-                calibrated: [false, false, true, true, false, true],
-                recording: [false, false, false, false, true, true],
-                stopped: [false, false, true, false, false, true]
+                calibrated: [false, false, false, false, false, true], // No manual start needed
+                recording: [false, false, false, true, false, true],
+                stopped: [false, false, true, false, true, true]
             };
             
-            const buttons = [initBtn, createBtn, calibrateBtn, startBtn, stopBtn, disconnectBtn];
+            const buttons = [initBtn, createBtn, calibrateBtn, stopBtn, downloadBtn, disconnectBtn];
             const buttonStates = states[state] || states.initial;
             
             buttons.forEach((btn, i) => {
@@ -311,11 +314,30 @@ Timestamp: ${new Date(gazePoint.systemTimestamp).toISOString()}`;
             log(`Event: ${event.type} - ${JSON.stringify(event.data || {})}`);
         });
         
-        onCalibration((result) => {
+        onCalibration(async (result) => {
             log(`Calibration completed: ${result.success ? 'Success' : 'Failed'} (Accuracy: ${result.accuracy})`);
             if (result.success) {
                 updateButtons('calibrated');
-                updateStatus('Calibrated successfully', 'completed');
+                updateStatus('Calibrated successfully, starting recording...', 'recording');
+                
+                // Auto-start recording after successful calibration
+                setTimeout(async () => {
+                    try {
+                        log('Auto-starting recording after calibration...');
+                        await startExperiment();
+                        
+                        log('Recording started automatically');
+                        updateStatus('Recording in progress', 'recording');
+                        updateButtons('recording');
+                        startDurationTimer();
+                        
+                    } catch (error) {
+                        log(`Failed to auto-start recording: ${error.message}`);
+                        updateStatus('Auto-start failed, ready to start manually', 'completed');
+                        updateButtons('calibrated');
+                    }
+                }, 1000); // 1 second delay to show calibration success
+                
             } else {
                 updateStatus(`Calibration failed: ${result.errorMessage}`, 'error');
             }
@@ -353,7 +375,7 @@ Timestamp: ${new Date(gazePoint.systemTimestamp).toISOString()}`;
                     experimentType: document.getElementById('experimentType').value,
                     recording: {
                         frameRate: parseInt(document.getElementById('frameRate').value),
-                        captureEntireScreen: true,
+                        captureEntireScreen: false, // Capture current tab only
                         quality: 'high'
                     },
                     eyeTracking: {
