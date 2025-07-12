@@ -1,5 +1,4 @@
 import {
-  DEMO_TASKS,
   type DemoConfig,
   type DemoState,
   subscribeToDemoState,
@@ -213,23 +212,12 @@ function setupEventListeners(): void {
 }
 
 function setupDemoTasks(): void {
-  // Create demo task buttons
-  DEMO_TASKS.forEach((task) => {
-    const button = document.createElement('button')
-    button.className = 'target-button'
-    button.textContent = task.name
-    button.addEventListener('click', () => handleTaskClick(task.name))
-    elements.demoArea.appendChild(button)
+  // Just add a simple click handler for the demo area
+  elements.demoArea.addEventListener('click', (e) => {
+    if (getCurrentDemoState().currentSession) {
+      handleTaskClick('Demo Area Click')
+    }
   })
-
-  // Add some demo text areas
-  for (let i = 1; i <= 3; i++) {
-    const textArea = document.createElement('div')
-    textArea.className = 'target-text'
-    textArea.textContent = `Demo text area ${i} - Move your mouse over this text to simulate gaze tracking`
-    textArea.addEventListener('mouseenter', () => handleTaskClick(`Text Area ${i}`))
-    elements.demoArea.appendChild(textArea)
-  }
 }
 
 // UI updates
@@ -291,6 +279,15 @@ function setupStateSubscription(): void {
 // Initialize the application
 function initializeApp(): void {
   initializeDOMElements()
+  
+  // Check if all required elements exist
+  if (!elements.initBtn || !elements.createBtn || !elements.startBtn || !elements.stopBtn ||
+      !elements.downloadBtn || !elements.downloadComponentsBtn || !elements.downloadZipBtn ||
+      !elements.autoSaveBtn || !elements.participantId || !elements.experimentType) {
+    console.error('Required DOM elements not found')
+    return
+  }
+  
   setupEventListeners()
   setupStateSubscription()
   updateUI()
@@ -298,5 +295,7 @@ function initializeApp(): void {
   log('This demo uses mock gaze data generated from mouse movements')
 }
 
-// Start the application
-initializeApp()
+// Start the application when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  initializeApp()
+})

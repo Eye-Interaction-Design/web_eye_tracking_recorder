@@ -47,10 +47,10 @@ interface EyeTrackerProviderProps {
 /**
  * Provider component that wraps your app and provides eye tracking functionality
  */
-export const EyeTrackerProvider: React.FC<EyeTrackerProviderProps> = ({ 
+export const EyeTrackerProvider = ({ 
   children, 
   autoInitialize = true 
-}) => {
+}: EyeTrackerProviderProps): JSX.Element => {
   const eyeTracker = useEyeTracker(autoInitialize);
   
   return (

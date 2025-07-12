@@ -156,10 +156,6 @@
         <p>This demo shows the Web Eye Tracking Recorder library with mock gaze data.</p>
         <div style="background-color: #e3f2fd; padding: 15px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #1976d2;">
             <strong>📹 Recording Target:</strong> When prompted to share your screen, please select <strong>"This tab"</strong> to record the current demo page. 
-            <br><br>
-            <div class="recording-guidance" style="font-weight: bold; margin-top: 10px;">
-                Detecting browser...
-            </div>
         </div>
         
         <div id="status" class="status idle">Status: Ready to initialize</div>
@@ -191,12 +187,10 @@
         <div class="config-section">
             <h3>Download Options</h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
-                <button id="downloadJsonBtn" class="button" disabled>Download JSON Only</button>
-                <button id="downloadCsvBtn" class="button" disabled>Download CSV Only</button>
-                <button id="downloadVideoBtn" class="button" disabled>Download Video (WebM)</button>
-                <button id="downloadVideoMp4Btn" class="button" disabled>Download Video (MP4)</button>
-                <button id="downloadAllBtn" class="button" disabled>Download All Files</button>
+                <button id="downloadBtn" class="button" disabled>Download JSON Only</button>
+                <button id="downloadComponentsBtn" class="button" disabled>Download Components</button>
                 <button id="downloadZipBtn" class="button" disabled>Download ZIP</button>
+                <button id="autoSaveBtn" class="button" disabled>Auto Save</button>
             </div>
         </div>
         
@@ -235,6 +229,6 @@
         </div>
     </div>
 
-    <script type="module" src="demo.ts"></script>
+    <script type="module" src="/demo.ts"></script>
 </body>
 </html>

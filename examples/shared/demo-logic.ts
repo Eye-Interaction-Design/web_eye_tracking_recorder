@@ -217,13 +217,3 @@ export function generateTimestamp(): string {
   return new Date().toLocaleTimeString()
 }
 
-// Pre-configured demo tasks
-export const DEMO_TASKS = [
-  { id: 'task1', name: 'Click the blue button', type: 'button' },
-  { id: 'task2', name: 'Read this text carefully', type: 'text' },
-  { id: 'task3', name: 'Hover over this area', type: 'area' },
-  { id: 'task4', name: 'Navigate to settings', type: 'navigation' },
-  { id: 'task5', name: 'Search for information', type: 'search' }
-] as const
-
-export type DemoTask = typeof DEMO_TASKS[number]
