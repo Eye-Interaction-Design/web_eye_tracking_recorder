@@ -99,3 +99,6 @@ export {
 	windowToScreenCoordinates,
 	windowToContentCoordinates,
 } from "./recorder/browser-info";
+
+// Note: React integration is available as a separate package:
+// npm install @web-eye-tracking-recorder/react

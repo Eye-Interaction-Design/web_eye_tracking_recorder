@@ -9,6 +9,8 @@
   "type": "module",
   "scripts": {
     "build": "bun build ./src/index.ts --outdir ./dist --target browser --format esm && bunx tsc --emitDeclarationOnly --outDir ./dist",
+    "build:react": "bun build ./src/react/index.ts --outdir ./dist/react --target browser --format esm && bunx tsc --emitDeclarationOnly --declaration --outDir ./dist/react ./src/react/index.ts",
+    "build:all": "bun run build && bun run build:react",
     "build:examples": "bun run build && cp dist/index.js examples/web-eye-tracking-recorder.js",
     "build:node": "bun build ./src/index.ts --outdir ./dist --target node",
     "dev": "bun --hot ./src/index.ts",
@@ -19,6 +21,7 @@
   "devDependencies": {
     "@types/bun": "latest",
     "@biomejs/biome": "latest",
+    "vite": "^6.0.7",
     "vitest": "^3.2.4",
     "happy-dom": "^18.0.1"
   },

@@ -6,7 +6,8 @@
   "scripts": {
     "build-lib": "cd ../.. && bun run build",
     "serve": "bun run build-lib && bun run --hot server.ts",
-    "dev": "bun run build-lib && bun run --hot server.ts"
+    "dev": "bun run build-lib && bun run --hot server.ts",
+    "build": "bun build demo.ts --outdir dist --target browser --format esm"
   },
   "dependencies": {
     "typescript": "^5"
