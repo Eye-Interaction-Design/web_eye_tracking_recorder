@@ -19,16 +19,17 @@ export function getBrowserWindowInfo(): {
 	outerWidth: number;
 	outerHeight: number;
 } {
+	const win = typeof window !== 'undefined' ? window : {} as any;
 	return {
-		innerWidth: window.innerWidth,
-		innerHeight: window.innerHeight,
-		scrollX: window.scrollX,
-		scrollY: window.scrollY,
-		devicePixelRatio: window.devicePixelRatio,
-		screenX: window.screenX,
-		screenY: window.screenY,
-		outerWidth: window.outerWidth,
-		outerHeight: window.outerHeight,
+		innerWidth: win.innerWidth || 1920,
+		innerHeight: win.innerHeight || 1080,
+		scrollX: win.scrollX || 0,
+		scrollY: win.scrollY || 0,
+		devicePixelRatio: win.devicePixelRatio || 1,
+		screenX: win.screenX || 0,
+		screenY: win.screenY || 0,
+		outerWidth: win.outerWidth || 1920,
+		outerHeight: win.outerHeight || 1080,
 	};
 }
 
@@ -38,11 +39,12 @@ export function getScreenInfo(): {
 	availWidth: number;
 	availHeight: number;
 } {
+	const scr = typeof screen !== 'undefined' ? screen : {} as any;
 	return {
-		width: screen.width,
-		height: screen.height,
-		availWidth: screen.availWidth,
-		availHeight: screen.availHeight,
+		width: scr.width || 1920,
+		height: scr.height || 1080,
+		availWidth: scr.availWidth || 1920,
+		availHeight: scr.availHeight || 1040,
 	};
 }
 

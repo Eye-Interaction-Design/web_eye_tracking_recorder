@@ -1,28 +1,28 @@
 import type { SyncMarker } from "../types";
 
-interface SyncState {
+interface SynchronizationState {
 	sessionStartTime: number;
 	syncMarkers: SyncMarker[];
 	syncIntervalId: number | null;
 	sessionId: string;
 }
 
-let syncState: SyncState = {
+let synchronizationState: SynchronizationState = {
 	sessionStartTime: 0,
 	syncMarkers: [],
 	syncIntervalId: null,
 	sessionId: "",
 };
 
-export const initializeSync = (sessionId: string): void => {
-	syncState.sessionId = sessionId;
-	syncState.sessionStartTime = performance.now();
-	syncState.syncMarkers = [];
-	startAutoSyncMarkers();
+export const initializeSynchronization = (sessionId: string): void => {
+	synchronizationState.sessionId = sessionId;
+	synchronizationState.sessionStartTime = performance.now();
+	synchronizationState.syncMarkers = [];
+	startAutomaticSyncMarkers();
 };
 
 export const getRelativeTimestamp = (): number => {
-	return performance.now() - syncState.sessionStartTime;
+	return performance.now() - synchronizationState.sessionStartTime;
 };
 
 export const addSyncMarker = (
@@ -30,8 +30,8 @@ export const addSyncMarker = (
 	data?: Record<string, unknown>,
 ): SyncMarker => {
 	const marker: SyncMarker = {
-		id: generateMarkerId(),
-		sessionId: syncState.sessionId,
+		id: generateSyncMarkerId(),
+		sessionId: synchronizationState.sessionId,
 		type,
 		timestamp: getRelativeTimestamp(),
 		systemTimestamp: Date.now(),
@@ -39,7 +39,7 @@ export const addSyncMarker = (
 		data,
 	};
 
-	syncState.syncMarkers.push(marker);
+	synchronizationState.syncMarkers.push(marker);
 	return marker;
 };
 
@@ -71,12 +71,12 @@ export const validateDataSync = (
 	return timeDiff <= 16; // 1フレーム以内
 };
 
-export const getSyncMarkers = (): SyncMarker[] => {
-	return [...syncState.syncMarkers];
+export const getSynchronizationMarkers = (): SyncMarker[] => {
+	return [...synchronizationState.syncMarkers];
 };
 
-const startAutoSyncMarkers = (): void => {
-	syncState.syncIntervalId = setInterval(() => {
+const startAutomaticSyncMarkers = (): void => {
+	synchronizationState.syncIntervalId = setInterval(() => {
 		addSyncMarker("auto_sync", {
 			markerId: `sync_${Date.now()}`,
 			timestamp: getRelativeTimestamp(),
@@ -84,19 +84,19 @@ const startAutoSyncMarkers = (): void => {
 	}, 1000) as unknown as number; // 1秒ごと
 };
 
-const generateMarkerId = (): string => {
-	return `sync_${syncState.sessionId}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+const generateSyncMarkerId = (): string => {
+	return `sync_${synchronizationState.sessionId}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 };
 
-export const stopSync = (): void => {
-	if (syncState.syncIntervalId) {
-		clearInterval(syncState.syncIntervalId);
-		syncState.syncIntervalId = null;
+export const stopSynchronization = (): void => {
+	if (synchronizationState.syncIntervalId) {
+		clearInterval(synchronizationState.syncIntervalId);
+		synchronizationState.syncIntervalId = null;
 	}
 };
 
 export const getSessionStartTime = (): number => {
-	return syncState.sessionStartTime;
+	return synchronizationState.sessionStartTime;
 };
 
 export const calculateSyncQuality = (): {
@@ -104,16 +104,16 @@ export const calculateSyncQuality = (): {
 	averageOffset: number;
 	quality: "excellent" | "good" | "fair" | "poor";
 } => {
-	if (syncState.syncMarkers.length <= 1) {
+	if (synchronizationState.syncMarkers.length <= 1) {
 		return { maxTimeOffset: 0, averageOffset: 0, quality: "poor" };
 	}
 
 	let totalOffset = 0;
 	let maxOffset = 0;
 
-	for (let i = 1; i < syncState.syncMarkers.length; i++) {
-		const prev = syncState.syncMarkers[i - 1];
-		const curr = syncState.syncMarkers[i];
+	for (let i = 1; i < synchronizationState.syncMarkers.length; i++) {
+		const prev = synchronizationState.syncMarkers[i - 1];
+		const curr = synchronizationState.syncMarkers[i];
 
 		if (prev && curr) {
 			const expectedDiff = curr.timestamp - prev.timestamp;
@@ -125,7 +125,7 @@ export const calculateSyncQuality = (): {
 		}
 	}
 
-	const averageOffset = totalOffset / (syncState.syncMarkers.length - 1);
+	const averageOffset = totalOffset / (synchronizationState.syncMarkers.length - 1);
 
 	let quality: "excellent" | "good" | "fair" | "poor";
 	if (maxOffset <= 5) quality = "excellent";
@@ -136,9 +136,9 @@ export const calculateSyncQuality = (): {
 	return { maxTimeOffset: maxOffset, averageOffset, quality };
 };
 
-export const resetSyncState = (): void => {
-	stopSync();
-	syncState = {
+export const resetSynchronizationState = (): void => {
+	stopSynchronization();
+	synchronizationState = {
 		sessionStartTime: 0,
 		syncMarkers: [],
 		syncIntervalId: null,

@@ -10,7 +10,7 @@ import {
 	getCurrentSession,
 	getQualityMetrics,
 	disconnect,
-} from "../src/index";
+} from "experiment-recorder";
 
 // 高度な使用例：複数の実験セッションとエラーハンドリング
 async function advancedUsage() {

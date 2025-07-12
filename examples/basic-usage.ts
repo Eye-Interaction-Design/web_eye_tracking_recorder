@@ -10,7 +10,7 @@ import {
 	isCurrentlyRecording,
 	getQualityMetrics,
 	disconnect,
-} from "../src/index";
+} from "experiment-recorder";
 
 // 基本的な使用例
 async function basicUsage() {

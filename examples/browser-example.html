@@ -137,8 +137,21 @@
     <div id="gazeIndicator" class="gaze-indicator"></div>
 
     <script type="module">
-        // モック版の実装（実際のライブラリを使用する場合は、import文を使用）
+        // 実際のライブラリを使用する場合のコード例
+        /*
+        import {
+            initializeExperiment,
+            createSession,
+            startExperiment,
+            stopExperiment,
+            calibrateGazeTracking,
+            onGazeData,
+            onSessionEvent,
+            onCalibration
+        } from './experiment-recorder.js';
+        */
         
+        // モック版の実装（デモ用）
         class MockExperimentRecorder {
             constructor() {
                 this.isInitialized = false;

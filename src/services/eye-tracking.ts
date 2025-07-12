@@ -35,7 +35,7 @@ let gazeState: GazeTrackingState = {
 	websocketUrl: "ws://localhost:8080",
 };
 
-export const initializeGazeTracking = (
+export const initializeEyeTracking = (
 	websocketUrl: string = "ws://localhost:8080",
 	config?: GazeConfig,
 ): Promise<void> => {
@@ -311,7 +311,7 @@ export const getTrackingQuality = async (): Promise<{
 	};
 };
 
-export const disconnectGazeTracking = (): void => {
+export const disconnectEyeTracking = (): void => {
 	stopTracking();
 
 	if (gazeState.websocket) {
@@ -333,8 +333,8 @@ export const getTrackingState = (): {
 	};
 };
 
-export const resetGazeTrackingState = (): void => {
-	disconnectGazeTracking();
+export const resetEyeTrackingState = (): void => {
+	disconnectEyeTracking();
 	gazeState = {
 		websocket: null,
 		sessionId: "",

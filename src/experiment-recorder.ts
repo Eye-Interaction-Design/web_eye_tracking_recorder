@@ -8,9 +8,9 @@ import type {
 import { getStore, updateStore, addSessionEvent } from "./store";
 import { generateSessionId } from "./utils";
 import { initializeDatabase, saveSession, saveEvent, getSessionData, checkForIncompleteSessions } from "./services/database";
-import { initializeSync, getRelativeTimestamp, stopSync, calculateSyncQuality } from "./services/sync";
+import { initializeSynchronization, getRelativeTimestamp, stopSynchronization, calculateSyncQuality } from "./services/synchronization";
 import { initializeRecording, startRecording, stopRecording, getRecordingQuality } from "./services/screen-recording";
-import { initializeGazeTracking, startTracking, stopTracking, calibrate, getTrackingQuality, disconnectGazeTracking } from "./services/gaze-tracking";
+import { initializeEyeTracking, startTracking, stopTracking, calibrate, getTrackingQuality, disconnectEyeTracking } from "./services/eye-tracking";
 
 export const initializeExperiment = async (
 	config?: ExperimentConfig & { eyeTrackingServerUrl?: string },
@@ -20,7 +20,7 @@ export const initializeExperiment = async (
 	}
 
 	await initializeDatabase();
-	await initializeGazeTracking(config?.eyeTrackingServerUrl, config?.gazeTracking);
+	await initializeEyeTracking(config?.eyeTrackingServerUrl, config?.gazeTracking);
 	initializeRecording(config?.recording);
 	await checkForIncompleteSessions();
 };
@@ -37,9 +37,9 @@ export const createSession = async (config: ExperimentConfig): Promise<string> =
 		config,
 		metadata: {
 			browser: navigator.userAgent,
-			screen: `${globalThis.screen?.width || 1920}x${globalThis.screen?.height || 1080}`,
-			displayWidth: globalThis.window?.innerWidth || 1920,
-			displayHeight: globalThis.window?.innerHeight || 1080,
+			screen: `${(typeof screen !== 'undefined' ? screen.width : 1920)}x${(typeof screen !== 'undefined' ? screen.height : 1080)}`,
+			displayWidth: typeof window !== 'undefined' ? window.innerWidth : 1920,
+			displayHeight: typeof window !== 'undefined' ? window.innerHeight : 1080,
 			userAgent: navigator.userAgent,
 			settings: {
 				screenRecording: config.recording || {},
@@ -47,9 +47,9 @@ export const createSession = async (config: ExperimentConfig): Promise<string> =
 			},
 			environment: {
 				browser: navigator.userAgent,
-				screen: `${globalThis.screen?.width || 1920}x${globalThis.screen?.height || 1080}`,
-				displayWidth: globalThis.window?.innerWidth || 1920,
-				displayHeight: globalThis.window?.innerHeight || 1080,
+				screen: `${(typeof screen !== 'undefined' ? screen.width : 1920)}x${(typeof screen !== 'undefined' ? screen.height : 1080)}`,
+				displayWidth: typeof window !== 'undefined' ? window.innerWidth : 1920,
+				displayHeight: typeof window !== 'undefined' ? window.innerHeight : 1080,
 				userAgent: navigator.userAgent,
 			},
 		},
@@ -68,7 +68,7 @@ export const startExperiment = async (): Promise<void> => {
 	}
 
 	updateStore({ isRecording: true });
-	initializeSync(store.currentSession.sessionId);
+	initializeSynchronization(store.currentSession.sessionId);
 
 	const startEvent: SessionEvent = {
 		id: `event_${Date.now()}`,
@@ -102,7 +102,7 @@ export const stopExperiment = async (): Promise<{
 	// Stop recording and tracking
 	await stopRecording();
 	await stopTracking();
-	stopSync();
+	stopSynchronization();
 
 	const stopEvent: SessionEvent = {
 		id: `event_${Date.now()}`,
@@ -130,7 +130,7 @@ export const stopExperiment = async (): Promise<{
 	};
 };
 
-export const calibrateGazeTracking = async (): Promise<CalibrationResult> => {
+export const calibrateEyeTracking = async (): Promise<CalibrationResult> => {
 	const store = getStore();
 	if (!store.currentSession) {
 		throw new Error("No active session for calibration.");
@@ -214,7 +214,7 @@ export const getQualityMetrics = async (): Promise<{
 };
 
 export const disconnect = (): void => {
-	disconnectGazeTracking();
+	disconnectEyeTracking();
 };
 
 const validateConfig = (config: ExperimentConfig): void => {
