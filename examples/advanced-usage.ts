@@ -10,7 +10,7 @@ import {
 	getCurrentSession,
 	getQualityMetrics,
 	disconnect,
-} from "experiment-recorder";
+} from "browser-eye-tracking";
 
 // 高度な使用例：複数の実験セッションとエラーハンドリング
 async function advancedUsage() {

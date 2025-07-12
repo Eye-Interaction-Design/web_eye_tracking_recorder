@@ -13,7 +13,7 @@ const server = Bun.serve({
 		}
 		
 		// ライブラリファイルを提供
-		if (url.pathname === "/experiment-recorder.js") {
+		if (url.pathname === "/browser-eye-tracking.js") {
 			const file = Bun.file("../dist/index.js");
 			return new Response(file, {
 				headers: { 

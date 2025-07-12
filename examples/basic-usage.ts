@@ -10,7 +10,7 @@ import {
 	isCurrentlyRecording,
 	getQualityMetrics,
 	disconnect,
-} from "experiment-recorder";
+} from "browser-eye-tracking";
 
 // 基本的な使用例
 async function basicUsage() {

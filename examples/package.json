@@ -1,7 +1,7 @@
 {
-  "name": "experiment-recorder-examples",
+  "name": "browser-eye-tracking-examples",
   "version": "1.0.0",
-  "description": "Examples for experiment-recorder library",
+  "description": "Examples for browser-eye-tracking library",
   "type": "module",
   "scripts": {
     "basic": "bun run basic-usage.ts",
@@ -9,7 +9,7 @@
     "serve": "bun run --hot server.ts"
   },
   "dependencies": {
-    "experiment-recorder": "file:../",
+    "browser-eye-tracking": "file:../",
     "typescript": "^5"
   },
   "devDependencies": {

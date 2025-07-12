@@ -20,7 +20,7 @@ export const initializeExperiment = async (
 	}
 
 	await initializeDatabase();
-	await initializeEyeTracking(config?.eyeTrackingServerUrl, config?.gazeTracking);
+	await initializeEyeTracking(config?.eyeTrackingServerUrl, config?.eyeTracking);
 	initializeRecording(config?.recording);
 	await checkForIncompleteSessions();
 };
@@ -43,7 +43,7 @@ export const createSession = async (config: ExperimentConfig): Promise<string> =
 			userAgent: navigator.userAgent,
 			settings: {
 				screenRecording: config.recording || {},
-				gazeTracking: config.gazeTracking || {},
+				eyeTracking: config.eyeTracking || {},
 			},
 			environment: {
 				browser: navigator.userAgent,
@@ -223,8 +223,8 @@ const validateConfig = (config: ExperimentConfig): void => {
 	}
 
 	if (
-		config.gazeTracking?.samplingRate &&
-		config.gazeTracking.samplingRate <= 0
+		config.eyeTracking?.samplingRate &&
+		config.eyeTracking.samplingRate <= 0
 	) {
 		throw new Error("Sampling rate must be positive");
 	}

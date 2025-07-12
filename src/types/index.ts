@@ -47,7 +47,7 @@ export interface ExperimentConfig {
 	participantId?: string;
 	experimentType?: string;
 	recording?: RecordingConfig;
-	gazeTracking?: GazeConfig;
+	eyeTracking?: EyeTrackingConfig;
 }
 
 export interface RecordingConfig {
@@ -57,7 +57,7 @@ export interface RecordingConfig {
 	quality?: "high" | "medium" | "low";
 }
 
-export interface GazeConfig {
+export interface EyeTrackingConfig {
 	samplingRate?: number;
 	calibrationPoints?: number;
 	deviceType?: "webcam" | "eyetracker";
@@ -83,7 +83,7 @@ export interface SessionMetadata {
 	duration?: number;
 	settings: {
 		screenRecording: RecordingConfig;
-		gazeTracking: GazeConfig;
+		eyeTracking: EyeTrackingConfig;
 	};
 	environment: {
 		browser: string;
@@ -142,7 +142,7 @@ export interface QualityMetrics {
 			frameDrops: number;
 			duration: number;
 		};
-		gazeTrackingQuality: {
+		eyeTrackingQuality: {
 			averageSamplingRate: number;
 			dataLossRate: number;
 			averageConfidence: number;

@@ -1,5 +1,5 @@
 {
-  "name": "experiment-recorder",
+  "name": "browser-eye-tracking",
   "version": "1.0.0",
   "description": "Experimental screen recording and eye tracking integration system",
   "main": "dist/index.js",
