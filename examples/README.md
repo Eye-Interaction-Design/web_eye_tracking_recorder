@@ -32,12 +32,33 @@ This directory contains examples for the `browser-eye-tracking` library.
 
 1. **Full Demo** - `http://localhost:3000`
    - Complete eye tracking and screen recording functionality
-   - Requires WebSocket eye tracking server
+   - Requires WebSocket eye tracking server (use mock server below)
 
 2. **Screen Recording Only** - `http://localhost:3000/screen-recording`
    - Tests only screen recording functionality
    - No eye tracking dependencies
    - Perfect for validating MediaRecorder API integration
+
+### Mock Eye Tracking Server
+
+For testing the full demo, start the mock eye tracking server:
+
+```bash
+bun run mock-eye-server
+```
+
+This will start a WebSocket server on `ws://localhost:8080` that simulates:
+- 60Hz gaze data stream with realistic eye movement patterns
+- Calibration process (2-second simulation)
+- Connection management
+- Web interface at `http://localhost:8080` for monitoring
+
+The mock server generates realistic gaze data including:
+- Smooth eye movement patterns with natural variations
+- Left/right eye differentiation
+- Confidence levels (85-95%)
+- Pupil size variations
+- Proper timestamp synchronization
 
 ### Files
 

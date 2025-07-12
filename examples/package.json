@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "serve": "bun run --hot server.ts",
-    "dev": "bun run --hot server.ts"
+    "dev": "bun run --hot server.ts",
+    "mock-eye-server": "bun run --hot mock-eye-tracking-server.ts"
   },
   "dependencies": {
     "browser-eye-tracking": "file:../",

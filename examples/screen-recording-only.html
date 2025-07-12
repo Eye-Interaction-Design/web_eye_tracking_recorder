@@ -342,7 +342,9 @@
                 log('Note: Eye tracking is disabled for this demo');
                 
                 // Initialize without eye tracking
-                await initializeExperiment();
+                await initializeExperiment({
+                    enableEyeTracking: false
+                });
                 
                 log('Screen recording system initialized successfully');
                 updateStatus('System initialized', 'completed');
