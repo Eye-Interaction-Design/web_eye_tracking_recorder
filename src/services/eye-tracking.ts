@@ -52,9 +52,13 @@ export const initializeEyeTracking = (
 	}
 
 	return new Promise((resolve, reject) => {
-		gazeState.websocket = new WebSocket(
-			`${gazeState.websocketUrl}/eye_tracking`,
-		);
+		// Construct proper WebSocket URL
+		const wsUrl = gazeState.websocketUrl.endsWith('/eye_tracking') 
+			? gazeState.websocketUrl 
+			: `${gazeState.websocketUrl}/eye_tracking`;
+		
+		console.log('Connecting to WebSocket:', wsUrl);
+		gazeState.websocket = new WebSocket(wsUrl);
 
 		gazeState.websocket.onopen = () => {
 			console.log("Connected to eye tracking server");

@@ -39,7 +39,7 @@ import {
 
 // Initialize the system
 await initializeExperiment({
-  eyeTrackingServerUrl: 'ws://localhost:8080', // Optional
+  eyeTrackingServerUrl: 'ws://localhost:8080', // Base URL, /eye_tracking is added automatically
   enableEyeTracking: true // Set to false for screen recording only
 });
 
