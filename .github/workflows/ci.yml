@@ -1,0 +1,171 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    name: Test & Build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v1
+      with:
+        bun-version: latest
+
+    - name: Install dependencies
+      run: bun install
+
+    - name: Run linter
+      run: bun run lint
+
+    - name: Run tests
+      run: bun test
+
+    - name: Build library
+      run: bun run build
+
+    - name: Check build output
+      run: |
+        ls -la dist/
+        echo "Build completed successfully"
+
+    - name: Test examples installation
+      run: |
+        cd examples
+        bun install --production
+
+  lint:
+    name: Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v1
+      with:
+        bun-version: latest
+
+    - name: Install dependencies
+      run: bun install
+
+    - name: Run Biome linter
+      run: bun run lint
+
+    - name: Run Biome formatter check
+      run: bunx @biomejs/biome format src --write=false
+
+    - name: Check TypeScript types
+      run: bunx tsc --noEmit
+
+  build:
+    name: Build Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v1
+      with:
+        bun-version: latest
+
+    - name: Install dependencies
+      run: bun install
+
+    - name: Build for browser
+      run: bun run build
+
+    - name: Verify build outputs
+      run: |
+        test -f dist/index.js || (echo "Browser build failed: index.js not found" && exit 1)
+        test -f dist/index.d.ts || (echo "TypeScript declarations not generated" && exit 1)
+        echo "Build verification passed"
+
+    - name: Check bundle size
+      run: |
+        BUNDLE_SIZE=$(wc -c < dist/index.js)
+        echo "Bundle size: $BUNDLE_SIZE bytes"
+        if [ $BUNDLE_SIZE -gt 1048576 ]; then
+          echo "Warning: Bundle size is over 1MB"
+        fi
+
+  examples:
+    name: Examples Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v1
+      with:
+        bun-version: latest
+
+    - name: Install main dependencies
+      run: bun install
+
+    - name: Build library
+      run: bun run build
+
+    - name: Install examples dependencies
+      run: |
+        cd examples
+        bun install
+
+    - name: Start mock server (background)
+      run: |
+        cd examples
+        timeout 10s bun run mock-eye-server &
+        sleep 2
+
+    - name: Start examples server (test)
+      run: |
+        cd examples
+        timeout 5s bun run serve &
+        sleep 2
+        # Check if server is running
+        curl -f http://localhost:3000 > /dev/null || (echo "Examples server failed to start" && exit 1)
+        curl -f http://localhost:3000/screen-recording > /dev/null || (echo "Screen recording demo failed" && exit 1)
+        echo "Examples server check passed"
+
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v1
+      with:
+        bun-version: latest
+
+    - name: Install dependencies
+      run: bun install
+
+    - name: Security audit
+      run: |
+        # Check for known vulnerabilities
+        bun audit || echo "Audit completed with warnings"
+
+    - name: Check for secrets in code
+      run: |
+        # Simple check for common secret patterns
+        if grep -r "password\|secret\|token\|key" src/ --include="*.ts" --include="*.js" | grep -v "// " | grep -v "console.log"; then
+          echo "Potential secrets found in code"
+          exit 1
+        fi
+        echo "No obvious secrets found"

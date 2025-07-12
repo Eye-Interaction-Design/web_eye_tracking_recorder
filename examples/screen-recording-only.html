@@ -194,6 +194,7 @@
             <button id="createBtn" class="button" disabled>Create Session</button>
             <button id="startBtn" class="button" disabled>Start Recording</button>
             <button id="stopBtn" class="button danger" disabled>Stop Recording</button>
+            <button id="downloadBtn" class="button" disabled>Download Data</button>
             <button id="disconnectBtn" class="button" disabled>Reset</button>
         </div>
         
@@ -242,6 +243,9 @@
             getQualityMetrics,
             disconnect
         } from './browser-eye-tracking.js';
+        
+        // Import database functions for data download
+        import { getSessionData } from './browser-eye-tracking.js';
 
         // DOM elements
         const statusEl = document.getElementById('status');
@@ -253,6 +257,7 @@
         const createBtn = document.getElementById('createBtn');
         const startBtn = document.getElementById('startBtn');
         const stopBtn = document.getElementById('stopBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
         const disconnectBtn = document.getElementById('disconnectBtn');
         
         // Metric elements
@@ -266,6 +271,7 @@
         let eventsCount = 0;
         let durationInterval = null;
         let dataSizeEstimate = 0;
+        let currentSessionId = null;
         
         // Utility functions
         function log(message) {
@@ -282,14 +288,14 @@
         
         function updateButtons(state) {
             const states = {
-                initial: [true, false, false, false, false],
-                initialized: [false, true, false, false, true],
-                session_created: [false, false, true, false, true],
-                recording: [false, false, false, true, true],
-                stopped: [false, false, true, false, true]
+                initial: [true, false, false, false, false, false],
+                initialized: [false, true, false, false, false, true],
+                session_created: [false, false, true, false, false, true],
+                recording: [false, false, false, true, false, true],
+                stopped: [false, false, true, false, true, true]
             };
             
-            const buttons = [initBtn, createBtn, startBtn, stopBtn, disconnectBtn];
+            const buttons = [initBtn, createBtn, startBtn, stopBtn, downloadBtn, disconnectBtn];
             const buttonStates = states[state] || states.initial;
             
             buttons.forEach((btn, i) => {
@@ -318,6 +324,69 @@
                 clearInterval(durationInterval);
                 durationInterval = null;
             }
+        }
+        
+        // Download functions
+        async function downloadSessionData() {
+            if (!currentSessionId) {
+                log('No session to download');
+                return;
+            }
+            
+            try {
+                log('Gathering session data for download...');
+                const sessionData = await getSessionData(currentSessionId);
+                
+                // Create downloadable data package
+                const dataPackage = {
+                    session: sessionData.session,
+                    events: sessionData.events,
+                    videoChunks: sessionData.videoChunks ? sessionData.videoChunks.length : 0,
+                    metadata: {
+                        downloadedAt: new Date().toISOString(),
+                        totalEvents: sessionData.events?.length || 0,
+                        totalVideoChunks: sessionData.videoChunks?.length || 0,
+                        sessionDuration: sessionData.session?.endTime ? 
+                            sessionData.session.endTime - sessionData.session.startTime : null
+                    }
+                };
+                
+                // Download session metadata and events as JSON
+                const jsonBlob = new Blob([JSON.stringify(dataPackage, null, 2)], 
+                    { type: 'application/json' });
+                downloadBlob(jsonBlob, `session-${currentSessionId}-data.json`);
+                
+                // Download video chunks if available
+                if (sessionData.videoChunks && sessionData.videoChunks.length > 0) {
+                    log(`Downloading ${sessionData.videoChunks.length} video chunks...`);
+                    
+                    for (let i = 0; i < sessionData.videoChunks.length; i++) {
+                        const chunk = sessionData.videoChunks[i];
+                        const filename = `session-${currentSessionId}-chunk-${String(i).padStart(3, '0')}.webm`;
+                        downloadBlob(chunk.data, filename);
+                        
+                        // Small delay to avoid overwhelming the browser
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    }
+                }
+                
+                log(`Download completed for session ${currentSessionId}`);
+                log(`Files: session data (JSON) + ${sessionData.videoChunks?.length || 0} video chunks`);
+                
+            } catch (error) {
+                log(`Download failed: ${error.message}`);
+            }
+        }
+        
+        function downloadBlob(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
         
         // Setup event listeners
@@ -375,6 +444,7 @@
                 };
                 
                 const sessionId = await createSession(config);
+                currentSessionId = sessionId; // Store for download
                 log(`Recording session created with ID: ${sessionId}`);
                 log(`Configuration: ${JSON.stringify(config.recording, null, 2)}`);
                 updateStatus('Session created', 'completed');
@@ -455,6 +525,21 @@
             }
         });
         
+        downloadBtn.addEventListener('click', async () => {
+            try {
+                updateStatus('Downloading data...', 'recording');
+                log('Starting data download...');
+                
+                await downloadSessionData();
+                
+                updateStatus('Download completed', 'completed');
+                
+            } catch (error) {
+                log(`Download failed: ${error.message}`);
+                updateStatus('Download failed', 'error');
+            }
+        });
+        
         disconnectBtn.addEventListener('click', () => {
             try {
                 log('Resetting system...');
@@ -467,6 +552,7 @@
                 // Reset UI
                 eventsCount = 0;
                 dataSizeEstimate = 0;
+                currentSessionId = null;
                 eventsCountEl.textContent = '0';
                 sessionDurationEl.textContent = '0s';
                 recordingStatusEl.textContent = 'Stopped';

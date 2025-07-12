@@ -1,9 +1,39 @@
 import { vi } from 'vitest';
 
-// Mock IndexedDB
+// Mock IndexedDB with proper implementation
 global.indexedDB = {
-  open: vi.fn(),
-  deleteDatabase: vi.fn(),
+  open: vi.fn().mockImplementation((name, version) => ({
+    onsuccess: null,
+    onerror: null,
+    onupgradeneeded: null,
+    result: {
+      createObjectStore: vi.fn(),
+      transaction: vi.fn().mockReturnValue({
+        objectStore: vi.fn().mockReturnValue({
+          add: vi.fn().mockImplementation(() => ({ onsuccess: null, onerror: null })),
+          put: vi.fn().mockImplementation(() => ({ onsuccess: null, onerror: null })),
+          get: vi.fn().mockImplementation(() => ({ onsuccess: null, onerror: null, result: null })),
+          getAll: vi.fn().mockImplementation(() => ({ onsuccess: null, onerror: null, result: [] })),
+          index: vi.fn().mockReturnValue({
+            getAll: vi.fn().mockImplementation(() => ({ onsuccess: null, onerror: null, result: [] }))
+          }),
+          createIndex: vi.fn()
+        }),
+        oncomplete: null,
+        onerror: null
+      }),
+      close: vi.fn(),
+      version: version || 1,
+      name: name,
+      objectStoreNames: {
+        contains: vi.fn().mockReturnValue(true)
+      }
+    }
+  })),
+  deleteDatabase: vi.fn().mockImplementation(() => ({
+    onsuccess: null,
+    onerror: null
+  }))
 } as any;
 
 // Mock MediaRecorder

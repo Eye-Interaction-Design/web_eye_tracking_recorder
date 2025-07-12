@@ -13,14 +13,19 @@ import { initializeRecording, startRecording, stopRecording, getRecordingQuality
 import { initializeEyeTracking, startTracking, stopTracking, calibrate, getTrackingQuality, disconnectEyeTracking } from "./services/eye-tracking";
 
 export const initializeExperiment = async (
-	config?: ExperimentConfig & { eyeTrackingServerUrl?: string },
+	config?: ExperimentConfig & { eyeTrackingServerUrl?: string; enableEyeTracking?: boolean },
 ): Promise<void> => {
 	if (config) {
 		validateConfig(config);
 	}
 
 	await initializeDatabase();
-	await initializeEyeTracking(config?.eyeTrackingServerUrl, config?.eyeTracking);
+	
+	// Only initialize eye tracking if explicitly enabled or if eyeTrackingServerUrl is provided
+	if (config?.enableEyeTracking !== false && (config?.eyeTrackingServerUrl || config?.eyeTracking)) {
+		await initializeEyeTracking(config?.eyeTrackingServerUrl, config?.eyeTracking);
+	}
+	
 	initializeRecording(config?.recording);
 	await checkForIncompleteSessions();
 };
@@ -84,8 +89,13 @@ export const startExperiment = async (): Promise<void> => {
 	// Start screen recording
 	await startRecording(store.currentSession.sessionId);
 
-	// Start gaze tracking
-	await startTracking(store.currentSession.sessionId);
+	// Start gaze tracking (only if initialized)
+	try {
+		await startTracking(store.currentSession.sessionId);
+	} catch (error) {
+		// Eye tracking not initialized or failed - continue with recording only
+		console.warn('Eye tracking not available, continuing with screen recording only:', error);
+	}
 };
 
 export const stopExperiment = async (): Promise<{
@@ -101,7 +111,14 @@ export const stopExperiment = async (): Promise<{
 
 	// Stop recording and tracking
 	await stopRecording();
-	await stopTracking();
+	
+	// Stop gaze tracking (only if initialized)
+	try {
+		await stopTracking();
+	} catch (error) {
+		// Eye tracking not initialized or failed - continue with recording only
+		console.warn('Eye tracking not available during stop, continuing:', error);
+	}
 	stopSynchronization();
 
 	const stopEvent: SessionEvent = {
