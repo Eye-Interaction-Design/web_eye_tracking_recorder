@@ -7,30 +7,64 @@ import type {
 } from "./types";
 import { getStore, updateStore, addSessionEvent } from "./store";
 import { generateSessionId } from "./utils";
-import { initializeDatabase, saveSession, saveEvent, getSessionData, checkForIncompleteSessions } from "./services/database";
-import { initializeSynchronization, getRelativeTimestamp, stopSynchronization, calculateSyncQuality } from "./services/synchronization";
-import { initializeRecording, startRecording, stopRecording, getRecordingQuality } from "./services/screen-recording";
-import { initializeEyeTracking, startTracking, stopTracking, calibrate, getTrackingQuality, disconnectEyeTracking } from "./services/eye-tracking";
+import {
+	initializeDatabase,
+	saveSession,
+	saveEvent,
+	getSessionData,
+	checkForIncompleteSessions,
+} from "./services/database";
+import {
+	initializeSynchronization,
+	getRelativeTimestamp,
+	stopSynchronization,
+	calculateSyncQuality,
+} from "./services/synchronization";
+import {
+	initializeRecording,
+	startRecording,
+	stopRecording,
+	getRecordingQuality,
+} from "./services/screen-recording";
+import {
+	initializeEyeTracking,
+	startTracking,
+	stopTracking,
+	calibrate,
+	getTrackingQuality,
+	disconnectEyeTracking,
+} from "./services/eye-tracking";
 
 export const initializeExperiment = async (
-	config?: ExperimentConfig & { eyeTrackingServerUrl?: string; enableEyeTracking?: boolean },
+	config?: ExperimentConfig & {
+		eyeTrackingServerUrl?: string;
+		enableEyeTracking?: boolean;
+	},
 ): Promise<void> => {
 	if (config) {
 		validateConfig(config);
 	}
 
 	await initializeDatabase();
-	
+
 	// Only initialize eye tracking if explicitly enabled or if eyeTrackingServerUrl is provided
-	if (config?.enableEyeTracking !== false && (config?.eyeTrackingServerUrl || config?.eyeTracking)) {
-		await initializeEyeTracking(config?.eyeTrackingServerUrl, config?.eyeTracking);
+	if (
+		config?.enableEyeTracking !== false &&
+		(config?.eyeTrackingServerUrl || config?.eyeTracking)
+	) {
+		await initializeEyeTracking(
+			config?.eyeTrackingServerUrl,
+			config?.eyeTracking,
+		);
 	}
-	
+
 	initializeRecording(config?.recording);
 	await checkForIncompleteSessions();
 };
 
-export const createSession = async (config: ExperimentConfig): Promise<string> => {
+export const createSession = async (
+	config: ExperimentConfig,
+): Promise<string> => {
 	const sessionId = config.sessionId || generateSessionId();
 
 	const session: ExperimentSession = {
@@ -42,9 +76,9 @@ export const createSession = async (config: ExperimentConfig): Promise<string> =
 		config,
 		metadata: {
 			browser: navigator.userAgent,
-			screen: `${(typeof screen !== 'undefined' ? screen.width : 1920)}x${(typeof screen !== 'undefined' ? screen.height : 1080)}`,
-			displayWidth: typeof window !== 'undefined' ? window.innerWidth : 1920,
-			displayHeight: typeof window !== 'undefined' ? window.innerHeight : 1080,
+			screen: `${typeof screen !== "undefined" ? screen.width : 1920}x${typeof screen !== "undefined" ? screen.height : 1080}`,
+			displayWidth: typeof window !== "undefined" ? window.innerWidth : 1920,
+			displayHeight: typeof window !== "undefined" ? window.innerHeight : 1080,
 			userAgent: navigator.userAgent,
 			settings: {
 				screenRecording: config.recording || {},
@@ -52,9 +86,10 @@ export const createSession = async (config: ExperimentConfig): Promise<string> =
 			},
 			environment: {
 				browser: navigator.userAgent,
-				screen: `${(typeof screen !== 'undefined' ? screen.width : 1920)}x${(typeof screen !== 'undefined' ? screen.height : 1080)}`,
-				displayWidth: typeof window !== 'undefined' ? window.innerWidth : 1920,
-				displayHeight: typeof window !== 'undefined' ? window.innerHeight : 1080,
+				screen: `${typeof screen !== "undefined" ? screen.width : 1920}x${typeof screen !== "undefined" ? screen.height : 1080}`,
+				displayWidth: typeof window !== "undefined" ? window.innerWidth : 1920,
+				displayHeight:
+					typeof window !== "undefined" ? window.innerHeight : 1080,
 				userAgent: navigator.userAgent,
 			},
 		},
@@ -94,7 +129,10 @@ export const startExperiment = async (): Promise<void> => {
 		await startTracking(store.currentSession.sessionId);
 	} catch (error) {
 		// Eye tracking not initialized or failed - continue with recording only
-		console.warn('Eye tracking not available, continuing with screen recording only:', error);
+		console.warn(
+			"Eye tracking not available, continuing with screen recording only:",
+			error,
+		);
 	}
 };
 
@@ -111,13 +149,13 @@ export const stopExperiment = async (): Promise<{
 
 	// Stop recording and tracking
 	await stopRecording();
-	
+
 	// Stop gaze tracking (only if initialized)
 	try {
 		await stopTracking();
 	} catch (error) {
 		// Eye tracking not initialized or failed - continue with recording only
-		console.warn('Eye tracking not available during stop, continuing:', error);
+		console.warn("Eye tracking not available during stop, continuing:", error);
 	}
 	stopSynchronization();
 
@@ -184,11 +222,15 @@ export const onGazeData = (callback: (gazePoint: GazePoint) => void): void => {
 	updateStore({ onGazeDataCallback: callback });
 };
 
-export const onSessionEvent = (callback: (event: SessionEvent) => void): void => {
+export const onSessionEvent = (
+	callback: (event: SessionEvent) => void,
+): void => {
 	updateStore({ onSessionEventCallback: callback });
 };
 
-export const onCalibration = (callback: (result: CalibrationResult) => void): void => {
+export const onCalibration = (
+	callback: (result: CalibrationResult) => void,
+): void => {
 	updateStore({ onCalibrationCallback: callback });
 };
 

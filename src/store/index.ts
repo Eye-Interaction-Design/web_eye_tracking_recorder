@@ -1,4 +1,9 @@
-import type { ExperimentSession, GazePoint, SessionEvent, CalibrationResult } from '../types';
+import type {
+	ExperimentSession,
+	GazePoint,
+	SessionEvent,
+	CalibrationResult,
+} from "../types";
 
 export interface ExperimentStore {
 	currentSession: ExperimentSession | null;

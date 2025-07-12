@@ -89,7 +89,9 @@ export const saveSession = (session: ExperimentSession): Promise<void> => {
 	});
 };
 
-export const getSession = (sessionId: string): Promise<ExperimentSession | null> => {
+export const getSession = (
+	sessionId: string,
+): Promise<ExperimentSession | null> => {
 	if (!db) throw new Error("Database not initialized");
 
 	const transaction = db.transaction(["sessions"], "readonly");
@@ -161,7 +163,9 @@ export const saveSyncMarker = (marker: SyncMarker): Promise<void> => {
 	});
 };
 
-export const getSessionData = async (sessionId: string): Promise<{
+export const getSessionData = async (
+	sessionId: string,
+): Promise<{
 	session: ExperimentSession | null;
 	videoChunks: VideoChunk[];
 	gazeData: GazePoint[];

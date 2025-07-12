@@ -206,7 +206,9 @@ export const getRecordingQuality = async (): Promise<{
 		averageFrameRate: recordingState.config.frameRate || 30,
 		frameDrops: 0,
 		duration:
-			recordingState.chunkIndex * (recordingState.config.chunkDuration || 30) * 1000,
+			recordingState.chunkIndex *
+			(recordingState.config.chunkDuration || 30) *
+			1000,
 	};
 };
 

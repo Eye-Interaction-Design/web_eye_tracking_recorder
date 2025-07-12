@@ -1,7 +1,7 @@
 {
   "name": "browser-eye-tracking",
   "version": "1.0.0",
-  "description": "Experimental screen recording and eye tracking integration system",
+  "description": "Simple browser-based screen recording and eye tracking library",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "module": "dist/index.js",
@@ -24,7 +24,7 @@
   "peerDependencies": {
     "typescript": "^5"
   },
-  "keywords": ["eye-tracking", "screen-recording", "experiment", "research"],
-  "author": "System Design Team",
+  "keywords": ["eye-tracking", "screen-recording", "experiment", "research", "browser", "indexeddb"],
+  "author": "shikibu9419",
   "license": "MIT"
 }

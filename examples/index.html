@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Browser Eye Tracking - Demo</title>
+    <title>Browser Eye Tracking - Simple Demo</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 900px;
+            max-width: 800px;
             margin: 0 auto;
             padding: 20px;
             background-color: #f5f5f5;
@@ -93,7 +93,7 @@
         
         .metrics {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 15px;
             margin: 15px 0;
         }
@@ -117,7 +117,7 @@
             margin-top: 5px;
         }
         
-        .eye-tracking-data {
+        .gaze-display {
             background-color: #e8f5e8;
             padding: 10px;
             margin: 10px 0;
@@ -125,21 +125,40 @@
             font-family: monospace;
             font-size: 12px;
         }
+
+        .demo-area {
+            background-color: #f0f8ff;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            border: 2px dashed #1976d2;
+            text-align: center;
+            position: relative;
+            height: 200px;
+            cursor: crosshair;
+        }
+
+        .gaze-point {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background-color: red;
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            opacity: 0.8;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Browser Eye Tracking Demo</h1>
-        <p>This demo uses the actual browser-eye-tracking library with real browser APIs.</p>
-        <div class="warning">
-            <strong>Auto-Recording:</strong> After successful calibration, screen recording will start automatically without requiring target selection.
-        </div>
+        <h1>Browser Eye Tracking - Simple Demo</h1>
+        <p>This demo shows the simplified browser-eye-tracking library with mock gaze data.</p>
         
         <div id="status" class="status idle">Status: Ready to initialize</div>
         
         <div class="config-section">
             <h3>Configuration</h3>
-            <p><em>Recording will automatically capture the current browser tab after calibration.</em></p>
             <div class="form-group">
                 <label for="participantId">Participant ID:</label>
                 <input type="text" id="participantId" value="demo-participant-001">
@@ -147,56 +166,48 @@
             <div class="form-group">
                 <label for="experimentType">Experiment Type:</label>
                 <select id="experimentType">
-                    <option value="eye-tracking-demo">Eye Tracking Demo</option>
-                    <option value="screen-recording-test">Screen Recording Test</option>
-                    <option value="full-integration">Full Integration</option>
+                    <option value="simple-demo">Simple Demo</option>
+                    <option value="gaze-tracking">Gaze Tracking</option>
+                    <option value="interaction-study">Interaction Study</option>
                 </select>
-            </div>
-            <div class="form-group">
-                <label for="frameRate">Frame Rate:</label>
-                <input type="number" id="frameRate" value="30" min="15" max="60">
-            </div>
-            <div class="form-group">
-                <label for="samplingRate">Eye Tracking Rate:</label>
-                <input type="number" id="samplingRate" value="60" min="30" max="120">
-            </div>
-            <div class="form-group">
-                <label for="websocketUrl">WebSocket URL:</label>
-                <input type="text" id="websocketUrl" value="ws://localhost:8080" style="width: 200px;">
             </div>
         </div>
         
         <div>
-            <button id="initBtn" class="button">Initialize System</button>
+            <button id="initBtn" class="button">Initialize</button>
             <button id="createBtn" class="button" disabled>Create Session</button>
-            <button id="calibrateBtn" class="button" disabled>Calibrate & Start Recording</button>
+            <button id="startBtn" class="button" disabled>Start Recording</button>
             <button id="stopBtn" class="button danger" disabled>Stop Recording</button>
             <button id="downloadBtn" class="button" disabled>Download Data</button>
-            <button id="disconnectBtn" class="button" disabled>Disconnect</button>
         </div>
         
         <div class="metrics">
             <div class="metric-card">
                 <div id="sessionDuration" class="metric-value">0s</div>
-                <div class="metric-label">Session Duration</div>
+                <div class="metric-label">Duration</div>
             </div>
             <div class="metric-card">
                 <div id="gazeDataCount" class="metric-value">0</div>
-                <div class="metric-label">Gaze Data Points</div>
+                <div class="metric-label">Gaze Points</div>
             </div>
             <div class="metric-card">
                 <div id="eventsCount" class="metric-value">0</div>
-                <div class="metric-label">Events Recorded</div>
+                <div class="metric-label">Events</div>
             </div>
             <div class="metric-card">
-                <div id="connectionStatus" class="metric-value">Disconnected</div>
-                <div class="metric-label">Eye Tracker Status</div>
+                <div id="recordingStatus" class="metric-value">Idle</div>
+                <div class="metric-label">Recording</div>
             </div>
+        </div>
+
+        <div class="demo-area" id="demoArea">
+            <h3>Demo Area - Move your mouse to simulate gaze</h3>
+            <p>During recording, mouse movements will simulate gaze data points</p>
         </div>
         
         <div>
             <h3>Latest Gaze Data:</h3>
-            <div id="gazeData" class="eye-tracking-data">No gaze data yet...</div>
+            <div id="gazeData" class="gaze-display">No gaze data yet...</div>
         </div>
         
         <div>
@@ -207,43 +218,41 @@
 
     <script type="module">
         import {
-            initializeExperiment,
+            initialize,
             createSession,
-            startExperiment,
-            stopExperiment,
-            calibrateEyeTracking,
-            onGazeData,
-            onSessionEvent,
-            onCalibration,
-            getCurrentSession,
-            isCurrentlyRecording,
-            getQualityMetrics,
-            disconnect
+            startRecording,
+            stopRecording,
+            addGazeData,
+            addEvent,
+            downloadSessionData,
+            subscribe,
+            getCurrentState,
+            isRecording,
+            getCurrentSession
         } from './browser-eye-tracking.js';
 
         // DOM elements
         const statusEl = document.getElementById('status');
         const logEl = document.getElementById('log');
         const gazeDataEl = document.getElementById('gazeData');
+        const demoArea = document.getElementById('demoArea');
         
         const initBtn = document.getElementById('initBtn');
         const createBtn = document.getElementById('createBtn');
-        const calibrateBtn = document.getElementById('calibrateBtn');
+        const startBtn = document.getElementById('startBtn');
         const stopBtn = document.getElementById('stopBtn');
         const downloadBtn = document.getElementById('downloadBtn');
-        const disconnectBtn = document.getElementById('disconnectBtn');
         
         // Metric elements
         const sessionDurationEl = document.getElementById('sessionDuration');
         const gazeDataCountEl = document.getElementById('gazeDataCount');
         const eventsCountEl = document.getElementById('eventsCount');
-        const connectionStatusEl = document.getElementById('connectionStatus');
+        const recordingStatusEl = document.getElementById('recordingStatus');
         
         // State
         let sessionStartTime = null;
-        let gazeDataCount = 0;
-        let eventsCount = 0;
         let durationInterval = null;
+        let mockGazeInterval = null;
         
         // Utility functions
         function log(message) {
@@ -260,15 +269,14 @@
         
         function updateButtons(state) {
             const states = {
-                initial: [true, false, false, false, false, false],
-                initialized: [false, true, false, false, false, true],
-                session_created: [false, false, true, false, false, true],
-                calibrated: [false, false, false, false, false, true], // No manual start needed
-                recording: [false, false, false, true, false, true],
-                stopped: [false, false, true, false, true, true]
+                initial: [true, false, false, false, false],
+                initialized: [false, true, false, false, false],
+                session_created: [false, false, true, false, false],
+                recording: [false, false, false, true, false],
+                stopped: [false, false, true, false, true]
             };
             
-            const buttons = [initBtn, createBtn, calibrateBtn, stopBtn, downloadBtn, disconnectBtn];
+            const buttons = [initBtn, createBtn, startBtn, stopBtn, downloadBtn];
             const buttonStates = states[state] || states.initial;
             
             buttons.forEach((btn, i) => {
@@ -292,54 +300,103 @@
                 durationInterval = null;
             }
         }
-        
-        // Setup event listeners
-        onGazeData((gazePoint) => {
-            gazeDataCount++;
-            gazeDataCountEl.textContent = gazeDataCount.toString();
+
+        // Mock gaze data generation
+        function startMockGazeData() {
+            let lastMouseX = 0;
+            let lastMouseY = 0;
+
+            // Track mouse movements for realistic gaze simulation
+            const mouseMoveHandler = (event) => {
+                lastMouseX = event.clientX;
+                lastMouseY = event.clientY;
+            };
             
-            gazeDataEl.textContent = `Screen: (${gazePoint.screenX.toFixed(1)}, ${gazePoint.screenY.toFixed(1)})
-Window: (${gazePoint.windowX?.toFixed(1) || 'N/A'}, ${gazePoint.windowY?.toFixed(1) || 'N/A'})
-Confidence: ${gazePoint.confidence.toFixed(2)}
-Left Eye: (${gazePoint.leftEye.screenX.toFixed(1)}, ${gazePoint.leftEye.screenY.toFixed(1)})
-Right Eye: (${gazePoint.rightEye.screenX.toFixed(1)}, ${gazePoint.rightEye.screenY.toFixed(1)})
-Timestamp: ${new Date(gazePoint.systemTimestamp).toISOString()}`;
-            
-            connectionStatusEl.textContent = 'Connected';
-        });
-        
-        onSessionEvent((event) => {
-            eventsCount++;
-            eventsCountEl.textContent = eventsCount.toString();
-            log(`Event: ${event.type} - ${JSON.stringify(event.data || {})}`);
-        });
-        
-        onCalibration(async (result) => {
-            log(`Calibration completed: ${result.success ? 'Success' : 'Failed'} (Accuracy: ${result.accuracy})`);
-            if (result.success) {
-                updateButtons('calibrated');
-                updateStatus('Calibrated successfully, starting recording...', 'recording');
-                
-                // Auto-start recording after successful calibration
-                setTimeout(async () => {
+            document.addEventListener('mousemove', mouseMoveHandler);
+
+            mockGazeInterval = setInterval(async () => {
+                if (isRecording()) {
+                    // Add some noise and offset to make it more realistic
+                    const noise = () => (Math.random() - 0.5) * 20;
+                    const gazePointInput = {
+                        systemTimestamp: Date.now(),
+                        screenX: lastMouseX + noise(),
+                        screenY: lastMouseY + noise(),
+                        confidence: 0.8 + Math.random() * 0.2,
+                        leftEye: {
+                            screenX: lastMouseX - 5 + noise(),
+                            screenY: lastMouseY + noise(),
+                            positionX: 1254 + noise(),
+                            positionY: 521 + noise(),
+                            positionZ: 700 + noise() * 0.1,
+                            pupilSize: 3.2 + Math.random() * 0.8
+                        },
+                        rightEye: {
+                            screenX: lastMouseX + 5 + noise(),
+                            screenY: lastMouseY + noise(),
+                            positionX: 1258 + noise(),
+                            positionY: 519 + noise(),
+                            positionZ: 702 + noise() * 0.1,
+                            pupilSize: 3.0 + Math.random() * 0.8
+                        }
+                    };
+
                     try {
-                        log('Auto-starting recording after calibration...');
-                        await startExperiment();
+                        await addGazeData(gazePointInput);
                         
-                        log('Recording started automatically');
-                        updateStatus('Recording in progress', 'recording');
-                        updateButtons('recording');
-                        startDurationTimer();
-                        
+                        // Update display
+                        gazeDataEl.textContent = `Screen: (${gazePointInput.screenX.toFixed(1)}, ${gazePointInput.screenY.toFixed(1)})
+Confidence: ${gazePointInput.confidence.toFixed(2)}
+Left Eye: (${gazePointInput.leftEye.screenX.toFixed(1)}, ${gazePointInput.leftEye.screenY.toFixed(1)})
+Right Eye: (${gazePointInput.rightEye.screenX.toFixed(1)}, ${gazePointInput.rightEye.screenY.toFixed(1)})
+System Timestamp: ${gazePointInput.systemTimestamp}
+Position Data: L(${gazePointInput.leftEye.positionX?.toFixed(1)}, ${gazePointInput.leftEye.positionY?.toFixed(1)}, ${gazePointInput.leftEye.positionZ?.toFixed(1)}) R(${gazePointInput.rightEye.positionX?.toFixed(1)}, ${gazePointInput.rightEye.positionY?.toFixed(1)}, ${gazePointInput.rightEye.positionZ?.toFixed(1)})`;
+
+                        // Add visual gaze point in demo area
+                        const rect = demoArea.getBoundingClientRect();
+                        if (gazePointInput.screenX >= rect.left && gazePointInput.screenX <= rect.right &&
+                            gazePointInput.screenY >= rect.top && gazePointInput.screenY <= rect.bottom) {
+                            
+                            const gazePointElement = document.createElement('div');
+                            gazePointElement.className = 'gaze-point';
+                            gazePointElement.style.left = `${gazePointInput.screenX - rect.left}px`;
+                            gazePointElement.style.top = `${gazePointInput.screenY - rect.top}px`;
+                            demoArea.appendChild(gazePointElement);
+
+                            // Remove after 1 second
+                            setTimeout(() => {
+                                if (gazePointElement.parentNode) {
+                                    gazePointElement.parentNode.removeChild(gazePointElement);
+                                }
+                            }, 1000);
+                        }
+
                     } catch (error) {
-                        log(`Failed to auto-start recording: ${error.message}`);
-                        updateStatus('Auto-start failed, ready to start manually', 'completed');
-                        updateButtons('calibrated');
+                        console.error('Failed to add gaze data:', error);
                     }
-                }, 1000); // 1 second delay to show calibration success
-                
-            } else {
-                updateStatus(`Calibration failed: ${result.errorMessage}`, 'error');
+                }
+            }, 16); // ~60 Hz
+
+            return () => {
+                document.removeEventListener('mousemove', mouseMoveHandler);
+                if (mockGazeInterval) {
+                    clearInterval(mockGazeInterval);
+                    mockGazeInterval = null;
+                }
+            };
+        }
+
+        let stopMockGaze = null;
+
+        // Subscribe to state changes
+        subscribe((state) => {
+            gazeDataCountEl.textContent = state.gazeDataCount.toString();
+            eventsCountEl.textContent = state.eventsCount.toString();
+            recordingStatusEl.textContent = state.isRecording ? 'Recording' : 'Idle';
+            
+            if (state.error) {
+                log(`Error: ${state.error}`);
+                updateStatus(state.error, 'error');
             }
         });
         
@@ -347,12 +404,9 @@ Timestamp: ${new Date(gazePoint.systemTimestamp).toISOString()}`;
         initBtn.addEventListener('click', async () => {
             try {
                 updateStatus('Initializing...', 'recording');
-                log('Initializing experiment system...');
+                log('Initializing system...');
                 
-                const websocketUrl = document.getElementById('websocketUrl').value;
-                await initializeExperiment({
-                    eyeTrackingServerUrl: websocketUrl
-                });
+                await initialize();
                 
                 log('System initialized successfully');
                 updateStatus('System initialized', 'completed');
@@ -368,24 +422,21 @@ Timestamp: ${new Date(gazePoint.systemTimestamp).toISOString()}`;
         createBtn.addEventListener('click', async () => {
             try {
                 updateStatus('Creating session...', 'recording');
-                log('Creating experiment session...');
+                log('Creating session...');
                 
                 const config = {
                     participantId: document.getElementById('participantId').value,
-                    experimentType: document.getElementById('experimentType').value,
-                    recording: {
-                        frameRate: parseInt(document.getElementById('frameRate').value),
-                        captureEntireScreen: false, // Capture current tab only
-                        quality: 'high'
-                    },
-                    eyeTracking: {
-                        samplingRate: parseInt(document.getElementById('samplingRate').value),
-                        calibrationPoints: 9,
-                        deviceType: 'eyetracker'
-                    }
+                    experimentType: document.getElementById('experimentType').value
+                };
+
+                const recordingConfig = {
+                    frameRate: 30,
+                    quality: 'medium',
+                    chunkDuration: 5,
+                    captureEntireScreen: false
                 };
                 
-                const sessionId = await createSession(config);
+                const sessionId = await createSession(config, recordingConfig);
                 log(`Session created with ID: ${sessionId}`);
                 updateStatus('Session created', 'completed');
                 updateButtons('session_created');
@@ -396,31 +447,24 @@ Timestamp: ${new Date(gazePoint.systemTimestamp).toISOString()}`;
             }
         });
         
-        calibrateBtn.addEventListener('click', async () => {
-            try {
-                updateStatus('Calibrating eye tracking...', 'recording');
-                log('Starting eye tracking calibration...');
-                
-                // Note: Actual calibration will depend on eye tracking hardware
-                await calibrateEyeTracking();
-                
-            } catch (error) {
-                log(`Calibration failed: ${error.message}`);
-                updateStatus('Calibration failed', 'error');
-            }
-        });
-        
         startBtn.addEventListener('click', async () => {
             try {
                 updateStatus('Starting recording...', 'recording');
-                log('Starting experiment recording...');
+                log('Starting recording...');
                 
-                await startExperiment();
+                await startRecording();
                 
                 log('Recording started successfully');
                 updateStatus('Recording in progress', 'recording');
                 updateButtons('recording');
                 startDurationTimer();
+                
+                // Start mock gaze data
+                stopMockGaze = startMockGazeData();
+                log('Mock gaze data generation started (move mouse to simulate gaze)');
+                
+                // Add a start event
+                await addEvent('recording_start', { note: 'User initiated recording' });
                 
             } catch (error) {
                 log(`Failed to start recording: ${error.message}`);
@@ -431,27 +475,25 @@ Timestamp: ${new Date(gazePoint.systemTimestamp).toISOString()}`;
         stopBtn.addEventListener('click', async () => {
             try {
                 updateStatus('Stopping recording...', 'recording');
-                log('Stopping experiment recording...');
+                log('Stopping recording...');
                 
-                const result = await stopExperiment();
+                // Stop mock gaze data
+                if (stopMockGaze) {
+                    stopMockGaze();
+                    stopMockGaze = null;
+                }
                 
-                log(`Recording stopped. Session ID: ${result.sessionId}`);
-                log('Export data available in result.exportData');
+                await stopRecording();
+                
+                const session = getCurrentSession();
+                log(`Recording stopped. Session ID: ${session?.sessionId}`);
                 
                 updateStatus('Recording completed', 'completed');
                 updateButtons('stopped');
                 stopDurationTimer();
                 
-                // Display quality metrics
-                try {
-                    const metrics = await getQualityMetrics();
-                    log(`Quality Metrics:
-Recording: ${metrics.recordingQuality.averageFrameRate} fps, ${metrics.recordingQuality.frameDrops} drops
-Eye Tracking: ${metrics.gazeTrackingQuality.averageSamplingRate} Hz, ${metrics.gazeTrackingQuality.dataLossRate}% loss
-Sync Quality: ${metrics.syncQuality.quality} (${metrics.syncQuality.averageOffset}ms avg offset)`);
-                } catch (metricsError) {
-                    log(`Could not retrieve quality metrics: ${metricsError.message}`);
-                }
+                // Add a stop event
+                await addEvent('recording_stop', { note: 'User stopped recording' });
                 
             } catch (error) {
                 log(`Failed to stop recording: ${error.message}`);
@@ -459,33 +501,46 @@ Sync Quality: ${metrics.syncQuality.quality} (${metrics.syncQuality.averageOffse
             }
         });
         
-        disconnectBtn.addEventListener('click', () => {
+        downloadBtn.addEventListener('click', async () => {
             try {
-                log('Disconnecting from eye tracking system...');
-                disconnect();
-                log('Disconnected successfully');
-                updateStatus('Disconnected', 'idle');
-                updateButtons('initial');
-                stopDurationTimer();
-                connectionStatusEl.textContent = 'Disconnected';
+                updateStatus('Downloading data...', 'recording');
+                log('Preparing download...');
                 
-                // Reset counters
-                gazeDataCount = 0;
-                eventsCount = 0;
-                gazeDataCountEl.textContent = '0';
-                eventsCountEl.textContent = '0';
-                sessionDurationEl.textContent = '0s';
-                gazeDataEl.textContent = 'No gaze data yet...';
+                const session = getCurrentSession();
+                if (!session) {
+                    throw new Error('No session available for download');
+                }
+                
+                await downloadSessionData();
+                log('Session data downloaded successfully');
+                updateStatus('Download completed', 'completed');
                 
             } catch (error) {
-                log(`Disconnect failed: ${error.message}`);
+                log(`Download failed: ${error.message}`);
+                updateStatus('Download failed', 'error');
+            }
+        });
+
+        // Demo area interactions
+        demoArea.addEventListener('click', async (event) => {
+            if (isRecording()) {
+                const rect = demoArea.getBoundingClientRect();
+                const x = event.clientX - rect.left;
+                const y = event.clientY - rect.top;
+                
+                await addEvent('demo_click', { 
+                    x: x, 
+                    y: y, 
+                    note: 'User clicked in demo area' 
+                });
+                
+                log(`Click event recorded at (${x.toFixed(1)}, ${y.toFixed(1)})`);
             }
         });
         
         // Initialize
         log('Browser Eye Tracking Demo loaded');
-        log('Note: Eye tracking requires WebSocket server at the configured URL');
-        log('Screen recording will request permission when started');
+        log('This demo uses mock gaze data generated from mouse movements');
         updateButtons('initial');
     </script>
 </body>

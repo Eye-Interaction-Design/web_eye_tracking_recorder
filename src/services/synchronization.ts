@@ -125,7 +125,8 @@ export const calculateSyncQuality = (): {
 		}
 	}
 
-	const averageOffset = totalOffset / (synchronizationState.syncMarkers.length - 1);
+	const averageOffset =
+		totalOffset / (synchronizationState.syncMarkers.length - 1);
 
 	let quality: "excellent" | "good" | "fair" | "poor";
 	if (maxOffset <= 5) quality = "excellent";

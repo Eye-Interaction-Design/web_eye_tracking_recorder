@@ -11,7 +11,13 @@ import {
 	getScreenInfo,
 	convertScreenToWindowCoordinates,
 } from "../utils";
-import { getStore, addToGazeBuffer, clearGazeBuffer, emitGazeData, emitCalibrationResult } from "../store";
+import {
+	getStore,
+	addToGazeBuffer,
+	clearGazeBuffer,
+	emitGazeData,
+	emitCalibrationResult,
+} from "../store";
 
 interface GazeTrackingState {
 	websocket: WebSocket | null;
@@ -53,11 +59,11 @@ export const initializeEyeTracking = (
 
 	return new Promise((resolve, reject) => {
 		// Construct proper WebSocket URL
-		const wsUrl = gazeState.websocketUrl.endsWith('/eye_tracking') 
-			? gazeState.websocketUrl 
+		const wsUrl = gazeState.websocketUrl.endsWith("/eye_tracking")
+			? gazeState.websocketUrl
 			: `${gazeState.websocketUrl}/eye_tracking`;
-		
-		console.log('Connecting to WebSocket:', wsUrl);
+
+		console.log("Connecting to WebSocket:", wsUrl);
 		gazeState.websocket = new WebSocket(wsUrl);
 
 		gazeState.websocket.onopen = () => {

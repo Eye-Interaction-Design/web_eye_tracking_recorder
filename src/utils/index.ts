@@ -19,7 +19,7 @@ export function getBrowserWindowInfo(): {
 	outerWidth: number;
 	outerHeight: number;
 } {
-	const win = typeof window !== 'undefined' ? window : {} as any;
+	const win = typeof window !== "undefined" ? window : ({} as any);
 	return {
 		innerWidth: win.innerWidth || 1920,
 		innerHeight: win.innerHeight || 1080,
@@ -39,7 +39,7 @@ export function getScreenInfo(): {
 	availWidth: number;
 	availHeight: number;
 } {
-	const scr = typeof screen !== 'undefined' ? screen : {} as any;
+	const scr = typeof screen !== "undefined" ? screen : ({} as any);
 	return {
 		width: scr.width || 1920,
 		height: scr.height || 1080,
