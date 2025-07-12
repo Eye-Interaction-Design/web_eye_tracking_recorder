@@ -9,7 +9,7 @@ import type {
 } from "./types";
 
 const DB_NAME = "RecorderDB";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let db: IDBDatabase | null = null;
 
@@ -57,10 +57,10 @@ export const initializeStorage = (): Promise<void> => {
 			// Gaze data store
 			if (!database.objectStoreNames.contains("gazeData")) {
 				const gazeStore = database.createObjectStore("gazeData", {
-					keyPath: ["sessionId", "timestamp"],
+					keyPath: ["sessionId", "systemTimestamp"],
 				});
 				gazeStore.createIndex("sessionId", "sessionId", { unique: false });
-				gazeStore.createIndex("timestamp", "timestamp", { unique: false });
+				gazeStore.createIndex("systemTimestamp", "systemTimestamp", { unique: false });
 			}
 
 			// Video chunks store

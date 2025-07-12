@@ -7,7 +7,6 @@
   "module": "dist/index.js",
   "browser": "dist/index.js",
   "type": "module",
-  "workspaces": ["examples"],
   "scripts": {
     "build": "bun build ./src/index.ts --outdir ./dist --target browser --format esm && bunx tsc --emitDeclarationOnly --outDir ./dist",
     "build:examples": "bun run build && cp dist/index.js examples/web-eye-tracking-recorder.js",

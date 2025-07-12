@@ -4,7 +4,7 @@
   "description": "Examples for web-eye-tracking-recorder library",
   "type": "module",
   "scripts": {
-    "build-lib": "cd .. && bun run build && cp dist/index.js examples/web-eye-tracking-recorder.js",
+    "build-lib": "cd ../.. && bun run build",
     "serve": "bun run build-lib && bun run --hot server.ts",
     "dev": "bun run build-lib && bun run --hot server.ts"
   },

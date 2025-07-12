@@ -20,8 +20,8 @@ const server = Bun.serve({
 		}
 		
 		// ライブラリファイルを提供
-		if (url.pathname === "/browser-eye-tracking.js") {
-			const file = Bun.file("../dist/index.js");
+		if (url.pathname === "/dist/index.js") {
+			const file = Bun.file("../../dist/index.js");
 			return new Response(file, {
 				headers: { 
 					"Content-Type": "application/javascript",
