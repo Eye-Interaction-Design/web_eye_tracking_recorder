@@ -4,9 +4,8 @@
   "description": "Examples for browser-eye-tracking library",
   "type": "module",
   "scripts": {
-    "basic": "bun run basic-usage.ts",
-    "advanced": "bun run advanced-usage.ts",
-    "serve": "bun run --hot server.ts"
+    "serve": "bun run --hot server.ts",
+    "dev": "bun run --hot server.ts"
   },
   "dependencies": {
     "browser-eye-tracking": "file:../",

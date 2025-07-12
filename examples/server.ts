@@ -28,7 +28,11 @@ const server = Bun.serve({
 });
 
 console.log(`🚀 Server running at http://localhost:${server.port}`);
-console.log("📁 Examples available:");
-console.log("  - Basic usage: bun run basic");
-console.log("  - Advanced usage: bun run advanced");
-console.log("  - Browser demo: http://localhost:3000");
+console.log("📁 Browser demo available at:");
+console.log("  - http://localhost:3000");
+console.log("");
+console.log("ℹ️  This is a browser-only library that uses:");
+console.log("  - IndexedDB for data storage");
+console.log("  - MediaRecorder for screen recording");
+console.log("  - WebSocket for eye tracking");
+console.log("  - Other browser-specific APIs");
