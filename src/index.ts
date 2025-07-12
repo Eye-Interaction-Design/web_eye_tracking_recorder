@@ -10,6 +10,7 @@ export {
 	addEvent,
 	exportSessionData,
 	downloadSessionData,
+	downloadCompleteSession,
 	reset,
 	getCurrentState,
 	isRecording,

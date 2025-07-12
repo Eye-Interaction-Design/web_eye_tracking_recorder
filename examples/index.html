@@ -182,7 +182,8 @@
             <button id="createBtn" class="button" disabled>Create Session</button>
             <button id="startBtn" class="button" disabled>Start Recording</button>
             <button id="stopBtn" class="button danger" disabled>Stop Recording</button>
-            <button id="downloadBtn" class="button" disabled>Download Data</button>
+            <button id="downloadBtn" class="button" disabled>Download JSON</button>
+            <button id="downloadCompleteBtn" class="button" disabled>Download All (JSON+CSV+Video)</button>
         </div>
         
         <div class="metrics">
@@ -229,6 +230,7 @@
             addGazeData,
             addEvent,
             downloadSessionData,
+            downloadCompleteSession,
             subscribe,
             getCurrentState,
             isRecording,
@@ -246,6 +248,7 @@
         const startBtn = document.getElementById('startBtn');
         const stopBtn = document.getElementById('stopBtn');
         const downloadBtn = document.getElementById('downloadBtn');
+        const downloadCompleteBtn = document.getElementById('downloadCompleteBtn');
         
         // Metric elements
         const sessionDurationEl = document.getElementById('sessionDuration');
@@ -273,14 +276,14 @@
         
         function updateButtons(state) {
             const states = {
-                initial: [true, false, false, false, false],
-                initialized: [false, true, false, false, false],
-                session_created: [false, false, true, false, false],
-                recording: [false, false, false, true, false],
-                stopped: [false, false, true, false, true]
+                initial: [true, false, false, false, false, false],
+                initialized: [false, true, false, false, false, false],
+                session_created: [false, false, true, false, false, false],
+                recording: [false, false, false, true, false, false],
+                stopped: [false, false, true, false, true, true]
             };
             
-            const buttons = [initBtn, createBtn, startBtn, stopBtn, downloadBtn];
+            const buttons = [initBtn, createBtn, startBtn, stopBtn, downloadBtn, downloadCompleteBtn];
             const buttonStates = states[state] || states.initial;
             
             buttons.forEach((btn, i) => {
@@ -507,8 +510,8 @@ Position Data: L(${gazePointInput.leftEye.positionX?.toFixed(1)}, ${gazePointInp
         
         downloadBtn.addEventListener('click', async () => {
             try {
-                updateStatus('Downloading data...', 'recording');
-                log('Preparing download...');
+                updateStatus('Downloading JSON data...', 'recording');
+                log('Preparing JSON download...');
                 
                 const session = getCurrentSession();
                 if (!session) {
@@ -516,11 +519,32 @@ Position Data: L(${gazePointInput.leftEye.positionX?.toFixed(1)}, ${gazePointInp
                 }
                 
                 await downloadSessionData();
-                log('Session data downloaded successfully');
-                updateStatus('Download completed', 'completed');
+                log('Session JSON downloaded successfully');
+                updateStatus('JSON download completed', 'completed');
                 
             } catch (error) {
-                log(`Download failed: ${error.message}`);
+                log(`JSON download failed: ${error.message}`);
+                updateStatus('Download failed', 'error');
+            }
+        });
+
+        downloadCompleteBtn.addEventListener('click', async () => {
+            try {
+                updateStatus('Downloading complete data...', 'recording');
+                log('Preparing complete download (JSON + CSV + Video)...');
+                
+                const session = getCurrentSession();
+                if (!session) {
+                    throw new Error('No session available for download');
+                }
+                
+                await downloadCompleteSession();
+                log('Complete session data downloaded successfully');
+                log('Downloaded files: metadata.json, gaze-data.csv, events.csv, recording.webm');
+                updateStatus('Complete download finished', 'completed');
+                
+            } catch (error) {
+                log(`Complete download failed: ${error.message}`);
                 updateStatus('Download failed', 'error');
             }
         });

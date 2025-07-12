@@ -427,7 +427,7 @@ export const exportSessionData = async (sessionId?: string): Promise<Blob> => {
 };
 
 /**
- * Download session data as file
+ * Download session data as file (legacy single JSON export)
  */
 export const downloadSessionData = async (
 	sessionId?: string,
@@ -457,6 +457,32 @@ export const downloadSessionData = async (
 			error instanceof Error
 				? error.message
 				: "Failed to download session data";
+		dispatch({ type: "SET_ERROR", payload: errorMessage });
+		throw error;
+	}
+};
+
+/**
+ * Download complete session data as multiple files (JSON + CSV + Video)
+ */
+export const downloadCompleteSession = async (sessionId?: string): Promise<void> => {
+	checkBrowserEnvironment();
+	
+	const state = getState();
+	const targetSessionId = sessionId || state.currentSession?.sessionId;
+	
+	if (!targetSessionId) {
+		throw new Error("No session ID provided and no active session");
+	}
+
+	try {
+		const { downloadCompleteSessionData } = await import('./export');
+		await downloadCompleteSessionData(targetSessionId);
+	} catch (error) {
+		const errorMessage =
+			error instanceof Error
+				? error.message
+				: "Failed to download complete session data";
 		dispatch({ type: "SET_ERROR", payload: errorMessage });
 		throw error;
 	}
