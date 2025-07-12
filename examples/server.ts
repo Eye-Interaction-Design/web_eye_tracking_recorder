@@ -7,7 +7,7 @@ const server = Bun.serve({
 		
 		// HTMLファイルを提供
 		if (url.pathname === "/" || url.pathname === "/index.html") {
-			return new Response(indexHTML, {
+			return new Response(indexHTML.toString(), {
 				headers: { "Content-Type": "text/html" },
 			});
 		}
