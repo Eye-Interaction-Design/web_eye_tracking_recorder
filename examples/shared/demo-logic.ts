@@ -8,9 +8,9 @@ import {
   addGazeData,
   addEvent,
   downloadSessionData,
-  downloadSessionComponents,
+  downloadSessionComponents as coreDownloadSessionComponents,
   downloadSessionAsZip,
-  saveExperimentData,
+  saveExperimentData as coreSaveExperimentData,
   subscribe,
   getCurrentState,
   getCurrentSession,
@@ -176,7 +176,7 @@ export async function downloadSessionComponents(sessionId?: string): Promise<voi
   const targetSessionId = sessionId || getCurrentSession()?.sessionId
   if (!targetSessionId) throw new Error('No session available')
   
-  await downloadSessionComponents(targetSessionId, {
+  await coreDownloadSessionComponents(targetSessionId, {
     includeMetadata: true,
     includeGazeData: true,
     includeEvents: true,
@@ -200,7 +200,7 @@ export async function saveExperimentData(experimentMetadata?: Record<string, any
   const targetSessionId = sessionId || getCurrentSession()?.sessionId
   if (!targetSessionId) throw new Error('No session available')
   
-  await saveExperimentData(targetSessionId, {
+  await coreSaveExperimentData(targetSessionId, {
     completedAt: new Date().toISOString(),
     ...experimentMetadata
   })
