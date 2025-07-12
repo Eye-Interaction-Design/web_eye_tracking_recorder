@@ -11,6 +11,14 @@ const server = Bun.serve({
 			});
 		}
 		
+		// 画面録画専用デモ
+		if (url.pathname === "/screen-recording" || url.pathname === "/screen-recording.html") {
+			const file = Bun.file("./screen-recording-only.html");
+			return new Response(file, {
+				headers: { "Content-Type": "text/html" },
+			});
+		}
+		
 		// ライブラリファイルを提供
 		if (url.pathname === "/browser-eye-tracking.js") {
 			const file = Bun.file("../dist/index.js");
@@ -27,8 +35,9 @@ const server = Bun.serve({
 });
 
 console.log(`🚀 Server running at http://localhost:${server.port}`);
-console.log("📁 Browser demo available at:");
-console.log("  - http://localhost:3000");
+console.log("📁 Browser demos available at:");
+console.log("  - http://localhost:3000 (Full demo)");
+console.log("  - http://localhost:3000/screen-recording (Screen recording only)");
 console.log("");
 console.log("ℹ️  This is a browser-only library that uses:");
 console.log("  - IndexedDB for data storage");
