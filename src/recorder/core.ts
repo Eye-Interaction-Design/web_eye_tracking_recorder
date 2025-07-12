@@ -154,7 +154,7 @@ export const startRecording = async (): Promise<void> => {
 				surfaceSwitching: "exclude",
 			} as any; // Chrome-specific properties not in standard types
 			recordingStream = await navigator.mediaDevices.getDisplayMedia(extendedConstraints);
-		} catch (error) {
+		} catch (_error) {
 			// Fallback to standard display media
 			recordingStream = await navigator.mediaDevices.getDisplayMedia(constraints);
 		}

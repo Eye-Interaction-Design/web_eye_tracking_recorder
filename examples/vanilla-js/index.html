@@ -154,8 +154,12 @@
     <div class="container">
         <h1>Web Eye Tracking Recorder - Demo</h1>
         <p>This demo shows the Web Eye Tracking Recorder library with mock gaze data.</p>
-        <div style="background-color: #e3f2fd; padding: 10px; border-radius: 5px; margin: 10px 0;">
-            <strong>📹 Recording Target:</strong> When prompted to share your screen, please select "This tab" to record the current demo page. The system will automatically prefer recording this tab where supported.
+        <div style="background-color: #e3f2fd; padding: 15px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #1976d2;">
+            <strong>📹 Recording Target:</strong> When prompted to share your screen, please select <strong>"This tab"</strong> to record the current demo page. 
+            <br><br>
+            <div class="recording-guidance" style="font-weight: bold; margin-top: 10px;">
+                Detecting browser...
+            </div>
         </div>
         
         <div id="status" class="status idle">Status: Ready to initialize</div>
@@ -459,6 +463,14 @@ Position Data: L(${gazePointInput.leftEye.positionX?.toFixed(1)}, ${gazePointInp
                 updateStatus('Starting recording...', 'recording');
                 log('Starting recording...');
                 
+                // Show recording guidance
+                const browser = detectBrowser();
+                if (browser === 'Chrome') {
+                    log('💡 Chrome detected: The system will automatically suggest this tab');
+                } else {
+                    log('💡 Please select "This tab" from the sharing dialog when prompted');
+                }
+                
                 await startRecording();
                 
                 log('Recording started successfully');
@@ -566,10 +578,48 @@ Position Data: L(${gazePointInput.leftEye.positionX?.toFixed(1)}, ${gazePointInp
             }
         });
         
+        // Browser detection and guidance
+        function detectBrowser() {
+            const userAgent = navigator.userAgent;
+            if (userAgent.includes('Chrome') && !userAgent.includes('Edg')) {
+                return 'Chrome';
+            } else if (userAgent.includes('Firefox')) {
+                return 'Firefox';
+            } else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) {
+                return 'Safari';
+            } else if (userAgent.includes('Edg')) {
+                return 'Edge';
+            }
+            return 'Other';
+        }
+
+        function updateRecordingGuidance() {
+            const browser = detectBrowser();
+            const guidanceEl = document.querySelector('.recording-guidance');
+            
+            let message = '';
+            if (browser === 'Chrome') {
+                message = '📍 Chrome detected: The system will automatically suggest this tab for recording.';
+            } else if (browser === 'Firefox') {
+                message = '🦊 Firefox detected: Please manually select "This tab" from the sharing dialog.';
+            } else if (browser === 'Safari') {
+                message = '🧭 Safari detected: Screen recording may have limited support. Please use Chrome or Firefox for best results.';
+            } else if (browser === 'Edge') {
+                message = '🌐 Edge detected: Please manually select "This tab" from the sharing dialog.';
+            } else {
+                message = '🌐 Please manually select "This tab" from the sharing dialog when prompted.';
+            }
+            
+            if (guidanceEl) {
+                guidanceEl.innerHTML = message;
+            }
+        }
+
         // Initialize
         log('Web Eye Tracking Recorder Demo loaded');
         log('This demo uses mock gaze data generated from mouse movements');
         updateButtons('initial');
+        updateRecordingGuidance();
     </script>
 </body>
 </html>
