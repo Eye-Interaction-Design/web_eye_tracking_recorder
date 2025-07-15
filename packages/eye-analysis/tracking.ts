@@ -1,6 +1,7 @@
 // Eye tracking and mouse simulation tracking utilities
 
-import { addGazeData } from "./experiment"
+import { interactionState } from "./interaction"
+import { addGazeData } from "./recorder/core"
 import type { CalibrationResult, GazePointInput } from "./recorder/types"
 
 // Tracking state management
@@ -159,7 +160,11 @@ export const startMouseTracking = (): void => {
       },
     }
 
-    addGazeData(gazePoint).catch(console.error)
+    addGazeData(gazePoint)
+      .then((gazePoint) => {
+        interactionState.onGazeDataCallback?.(gazePoint)
+      })
+      .catch(console.error)
   }
 
   document.addEventListener("mousemove", handleMouseMove)
@@ -204,62 +209,60 @@ const handleEyeTrackingData = async (data: unknown): Promise<void> => {
 
   const messageData = data as Record<string, unknown>
 
-  if (messageData.type === "gaze_data") {
-    const gazePoint: GazePointInput = {
-      screenX: (messageData.screenX as number) || 0,
-      screenY: (messageData.screenY as number) || 0,
-      confidence: (messageData.confidence as number) || 0.5,
-      leftEye: {
-        screenX:
-          ((messageData.leftEye as Record<string, unknown>)
-            ?.screenX as number) ||
-          (messageData.screenX as number) ||
-          0,
-        screenY:
-          ((messageData.leftEye as Record<string, unknown>)
-            ?.screenY as number) ||
-          (messageData.screenY as number) ||
-          0,
-        pupilSize:
-          ((messageData.leftEye as Record<string, unknown>)
-            ?.pupilSize as number) || 3,
-      },
-      rightEye: {
-        screenX:
-          ((messageData.rightEye as Record<string, unknown>)
-            ?.screenX as number) ||
-          (messageData.screenX as number) ||
-          0,
-        screenY:
-          ((messageData.rightEye as Record<string, unknown>)
-            ?.screenY as number) ||
-          (messageData.screenY as number) ||
-          0,
-        pupilSize:
-          ((messageData.rightEye as Record<string, unknown>)
-            ?.pupilSize as number) || 3,
-      },
-    }
-
-    try {
-      await addGazeData(gazePoint)
-    } catch (error) {
-      console.error("Failed to add gaze data:", error)
-    }
-  } else if (messageData.type === "calibration_result") {
-    const result = {
-      success: (messageData.success as boolean) || false,
-      accuracy: messageData.accuracy as number,
-      precision: messageData.precision as number,
-      errorMessage: messageData.errorMessage as string,
-      points: messageData.points as Array<{
-        x: number
-        y: number
-        accuracy: number
-      }>,
-    } as CalibrationResult
-    if (trackingState.onCalibrationCallback) {
-      trackingState.onCalibrationCallback(result)
-    }
+  const gazeInput: GazePointInput = {
+    screenX: (messageData.screenX as number) || 0,
+    screenY: (messageData.screenY as number) || 0,
+    confidence: (messageData.confidence as number) || 0.5,
+    leftEye: {
+      screenX:
+        ((messageData.leftEye as Record<string, unknown>)?.screenX as number) ||
+        (messageData.screenX as number) ||
+        0,
+      screenY:
+        ((messageData.leftEye as Record<string, unknown>)?.screenY as number) ||
+        (messageData.screenY as number) ||
+        0,
+      pupilSize:
+        ((messageData.leftEye as Record<string, unknown>)
+          ?.pupilSize as number) || 3,
+    },
+    rightEye: {
+      screenX:
+        ((messageData.rightEye as Record<string, unknown>)
+          ?.screenX as number) ||
+        (messageData.screenX as number) ||
+        0,
+      screenY:
+        ((messageData.rightEye as Record<string, unknown>)
+          ?.screenY as number) ||
+        (messageData.screenY as number) ||
+        0,
+      pupilSize:
+        ((messageData.rightEye as Record<string, unknown>)
+          ?.pupilSize as number) || 3,
+    },
   }
+
+  try {
+    const gazePoint = await addGazeData(gazeInput)
+    interactionState.onGazeDataCallback?.(gazePoint)
+  } catch (error) {
+    console.error("Failed to add gaze data:", error)
+  }
+  //   } else if (messageData.type === "calibration_result") {
+  //     const result = {
+  //       success: (messageData.success as boolean) || false,
+  //       accuracy: messageData.accuracy as number,
+  //       precision: messageData.precision as number,
+  //       errorMessage: messageData.errorMessage as string,
+  //       points: messageData.points as Array<{
+  //         x: number;
+  //         y: number;
+  //         accuracy: number;
+  //       }>,
+  //     } as CalibrationResult;
+  //     if (trackingState.onCalibrationCallback) {
+  //       trackingState.onCalibrationCallback(result);
+  //     }
+  //   }
 }

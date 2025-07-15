@@ -56,6 +56,7 @@ export const initializeEyeTracking = (
   if (!gazeState.websocketUrl) {
     throw new Error("WebSocket URL is required for gaze tracking")
   }
+  console.log("gazeState.websocketUrl", gazeState.websocketUrl, websocketUrl)
 
   return new Promise((resolve, reject) => {
     // Construct proper WebSocket URL

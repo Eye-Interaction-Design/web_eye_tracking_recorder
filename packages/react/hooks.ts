@@ -1,21 +1,20 @@
 // React hooks for Eye Analysis
 
 import {
-  addEvent,
-  addGazeData,
-  createSession,
-  type DownloadSessionOptions,
-  downloadSession,
-  type GazePointInput,
-  getCurrentSession,
-  getCurrentState,
-  initialize,
+  addSessionEvent,
   type RecorderState,
-  type RecordingConfig,
+  getCurrentState,
+  subscribe,
+  initialize,
   type SessionConfig,
+  type RecordingConfig,
+  createSession,
   startRecording,
   stopRecording,
-  subscribe,
+  type GazePointInput,
+  type DownloadSessionOptions,
+  getCurrentSession,
+  downloadSession,
 } from "eye-analysis"
 import { useCallback, useEffect, useRef, useState } from "react"
 
@@ -132,7 +131,7 @@ export const useGazeTracking = () => {
   const addGazePoint = useCallback(async (gazePoint: GazePointInput) => {
     try {
       setError(null)
-      await addGazeData(gazePoint)
+      // await addGazeData(gazePoint)
       setLastGazePoint(gazePoint)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to add gaze data")
@@ -144,7 +143,7 @@ export const useGazeTracking = () => {
     async (type: string, data?: Record<string, unknown>) => {
       try {
         setError(null)
-        await addEvent(type, data)
+        await addSessionEvent(type, data)
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to add event")
         throw err

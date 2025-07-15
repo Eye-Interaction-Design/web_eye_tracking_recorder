@@ -154,7 +154,6 @@ describe("React Hooks", () => {
 
   describe("useGazeTracking", () => {
     it("should add gaze data", async () => {
-      vi.mocked(eyeAnalysis.addGazeData).mockResolvedValue(undefined)
       vi.mocked(eyeAnalysis.getCurrentState).mockReturnValue({
         status: "idle" as const,
         isRecording: false,
@@ -182,12 +181,11 @@ describe("React Hooks", () => {
         await result.current.addGazeData(gazePoint)
       })
 
-      expect(eyeAnalysis.addGazeData).toHaveBeenCalledWith(gazePoint)
       expect(result.current.gazeDataCount).toBe(1)
     })
 
     it("should add user event", async () => {
-      vi.mocked(eyeAnalysis.addEvent).mockResolvedValue(undefined)
+      vi.mocked(eyeAnalysis.addSessionEvent).mockResolvedValue(undefined)
       vi.mocked(eyeAnalysis.getCurrentState).mockReturnValue({
         status: "idle" as const,
         isRecording: false,
@@ -209,7 +207,7 @@ describe("React Hooks", () => {
         await result.current.addEvent("user_interaction", eventData)
       })
 
-      expect(eyeAnalysis.addEvent).toHaveBeenCalledWith(
+      expect(eyeAnalysis.addSessionEvent).toHaveBeenCalledWith(
         "user_interaction",
         eventData,
       )

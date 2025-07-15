@@ -8,20 +8,17 @@ export type {
 } from "./experiment"
 // High-level Experiment API (recommended for most users)
 export {
-  addExperimentEvent,
-  addGazeData,
+  addSessionEvent,
   createSession,
   type DownloadSessionOptions,
   downloadSession,
-  downloadSessionData,
   getCurrentSession,
   getCurrentState,
   initialize,
   isRecording,
-  onGazeData,
+  onGaze,
   onSessionEvent,
   onStateChanged,
-  recordTaskInteraction,
   startRecording,
   stopRecording,
 } from "./experiment"
@@ -35,8 +32,6 @@ export {
 } from "./recorder/browser-info"
 // Core functionality (for advanced users)
 export {
-  addEvent,
-  addGazeData as coreAddGazeData,
   createSession as coreCreateSession,
   downloadCompleteSession,
   downloadSessionData as coreDownloadSessionData,
@@ -131,11 +126,7 @@ export {
   stopMouseTracking,
 } from "./tracking"
 // Utility functions
-export {
-  formatDuration,
-  generateTimestamp,
-  isValidWebSocketUrl,
-} from "./utils"
+export { formatDuration, generateTimestamp, isValidWebSocketUrl } from "./utils"
 
 // Note: React integration is available as a separate package:
 // npm install @web-eye-tracking-recorder/react

@@ -333,7 +333,9 @@ export const stopRecording = async (): Promise<SessionInfo | null> => {
 /**
  * Add gaze data point with automatic browser/screen info collection
  */
-export const addGazeData = async (gazeInput: GazePointInput): Promise<void> => {
+export const addGazeData = async (
+  gazeInput: GazePointInput,
+): Promise<GazePoint> => {
   requireBrowser("addGazeData")
 
   const state = getState()
@@ -401,6 +403,8 @@ export const addGazeData = async (gazeInput: GazePointInput): Promise<void> => {
 
     await saveGazeData(state.currentSession.sessionId, completeGazePoint)
     dispatch({ type: "ADD_GAZE_DATA", payload: completeGazePoint })
+
+    return completeGazePoint
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Failed to save gaze data"
@@ -415,7 +419,7 @@ export const addGazeData = async (gazeInput: GazePointInput): Promise<void> => {
 export const addEvent = async (
   type: string,
   data?: Record<string, unknown>,
-): Promise<void> => {
+): Promise<SessionEvent> => {
   requireBrowser("addEvent")
 
   const state = getState()
@@ -434,6 +438,8 @@ export const addEvent = async (
 
     await saveEvent(event)
     dispatch({ type: "ADD_EVENT", payload: event })
+
+    return event
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Failed to save event"

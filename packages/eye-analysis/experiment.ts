@@ -1,9 +1,9 @@
 // High-level experiment API that wraps core functionality
 // Integrates experiment-recorder.ts and demo-logic.ts functionality
 
+import { interactionState } from "./interaction"
 import {
   addEvent as coreAddEvent,
-  addGazeData as coreAddGazeData,
   createSession as coreCreateSession,
   initialize as coreInitialize,
   startRecording as coreStartRecording,
@@ -36,39 +36,13 @@ export type GazeDataCallback = (gazePoint: GazePoint) => void
 export type SessionEventCallback = (event: SessionEvent) => void
 export type CalibrationCallback = (result: CalibrationResult) => void
 
-// Experiment state management
-interface ExperimentState {
-  onGazeDataCallback?: GazeDataCallback
-  onSessionEventCallback?: SessionEventCallback
-  eyeTrackingServerUrl?: string
-}
-
-const experimentState: ExperimentState = {}
-
-// Enhanced gaze data handler that triggers callbacks
-const handleGazeData = (gazePoint: GazePoint) => {
-  if (experimentState.onGazeDataCallback) {
-    experimentState.onGazeDataCallback(gazePoint)
-  }
-}
-
-// Enhanced event handler that triggers callbacks
-const handleSessionEvent = (event: SessionEvent) => {
-  if (experimentState.onSessionEventCallback) {
-    experimentState.onSessionEventCallback(event)
-  }
-}
-
 /**
  * Initialize the experiment system
  */
-export const initialize = async (config?: ExperimentConfig): Promise<void> => {
+export const initialize = async (): Promise<void> => {
   await coreInitialize()
 
-  // Store eye tracking server URL if provided
-  if (config?.eyeTrackingServerUrl) {
-    experimentState.eyeTrackingServerUrl = config.eyeTrackingServerUrl
-  }
+  // TODO: eye tracking server urlなどは本来ここで設定されるべき
 }
 
 /**
@@ -103,9 +77,6 @@ export const startRecording = async (config?: {
 }): Promise<void> => {
   await coreStartRecording()
 
-  const serverUrl =
-    config?.eyeTrackingServerUrl || experimentState.eyeTrackingServerUrl
-
   // Set up gaze tracking - either real eye tracking or mouse simulation
   const {
     isValidWebSocketUrl,
@@ -113,8 +84,11 @@ export const startRecording = async (config?: {
     startMouseTracking,
   } = await import("./tracking")
 
-  if (serverUrl && isValidWebSocketUrl(serverUrl)) {
-    await connectToEyeTrackingServer(serverUrl)
+  if (
+    config?.eyeTrackingServerUrl &&
+    isValidWebSocketUrl(config?.eyeTrackingServerUrl)
+  ) {
+    await connectToEyeTrackingServer(config?.eyeTrackingServerUrl)
   } else {
     startMouseTracking()
   }
@@ -144,59 +118,28 @@ export const stopRecording = async (): Promise<{
 }
 
 /**
- * Add gaze data point (enhanced with callbacks)
- */
-export const addGazeData = async (gazeInput: GazePointInput): Promise<void> => {
-  await coreAddGazeData(gazeInput)
-
-  // Get the complete gaze point from state to trigger callback
-  const state = getCurrentState()
-  if (state.gazeDataCount > 0 && experimentState.onGazeDataCallback) {
-    // Note: This is a simplified approach - in a real implementation,
-    // we'd need to access the actual gaze point that was just added
-    // For now, we'll trigger the callback with the input data enhanced
-    const enhancedGazePoint = gazeInput as GazePoint
-    handleGazeData(enhancedGazePoint)
-  }
-}
-
-/**
  * Add experiment event (enhanced with callbacks)
  */
-export const addExperimentEvent = async (
+export const addSessionEvent = async (
   type: string,
   data?: Record<string, unknown>,
 ): Promise<void> => {
-  await coreAddEvent(type, data)
-
-  // Trigger callback if set
-  if (experimentState.onSessionEventCallback) {
-    const currentSession = getCurrentSession()
-    if (currentSession) {
-      const event: SessionEvent = {
-        id: `event_${Date.now()}`,
-        sessionId: currentSession.sessionId,
-        type: "user_event",
-        timestamp: Date.now(),
-        data: { eventType: type, ...data },
-      }
-      handleSessionEvent(event)
-    }
-  }
-}
-
-/**
- * Set gaze data callback
- */
-export const onGazeData = (callback: GazeDataCallback): void => {
-  experimentState.onGazeDataCallback = callback
+  const event = await coreAddEvent(type, data)
+  interactionState.onSessionEventCallback?.(event)
 }
 
 /**
  * Set session event callback
  */
 export const onSessionEvent = (callback: SessionEventCallback): void => {
-  experimentState.onSessionEventCallback = callback
+  interactionState.onSessionEventCallback = callback
+}
+
+/**
+ * Subscribe to gaze data
+ */
+export const onGaze = (callback: (gaze: GazePoint) => void): void => {
+  interactionState.onGazeDataCallback = callback
 }
 
 /**
@@ -247,44 +190,6 @@ export const downloadSession = async (
   if (!targetSessionId) throw new Error("No session available")
 
   await coreDownloadSession(targetSessionId, options)
-}
-
-// Legacy functions for backward compatibility
-
-/**
- * Download session data as JSON (legacy)
- */
-export const downloadSessionData = async (
-  sessionId?: string,
-): Promise<void> => {
-  await downloadSession(sessionId, {
-    include: { metadata: true, gaze: false, events: false, video: false },
-    asZip: false,
-  })
-}
-
-/**
- * Download session components (legacy)
- */
-
-// Mouse tracking simulation (from demo-logic.ts)
-
-// Eye tracking server connection (from demo-logic.ts)
-
-// Utility functions
-
-/**
- * Record task interaction event
- */
-export const recordTaskInteraction = async (
-  taskName: string,
-  elementType: string = "button",
-): Promise<void> => {
-  await addExperimentEvent("task_interaction", {
-    taskName,
-    elementType,
-    timestamp: Date.now(),
-  })
 }
 
 // Export all types for convenience
