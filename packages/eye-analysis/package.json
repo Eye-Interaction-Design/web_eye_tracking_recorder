@@ -1,74 +1,74 @@
 {
-	"name": "eye-analysis",
-	"version": "0.0.1",
-	"description": "Eye Analysis - Browser-based eye tracking and screen recording library for research and experiments",
-	"author": "shikibu9419",
-	"license": "MIT",
-	"type": "module",
-	"main": "dist/index.js",
-	"types": "dist/index.d.ts",
-	"module": "dist/index.js",
-	"browser": "dist/index.js",
-	"exports": {
-		".": {
-			"types": "./dist/index.d.ts",
-			"import": "./dist/index.js",
-			"default": "./dist/index.js"
-		}
-	},
-	"files": [
-		"dist/",
-		"README.md",
-		"LICENSE"
-	],
-	"scripts": {
-		"build": "bun build ./index.ts --outdir ./dist --target browser --format esm && bunx tsc --project tsconfig.json --emitDeclarationOnly --outDir ./dist",
-		"dev": "bun --hot ./index.ts",
-		"test": "vitest",
-		"test:watch": "vitest --watch",
-		"lint": "bunx @biomejs/biome lint .",
-		"format": "bunx @biomejs/biome format . --write"
-	},
-	"keywords": [
-		"eye-tracking",
-		"screen-recording",
-		"experiment",
-		"research",
-		"browser",
-		"indexeddb",
-		"webgazer",
-		"javascript",
-		"typescript",
-		"recording",
-		"eye-analysis",
-		"gaze-tracking"
-	],
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/Eye-Interaction-Design/web-eye-tracking-recorder.git",
-		"directory": "packages/eye-analysis"
-	},
-	"bugs": {
-		"url": "https://github.com/Eye-Interaction-Design/web-eye-tracking-recorder/issues"
-	},
-	"homepage": "https://github.com/Eye-Interaction-Design/web-eye-tracking-recorder#readme",
-	"engines": {
-		"node": ">=18.0.0"
-	},
-	"publishConfig": {
-		"access": "public"
-	},
-	"dependencies": {
-		"fflate": "^0.8.2"
-	},
-	"peerDependencies": {
-		"typescript": "^5"
-	},
-	"devDependencies": {
-		"@types/bun": "latest",
-		"@biomejs/biome": "latest",
-		"vite": "^6.0.7",
-		"vitest": "^3.2.4",
-		"happy-dom": "^18.0.1"
-	}
+  "name": "eye-analysis",
+  "version": "0.0.1",
+  "description": "Eye Analysis - Browser-based eye tracking and screen recording library for research and experiments",
+  "author": "shikibu9419",
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "module": "dist/index.js",
+  "browser": "dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "bun build ./index.ts --outdir ./dist --target browser --format esm && bunx tsc --project tsconfig.json --emitDeclarationOnly --outDir ./dist",
+    "dev": "bun --hot ./index.ts",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "lint": "bunx @biomejs/biome lint .",
+    "format": "bunx @biomejs/biome format . --write"
+  },
+  "keywords": [
+    "eye-tracking",
+    "screen-recording",
+    "experiment",
+    "research",
+    "browser",
+    "indexeddb",
+    "webgazer",
+    "javascript",
+    "typescript",
+    "recording",
+    "eye-analysis",
+    "gaze-tracking"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Eye-Interaction-Design/web-eye-tracking-recorder.git",
+    "directory": "packages/eye-analysis"
+  },
+  "bugs": {
+    "url": "https://github.com/Eye-Interaction-Design/web-eye-tracking-recorder/issues"
+  },
+  "homepage": "https://github.com/Eye-Interaction-Design/web-eye-tracking-recorder#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "fflate": "^0.8.2"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@biomejs/biome": "latest",
+    "vite": "^6.0.7",
+    "vitest": "^3.2.4",
+    "happy-dom": "^18.0.1"
+  }
 }

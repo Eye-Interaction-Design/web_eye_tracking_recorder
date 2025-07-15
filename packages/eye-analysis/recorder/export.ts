@@ -1,509 +1,505 @@
 // Data export utilities for improved data structure
 
-import { strToU8, zipSync } from "fflate";
-import { getSessionData, getVideoChunkData } from "./storage";
+import { strToU8, zipSync } from "fflate"
+import { getSessionData, getVideoChunkData } from "./storage"
 import type {
-	GazePoint,
-	SessionData,
-	SessionEvent,
-	MetadataJSON,
-} from "./types";
+  GazePoint,
+  SessionData,
+  SessionEvent,
+  MetadataJSON,
+} from "./types"
 
 /**
  * Convert gaze data to CSV format
  */
 export const gazeDataToCSV = (gazeData: GazePoint[]): string => {
-	const headers = [
-		"systemTimestamp",
-		"browserTimestamp",
-		"screenX",
-		"screenY",
-		"windowX",
-		"windowY",
-		"confidence",
-		"leftEye - screenX",
-		"leftEye - screenY",
-		"leftEye - windowX",
-		"leftEye - windowY",
-		"leftEye - positionX",
-		"leftEye - positionY",
-		"leftEye - positionZ",
-		"leftEye - pupilSize",
-		"rightEye - screenX",
-		"rightEye - screenY",
-		"rightEye - windowX",
-		"rightEye - windowY",
-		"rightEye - positionX",
-		"rightEye - positionY",
-		"rightEye - positionZ",
-		"rightEye - pupilSize",
-		"browserWindow - innerWidth",
-		"browserWindow - innerHeight",
-		"browserWindow - scrollX",
-		"browserWindow - scrollY",
-		"browserWindow - devicePixelRatio",
-		"browserWindow - screenX",
-		"browserWindow - screenY",
-		"browserWindow - outerWidth",
-		"browserWindow - outerHeight",
-		"screen - width",
-		"screen - height",
-		"screen - availWidth",
-		"screen - availHeight",
-	];
+  const headers = [
+    "systemTimestamp",
+    "browserTimestamp",
+    "screenX",
+    "screenY",
+    "windowX",
+    "windowY",
+    "confidence",
+    "leftEye - screenX",
+    "leftEye - screenY",
+    "leftEye - windowX",
+    "leftEye - windowY",
+    "leftEye - positionX",
+    "leftEye - positionY",
+    "leftEye - positionZ",
+    "leftEye - pupilSize",
+    "rightEye - screenX",
+    "rightEye - screenY",
+    "rightEye - windowX",
+    "rightEye - windowY",
+    "rightEye - positionX",
+    "rightEye - positionY",
+    "rightEye - positionZ",
+    "rightEye - pupilSize",
+    "browserWindow - innerWidth",
+    "browserWindow - innerHeight",
+    "browserWindow - scrollX",
+    "browserWindow - scrollY",
+    "browserWindow - devicePixelRatio",
+    "browserWindow - screenX",
+    "browserWindow - screenY",
+    "browserWindow - outerWidth",
+    "browserWindow - outerHeight",
+    "screen - width",
+    "screen - height",
+    "screen - availWidth",
+    "screen - availHeight",
+  ]
 
-	const csvRows = [headers.join(",")];
+  const csvRows = [headers.join(",")]
 
-	for (const point of gazeData) {
-		const row = [
-			point.systemTimestamp,
-			point.browserTimestamp,
-			point.screenX,
-			point.screenY,
-			point.windowX,
-			point.windowY,
-			point.confidence,
-			point.leftEye.screenX,
-			point.leftEye.screenY,
-			point.leftEye.windowX,
-			point.leftEye.windowY,
-			point.leftEye.positionX || "",
-			point.leftEye.positionY || "",
-			point.leftEye.positionZ || "",
-			point.leftEye.pupilSize || "",
-			point.rightEye.screenX,
-			point.rightEye.screenY,
-			point.rightEye.windowX,
-			point.rightEye.windowY,
-			point.rightEye.positionX || "",
-			point.rightEye.positionY || "",
-			point.rightEye.positionZ || "",
-			point.rightEye.pupilSize || "",
-			point.browserWindow.innerWidth,
-			point.browserWindow.innerHeight,
-			point.browserWindow.scrollX,
-			point.browserWindow.scrollY,
-			point.browserWindow.devicePixelRatio,
-			point.browserWindow.screenX,
-			point.browserWindow.screenY,
-			point.browserWindow.outerWidth,
-			point.browserWindow.outerHeight,
-			point.screen.width,
-			point.screen.height,
-			point.screen.availWidth,
-			point.screen.availHeight,
-		];
-		csvRows.push(row.join(","));
-	}
+  for (const point of gazeData) {
+    const row = [
+      point.systemTimestamp,
+      point.browserTimestamp,
+      point.screenX,
+      point.screenY,
+      point.windowX,
+      point.windowY,
+      point.confidence,
+      point.leftEye.screenX,
+      point.leftEye.screenY,
+      point.leftEye.windowX,
+      point.leftEye.windowY,
+      point.leftEye.positionX || "",
+      point.leftEye.positionY || "",
+      point.leftEye.positionZ || "",
+      point.leftEye.pupilSize || "",
+      point.rightEye.screenX,
+      point.rightEye.screenY,
+      point.rightEye.windowX,
+      point.rightEye.windowY,
+      point.rightEye.positionX || "",
+      point.rightEye.positionY || "",
+      point.rightEye.positionZ || "",
+      point.rightEye.pupilSize || "",
+      point.browserWindow.innerWidth,
+      point.browserWindow.innerHeight,
+      point.browserWindow.scrollX,
+      point.browserWindow.scrollY,
+      point.browserWindow.devicePixelRatio,
+      point.browserWindow.screenX,
+      point.browserWindow.screenY,
+      point.browserWindow.outerWidth,
+      point.browserWindow.outerHeight,
+      point.screen.width,
+      point.screen.height,
+      point.screen.availWidth,
+      point.screen.availHeight,
+    ]
+    csvRows.push(row.join(","))
+  }
 
-	return csvRows.join("\n");
-};
+  return csvRows.join("\n")
+}
 
 /**
  * Convert events data to CSV format
  */
 export const eventsToCSV = (events: SessionEvent[]): string => {
-	const headers = ["id", "sessionId", "type", "timestamp", "data"];
-	const csvRows = [headers.join(",")];
+  const headers = ["id", "sessionId", "type", "timestamp", "data"]
+  const csvRows = [headers.join(",")]
 
-	for (const event of events) {
-		const row = [
-			event.id,
-			event.sessionId,
-			event.type,
-			event.timestamp,
-			event.data ? JSON.stringify(event.data).replace(/"/g, '""') : "",
-		];
-		csvRows.push(row.map((field) => `"${field}"`).join(","));
-	}
+  for (const event of events) {
+    const row = [
+      event.id,
+      event.sessionId,
+      event.type,
+      event.timestamp,
+      event.data ? JSON.stringify(event.data).replace(/"/g, '""') : "",
+    ]
+    csvRows.push(row.map((field) => `"${field}"`).join(","))
+  }
 
-	return csvRows.join("\n");
-};
+  return csvRows.join("\n")
+}
 
 /**
  * Create metadata JSON (excluding time-series data)
  */
 export const createMetadataJSON = (sessionData: SessionData): MetadataJSON => {
-	return {
-		sessionInfo: sessionData.session,
-		metadata: sessionData.metadata,
-		videoChunks: sessionData.videoChunks.map((chunk) => ({
-			...chunk,
-			// Don't include the actual video data in metadata
-			note: `Video chunk ${chunk.chunkIndex} - ${chunk.size} bytes`,
-		})),
-		summary: {
-			totalGazePoints: sessionData.gazeData.length,
-			totalEvents: sessionData.events.length,
-			totalVideoChunks: sessionData.videoChunks.length,
-			sessionDuration: sessionData.metadata.totalDuration,
-			recordingStartTime: new Date(sessionData.session.startTime).toISOString(),
-			recordingEndTime: sessionData.session.endTime
-				? new Date(sessionData.session.endTime).toISOString()
-				: null,
-		},
-	};
-};
+  return {
+    sessionInfo: sessionData.session,
+    metadata: sessionData.metadata,
+    videoChunks: sessionData.videoChunks.map((chunk) => ({
+      ...chunk,
+      // Don't include the actual video data in metadata
+      note: `Video chunk ${chunk.chunkIndex} - ${chunk.size} bytes`,
+    })),
+    summary: {
+      totalGazePoints: sessionData.gazeData.length,
+      totalEvents: sessionData.events.length,
+      totalVideoChunks: sessionData.videoChunks.length,
+      sessionDuration: sessionData.metadata.totalDuration,
+      recordingStartTime: new Date(sessionData.session.startTime).toISOString(),
+      recordingEndTime: sessionData.session.endTime
+        ? new Date(sessionData.session.endTime).toISOString()
+        : null,
+    },
+  }
+}
 
 /**
  * Download a file with given content
  */
 export const downloadFile = (
-	content: string | Blob,
-	filename: string,
-	mimeType: string = "text/plain",
+  content: string | Blob,
+  filename: string,
+  mimeType: string = "text/plain",
 ): void => {
-	const blob =
-		content instanceof Blob ? content : new Blob([content], { type: mimeType });
-	const url = URL.createObjectURL(blob);
-	const a = document.createElement("a");
-	a.href = url;
-	a.download = filename;
-	document.body.appendChild(a);
-	a.click();
-	document.body.removeChild(a);
-	URL.revokeObjectURL(url);
-};
+  const blob =
+    content instanceof Blob ? content : new Blob([content], { type: mimeType })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
 
 /**
  * Download options for selective file download
  */
 export interface DownloadOptions {
-	includeMetadata?: boolean;
-	includeGazeData?: boolean;
-	includeEvents?: boolean;
-	includeVideo?: boolean;
-	videoFormat?: "webm" | "mp4";
+  includeMetadata?: boolean
+  includeGazeData?: boolean
+  includeEvents?: boolean
+  includeVideo?: boolean
+  videoFormat?: "webm" | "mp4"
 }
 
 /**
  * Get session data as individual downloadable components
  */
 export const getSessionComponents = async (
-	sessionId: string,
+  sessionId: string,
 ): Promise<{
-	metadata: string;
-	gazeDataCSV: string | null;
-	eventsCSV: string | null;
-	videoBlob: Blob | null;
-	sessionName: string;
-	videoFormat: string;
+  metadata: string
+  gazeDataCSV: string | null
+  eventsCSV: string | null
+  videoBlob: Blob | null
+  sessionName: string
+  videoFormat: string
 }> => {
-	const sessionData = await getSessionData(sessionId);
-	const sessionName = `session-${sessionId}-${new Date().toISOString().split("T")[0]}`;
+  const sessionData = await getSessionData(sessionId)
+  const sessionName = `session-${sessionId}-${new Date().toISOString().split("T")[0]}`
 
-	// 1. Metadata JSON
-	const metadata = createMetadataJSON(sessionData);
-	const metadataString = JSON.stringify(metadata, null, 2);
+  // 1. Metadata JSON
+  const metadata = createMetadataJSON(sessionData)
+  const metadataString = JSON.stringify(metadata, null, 2)
 
-	// 2. Gaze data CSV
-	const gazeDataCSV =
-		sessionData.gazeData.length > 0
-			? gazeDataToCSV(sessionData.gazeData)
-			: null;
+  // 2. Gaze data CSV
+  const gazeDataCSV =
+    sessionData.gazeData.length > 0 ? gazeDataToCSV(sessionData.gazeData) : null
 
-	// 3. Events CSV
-	const eventsCSV =
-		sessionData.events.length > 0 ? eventsToCSV(sessionData.events) : null;
+  // 3. Events CSV
+  const eventsCSV =
+    sessionData.events.length > 0 ? eventsToCSV(sessionData.events) : null
 
-	// 4. Video blob with format detection
-	let videoBlob: Blob | null = null;
-	let videoFormat = "webm"; // Default format
+  // 4. Video blob with format detection
+  let videoBlob: Blob | null = null
+  let videoFormat = "webm" // Default format
 
-	if (sessionData.videoChunks.length > 0) {
-		try {
-			const videoBlobs: Blob[] = [];
+  if (sessionData.videoChunks.length > 0) {
+    try {
+      const videoBlobs: Blob[] = []
 
-			for (const chunk of sessionData.videoChunks) {
-				const chunkData = await getVideoChunkData(chunk.id);
-				if (chunkData) {
-					videoBlobs.push(chunkData);
-					// Detect format from the actual blob
-					if (chunkData.type.includes("mp4")) {
-						videoFormat = "mp4";
-					} else if (chunkData.type.includes("webm")) {
-						videoFormat = "webm";
-					}
-				}
-			}
+      for (const chunk of sessionData.videoChunks) {
+        const chunkData = await getVideoChunkData(chunk.id)
+        if (chunkData) {
+          videoBlobs.push(chunkData)
+          // Detect format from the actual blob
+          if (chunkData.type.includes("mp4")) {
+            videoFormat = "mp4"
+          } else if (chunkData.type.includes("webm")) {
+            videoFormat = "webm"
+          }
+        }
+      }
 
-			if (videoBlobs.length > 0) {
-				// Use the original video format from session config if available
-				const sessionVideoFormat =
-					sessionData.session.config.videoFormat || videoFormat;
-				const mimeType =
-					sessionVideoFormat === "mp4" ? "video/mp4" : "video/webm";
-				videoBlob = new Blob(videoBlobs, { type: mimeType });
-				videoFormat = sessionVideoFormat;
-			}
-		} catch (error) {
-			console.error("Failed to prepare video data:", error);
-		}
-	}
+      if (videoBlobs.length > 0) {
+        // Use the original video format from session config if available
+        const sessionVideoFormat =
+          sessionData.session.config.videoFormat || videoFormat
+        const mimeType =
+          sessionVideoFormat === "mp4" ? "video/mp4" : "video/webm"
+        videoBlob = new Blob(videoBlobs, { type: mimeType })
+        videoFormat = sessionVideoFormat
+      }
+    } catch (error) {
+      console.error("Failed to prepare video data:", error)
+    }
+  }
 
-	return {
-		metadata: metadataString,
-		gazeDataCSV,
-		eventsCSV,
-		videoBlob,
-		sessionName,
-		videoFormat,
-	};
-};
+  return {
+    metadata: metadataString,
+    gazeDataCSV,
+    eventsCSV,
+    videoBlob,
+    sessionName,
+    videoFormat,
+  }
+}
 
 /**
  * Download individual components based on options
  */
 export const downloadSessionComponents = async (
-	sessionId: string,
-	options: DownloadOptions = {},
+  sessionId: string,
+  options: DownloadOptions = {},
 ): Promise<void> => {
-	const {
-		includeMetadata = true,
-		includeGazeData = true,
-		includeEvents = true,
-		includeVideo = true,
-		videoFormat: _videoFormat = "webm",
-	} = options;
+  const {
+    includeMetadata = true,
+    includeGazeData = true,
+    includeEvents = true,
+    includeVideo = true,
+    videoFormat: _videoFormat = "webm",
+  } = options
 
-	const components = await getSessionComponents(sessionId);
+  const components = await getSessionComponents(sessionId)
 
-	// Download metadata JSON
-	if (includeMetadata) {
-		downloadFile(
-			components.metadata,
-			`${components.sessionName}-metadata.json`,
-			"application/json",
-		);
-	}
+  // Download metadata JSON
+  if (includeMetadata) {
+    downloadFile(
+      components.metadata,
+      `${components.sessionName}-metadata.json`,
+      "application/json",
+    )
+  }
 
-	// Download gaze data CSV
-	if (includeGazeData && components.gazeDataCSV) {
-		downloadFile(
-			components.gazeDataCSV,
-			`${components.sessionName}-gaze-data.csv`,
-			"text/csv",
-		);
-	}
+  // Download gaze data CSV
+  if (includeGazeData && components.gazeDataCSV) {
+    downloadFile(
+      components.gazeDataCSV,
+      `${components.sessionName}-gaze-data.csv`,
+      "text/csv",
+    )
+  }
 
-	// Download events CSV
-	if (includeEvents && components.eventsCSV) {
-		downloadFile(
-			components.eventsCSV,
-			`${components.sessionName}-events.csv`,
-			"text/csv",
-		);
-	}
+  // Download events CSV
+  if (includeEvents && components.eventsCSV) {
+    downloadFile(
+      components.eventsCSV,
+      `${components.sessionName}-events.csv`,
+      "text/csv",
+    )
+  }
 
-	// Download video
-	if (includeVideo && components.videoBlob) {
-		const videoExtension = components.videoFormat;
-		const videoMimeType =
-			components.videoFormat === "mp4" ? "video/mp4" : "video/webm";
+  // Download video
+  if (includeVideo && components.videoBlob) {
+    const videoExtension = components.videoFormat
+    const videoMimeType =
+      components.videoFormat === "mp4" ? "video/mp4" : "video/webm"
 
-		downloadFile(
-			components.videoBlob,
-			`${components.sessionName}-recording.${videoExtension}`,
-			videoMimeType,
-		);
-	}
-};
+    downloadFile(
+      components.videoBlob,
+      `${components.sessionName}-recording.${videoExtension}`,
+      videoMimeType,
+    )
+  }
+}
 
 /**
  * Download session data as ZIP file
  */
 export const downloadSessionAsZip = async (
-	sessionId: string,
-	options: DownloadOptions = {},
+  sessionId: string,
+  options: DownloadOptions = {},
 ): Promise<void> => {
-	const {
-		includeMetadata = true,
-		includeGazeData = true,
-		includeEvents = true,
-		includeVideo = true,
-		videoFormat: _videoFormat = "webm",
-	} = options;
+  const {
+    includeMetadata = true,
+    includeGazeData = true,
+    includeEvents = true,
+    includeVideo = true,
+    videoFormat: _videoFormat = "webm",
+  } = options
 
-	const components = await getSessionComponents(sessionId);
-	const files: Record<string, Uint8Array> = {};
+  const components = await getSessionComponents(sessionId)
+  const files: Record<string, Uint8Array> = {}
 
-	// Add metadata JSON
-	if (includeMetadata) {
-		files["metadata.json"] = strToU8(components.metadata);
-	}
+  // Add metadata JSON
+  if (includeMetadata) {
+    files["metadata.json"] = strToU8(components.metadata)
+  }
 
-	// Add gaze data CSV
-	if (includeGazeData && components.gazeDataCSV) {
-		files["gaze-data.csv"] = strToU8(components.gazeDataCSV);
-	}
+  // Add gaze data CSV
+  if (includeGazeData && components.gazeDataCSV) {
+    files["gaze-data.csv"] = strToU8(components.gazeDataCSV)
+  }
 
-	// Add events CSV
-	if (includeEvents && components.eventsCSV) {
-		files["events.csv"] = strToU8(components.eventsCSV);
-	}
+  // Add events CSV
+  if (includeEvents && components.eventsCSV) {
+    files["events.csv"] = strToU8(components.eventsCSV)
+  }
 
-	// Add video
-	if (includeVideo && components.videoBlob) {
-		const videoExtension = components.videoFormat;
-		const videoData = new Uint8Array(await components.videoBlob.arrayBuffer());
-		files[`recording.${videoExtension}`] = videoData;
-	}
+  // Add video
+  if (includeVideo && components.videoBlob) {
+    const videoExtension = components.videoFormat
+    const videoData = new Uint8Array(await components.videoBlob.arrayBuffer())
+    files[`recording.${videoExtension}`] = videoData
+  }
 
-	// Create ZIP
-	const zipped = zipSync(files);
-	const zipBlob = new Blob([zipped], { type: "application/zip" });
+  // Create ZIP
+  const zipped = zipSync(files)
+  const zipBlob = new Blob([zipped], { type: "application/zip" })
 
-	downloadFile(zipBlob, `${components.sessionName}.zip`, "application/zip");
-};
+  downloadFile(zipBlob, `${components.sessionName}.zip`, "application/zip")
+}
 
 /**
  * Save experiment data and automatically download as ZIP
  */
 export const saveExperimentData = async (
-	sessionId: string,
-	experimentMetadata?: Record<string, unknown>,
+  sessionId: string,
+  experimentMetadata?: Record<string, unknown>,
 ): Promise<void> => {
-	const sessionData = await getSessionData(sessionId);
+  const sessionData = await getSessionData(sessionId)
 
-	// Update session with experiment completion
-	const updatedSession = {
-		...sessionData.session,
-		experimentCompleted: true,
-		experimentMetadata: experimentMetadata || {},
-		completedAt: Date.now(),
-	};
+  // Update session with experiment completion
+  const updatedSession = {
+    ...sessionData.session,
+    experimentCompleted: true,
+    experimentMetadata: experimentMetadata || {},
+    completedAt: Date.now(),
+  }
 
-	// Save updated session
-	const { saveSession } = await import("./storage");
-	await saveSession(updatedSession);
+  // Save updated session
+  const { saveSession } = await import("./storage")
+  await saveSession(updatedSession)
 
-	// Automatically download as ZIP
-	await downloadSessionAsZip(sessionId, {
-		includeMetadata: true,
-		includeGazeData: true,
-		includeEvents: true,
-		includeVideo: true,
-	});
-};
+  // Automatically download as ZIP
+  await downloadSessionAsZip(sessionId, {
+    includeMetadata: true,
+    includeGazeData: true,
+    includeEvents: true,
+    includeVideo: true,
+  })
+}
 
 /**
  * Export all session data for research purposes
  */
 export const exportExperimentDataset = async (
-	sessionIds: string[],
+  sessionIds: string[],
 ): Promise<void> => {
-	const allFiles: Record<string, Uint8Array> = {};
+  const allFiles: Record<string, Uint8Array> = {}
 
-	for (const sessionId of sessionIds) {
-		const components = await getSessionComponents(sessionId);
-		const sessionFolder = `session_${sessionId}`;
+  for (const sessionId of sessionIds) {
+    const components = await getSessionComponents(sessionId)
+    const sessionFolder = `session_${sessionId}`
 
-		// Add files with session folder prefix
-		if (components.metadata) {
-			allFiles[`${sessionFolder}/metadata.json`] = strToU8(components.metadata);
-		}
-		if (components.gazeDataCSV) {
-			allFiles[`${sessionFolder}/gaze-data.csv`] = strToU8(
-				components.gazeDataCSV,
-			);
-		}
-		if (components.eventsCSV) {
-			allFiles[`${sessionFolder}/events.csv`] = strToU8(components.eventsCSV);
-		}
-		if (components.videoBlob) {
-			const videoData = new Uint8Array(
-				await components.videoBlob.arrayBuffer(),
-			);
-			allFiles[`${sessionFolder}/recording.webm`] = videoData;
-		}
-	}
+    // Add files with session folder prefix
+    if (components.metadata) {
+      allFiles[`${sessionFolder}/metadata.json`] = strToU8(components.metadata)
+    }
+    if (components.gazeDataCSV) {
+      allFiles[`${sessionFolder}/gaze-data.csv`] = strToU8(
+        components.gazeDataCSV,
+      )
+    }
+    if (components.eventsCSV) {
+      allFiles[`${sessionFolder}/events.csv`] = strToU8(components.eventsCSV)
+    }
+    if (components.videoBlob) {
+      const videoData = new Uint8Array(await components.videoBlob.arrayBuffer())
+      allFiles[`${sessionFolder}/recording.webm`] = videoData
+    }
+  }
 
-	// Create combined dataset summary
-	const datasetSummary = {
-		exportedAt: new Date().toISOString(),
-		totalSessions: sessionIds.length,
-		sessionIds: sessionIds,
-		description: "Combined dataset from Web Eye Tracking Recorder",
-	};
-	allFiles["dataset-summary.json"] = strToU8(
-		JSON.stringify(datasetSummary, null, 2),
-	);
+  // Create combined dataset summary
+  const datasetSummary = {
+    exportedAt: new Date().toISOString(),
+    totalSessions: sessionIds.length,
+    sessionIds: sessionIds,
+    description: "Combined dataset from Web Eye Tracking Recorder",
+  }
+  allFiles["dataset-summary.json"] = strToU8(
+    JSON.stringify(datasetSummary, null, 2),
+  )
 
-	// Create ZIP
-	const zipped = zipSync(allFiles);
-	const zipBlob = new Blob([zipped], { type: "application/zip" });
+  // Create ZIP
+  const zipped = zipSync(allFiles)
+  const zipBlob = new Blob([zipped], { type: "application/zip" })
 
-	const filename = `experiment-dataset-${new Date().toISOString().split("T")[0]}.zip`;
-	downloadFile(zipBlob, filename, "application/zip");
-};
+  const filename = `experiment-dataset-${new Date().toISOString().split("T")[0]}.zip`
+  downloadFile(zipBlob, filename, "application/zip")
+}
 
 /**
  * Download complete session data as multiple files (JSON + CSV + Video)
  */
 export const downloadCompleteSessionData = async (
-	sessionId: string,
+  sessionId: string,
 ): Promise<void> => {
-	const sessionData = await getSessionData(sessionId);
-	const sessionName = `session-${sessionId}-${new Date().toISOString().split("T")[0]}`;
+  const sessionData = await getSessionData(sessionId)
+  const sessionName = `session-${sessionId}-${new Date().toISOString().split("T")[0]}`
 
-	// 1. Download metadata as JSON
-	const metadata = createMetadataJSON(sessionData);
-	downloadFile(
-		JSON.stringify(metadata, null, 2),
-		`${sessionName}-metadata.json`,
-		"application/json",
-	);
+  // 1. Download metadata as JSON
+  const metadata = createMetadataJSON(sessionData)
+  downloadFile(
+    JSON.stringify(metadata, null, 2),
+    `${sessionName}-metadata.json`,
+    "application/json",
+  )
 
-	// 2. Download gaze data as CSV
-	if (sessionData.gazeData.length > 0) {
-		const gazeCSV = gazeDataToCSV(sessionData.gazeData);
-		downloadFile(gazeCSV, `${sessionName}-gaze-data.csv`, "text/csv");
-	}
+  // 2. Download gaze data as CSV
+  if (sessionData.gazeData.length > 0) {
+    const gazeCSV = gazeDataToCSV(sessionData.gazeData)
+    downloadFile(gazeCSV, `${sessionName}-gaze-data.csv`, "text/csv")
+  }
 
-	// 3. Download events as CSV
-	if (sessionData.events.length > 0) {
-		const eventsCSV = eventsToCSV(sessionData.events);
-		downloadFile(eventsCSV, `${sessionName}-events.csv`, "text/csv");
-	}
+  // 3. Download events as CSV
+  if (sessionData.events.length > 0) {
+    const eventsCSV = eventsToCSV(sessionData.events)
+    downloadFile(eventsCSV, `${sessionName}-events.csv`, "text/csv")
+  }
 
-	// 4. Download video chunks (combined into single webm file)
-	if (sessionData.videoChunks.length > 0) {
-		try {
-			const videoBlobs: Blob[] = [];
+  // 4. Download video chunks (combined into single webm file)
+  if (sessionData.videoChunks.length > 0) {
+    try {
+      const videoBlobs: Blob[] = []
 
-			// Collect all video chunk data
-			for (const chunk of sessionData.videoChunks) {
-				const chunkData = await getVideoChunkData(chunk.id);
-				if (chunkData) {
-					videoBlobs.push(chunkData);
-				}
-			}
+      // Collect all video chunk data
+      for (const chunk of sessionData.videoChunks) {
+        const chunkData = await getVideoChunkData(chunk.id)
+        if (chunkData) {
+          videoBlobs.push(chunkData)
+        }
+      }
 
-			// Combine video chunks
-			if (videoBlobs.length > 0) {
-				const combinedVideo = new Blob(videoBlobs, { type: "video/webm" });
-				downloadFile(
-					combinedVideo,
-					`${sessionName}-recording.webm`,
-					"video/webm",
-				);
-			}
-		} catch (error) {
-			console.error("Failed to download video data:", error);
-			// Continue with other downloads even if video fails
-		}
-	}
-};
+      // Combine video chunks
+      if (videoBlobs.length > 0) {
+        const combinedVideo = new Blob(videoBlobs, { type: "video/webm" })
+        downloadFile(
+          combinedVideo,
+          `${sessionName}-recording.webm`,
+          "video/webm",
+        )
+      }
+    } catch (error) {
+      console.error("Failed to download video data:", error)
+      // Continue with other downloads even if video fails
+    }
+  }
+}
 
 /**
  * Create a summary report of the session
  */
 export const createSessionSummaryText = (sessionData: SessionData): string => {
-	const duration = Math.round(sessionData.metadata.totalDuration / 1000);
-	const minutes = Math.floor(duration / 60);
-	const seconds = duration % 60;
+  const duration = Math.round(sessionData.metadata.totalDuration / 1000)
+  const minutes = Math.floor(duration / 60)
+  const seconds = duration % 60
 
-	return `Web Eye Tracking Recorder - Session Summary
+  return `Web Eye Tracking Recorder - Session Summary
 ==========================================
 
 Session ID: ${sessionData.session.sessionId}
@@ -525,5 +521,5 @@ Recording Settings:
 
 Export Date: ${new Date().toLocaleString()}
 Generated by Web Eye Tracking Recorder
-`;
-};
+`
+}

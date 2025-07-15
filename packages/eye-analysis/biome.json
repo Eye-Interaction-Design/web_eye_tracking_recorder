@@ -1,13 +1,19 @@
 {
-	"files": {
-		"ignoreUnknown": true,
-		"includes": ["**"],
-		"experimentalScannerIgnores": ["node_modules", "dist"]
-	},
-	"linter": {
-		"includes": ["**", "!dist/**", "!node_modules/**"]
-	},
-	"formatter": {
-		"includes": ["**", "!dist/**", "!node_modules/**"]
-	}
+  "files": {
+    "ignoreUnknown": true,
+    "includes": ["**"]
+  },
+  "linter": {
+    "includes": ["**", "!dist/**", "!node_modules/**"]
+  },
+  "formatter": {
+    "includes": ["**", "!dist/**", "!node_modules/**"],
+    "indentStyle": "space",
+    "indentWidth": 2
+  },
+  "javascript": {
+    "formatter": {
+      "semicolons": "asNeeded"
+    }
+  }
 }

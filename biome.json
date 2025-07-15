@@ -8,6 +8,13 @@
     "includes": ["**", "!dist/**", "!node_modules/**"]
   },
   "formatter": {
-    "includes": ["**", "!dist/**", "!node_modules/**"]
+    "includes": ["**", "!dist/**", "!node_modules/**"],
+    "indentStyle": "space",
+    "indentWidth": 2
+  },
+  "javascript": {
+    "formatter": {
+      "semicolons": "asNeeded"
+    }
   }
 }

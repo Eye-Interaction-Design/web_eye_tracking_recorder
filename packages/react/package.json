@@ -1,49 +1,49 @@
 {
-	"name": "@eye-analysis/react",
-	"version": "0.0.1",
-	"description": "React integration for Eye Analysis library",
-	"main": "dist/index.js",
-	"types": "dist/index.d.ts",
-	"module": "dist/index.js",
-	"type": "module",
-	"scripts": {
-		"build": "bun build ./index.ts --outdir ./dist --target browser --format esm && bunx tsc --emitDeclarationOnly --outDir ./dist",
-		"test": "vitest",
-		"test:watch": "vitest --watch",
-		"lint": "bunx @biomejs/biome lint .",
-		"format": "bunx @biomejs/biome format . --write"
-	},
-	"dependencies": {
-		"eye-analysis": "workspace:*"
-	},
-	"peerDependencies": {
-		"react": ">=16.8.0",
-		"react-dom": ">=16.8.0"
-	},
-	"devDependencies": {
-		"@types/react": "^18.0.0",
-		"@types/react-dom": "^18.0.0",
-		"typescript": "^5",
-		"@testing-library/react": "^14.0.0",
-		"@testing-library/jest-dom": "^6.0.0",
-		"vitest": "^3.2.4",
-		"happy-dom": "^18.0.1"
-	},
-	"keywords": [
-		"eye-tracking",
-		"screen-recording",
-		"react",
-		"hooks",
-		"experiment",
-		"research",
-		"eye-analysis",
-		"gaze-tracking"
-	],
-	"author": "shikibu9419",
-	"license": "MIT",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/shikibu9419/web-eye-tracking-recorder.git",
-		"directory": "packages/react"
-	}
+  "name": "@eye-analysis/react",
+  "version": "0.0.1",
+  "description": "React integration for Eye Analysis library",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "module": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "bun build ./index.ts --outdir ./dist --target browser --format esm && bunx tsc --emitDeclarationOnly --outDir ./dist",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "lint": "bunx @biomejs/biome lint .",
+    "format": "bunx @biomejs/biome format . --write"
+  },
+  "dependencies": {
+    "eye-analysis": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "typescript": "^5",
+    "@testing-library/react": "^14.0.0",
+    "@testing-library/jest-dom": "^6.0.0",
+    "vitest": "^3.2.4",
+    "happy-dom": "^18.0.1"
+  },
+  "keywords": [
+    "eye-tracking",
+    "screen-recording",
+    "react",
+    "hooks",
+    "experiment",
+    "research",
+    "eye-analysis",
+    "gaze-tracking"
+  ],
+  "author": "shikibu9419",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shikibu9419/web-eye-tracking-recorder.git",
+    "directory": "packages/react"
+  }
 }
