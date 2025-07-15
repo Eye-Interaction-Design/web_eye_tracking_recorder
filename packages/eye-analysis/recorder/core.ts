@@ -24,7 +24,7 @@ import {
 } from "./browser-info";
 
 // SSR Detection
-import { requireBrowser } from './ssr-guard';
+import { requireBrowser } from "./ssr-guard";
 
 // Current MediaRecorder instance
 let mediaRecorder: MediaRecorder | null = null;
@@ -40,7 +40,7 @@ const generateId = (): string => {
  * Initialize the recording system
  */
 export const initialize = async (): Promise<void> => {
-	requireBrowser('initialize');
+	requireBrowser("initialize");
 
 	try {
 		await initializeStorage();
@@ -59,8 +59,9 @@ export const initialize = async (): Promise<void> => {
 export const createSession = async (
 	config: SessionConfig,
 	recordingConfig?: RecordingConfig,
+	includeMetadata?: boolean,
 ): Promise<string> => {
-	requireBrowser('createSession');
+	requireBrowser("createSession");
 
 	const state = getState();
 	if (state.status !== "initialized") {
@@ -73,6 +74,7 @@ export const createSession = async (
 		participantId: config.participantId,
 		experimentType: config.experimentType,
 		startTime: Date.now(),
+		status: "recording",
 		config: {
 			frameRate: 30,
 			quality: "medium",
@@ -81,6 +83,38 @@ export const createSession = async (
 			...recordingConfig,
 		},
 	};
+
+	// Add metadata if requested (for experiment API)
+	if (includeMetadata) {
+		sessionInfo.metadata = {
+			browser:
+				typeof navigator !== "undefined" ? navigator.userAgent : "Unknown",
+			screen:
+				typeof screen !== "undefined"
+					? `${screen.width}x${screen.height}`
+					: "1920x1080",
+			displayWidth: typeof window !== "undefined" ? window.innerWidth : 1920,
+			displayHeight: typeof window !== "undefined" ? window.innerHeight : 1080,
+			userAgent:
+				typeof navigator !== "undefined" ? navigator.userAgent : "Unknown",
+			settings: {
+				screenRecording: recordingConfig || {},
+			},
+			environment: {
+				browser:
+					typeof navigator !== "undefined" ? navigator.userAgent : "Unknown",
+				screen:
+					typeof screen !== "undefined"
+						? `${screen.width}x${screen.height}`
+						: "1920x1080",
+				displayWidth: typeof window !== "undefined" ? window.innerWidth : 1920,
+				displayHeight:
+					typeof window !== "undefined" ? window.innerHeight : 1080,
+				userAgent:
+					typeof navigator !== "undefined" ? navigator.userAgent : "Unknown",
+			},
+		};
+	}
 
 	try {
 		await saveSession(sessionInfo);
@@ -114,7 +148,7 @@ export const createSession = async (
  * Start screen recording
  */
 export const startRecording = async (): Promise<void> => {
-	requireBrowser('startRecording');
+	requireBrowser("startRecording");
 
 	const state = getState();
 	if (!state.currentSession) {
@@ -143,28 +177,33 @@ export const startRecording = async (): Promise<void> => {
 				selfBrowserSurface: "include",
 				surfaceSwitching: "exclude",
 			} as any; // Chrome-specific properties not in standard types
-			recordingStream = await navigator.mediaDevices.getDisplayMedia(extendedConstraints);
+			recordingStream =
+				await navigator.mediaDevices.getDisplayMedia(extendedConstraints);
 		} catch (_error) {
 			// Fallback to standard display media
-			recordingStream = await navigator.mediaDevices.getDisplayMedia(constraints);
+			recordingStream =
+				await navigator.mediaDevices.getDisplayMedia(constraints);
 		}
 
 		// Setup MediaRecorder with format selection
-		const videoFormat = state.currentSession.config.videoFormat || 'webm'
-		const videoCodec = state.currentSession.config.videoCodec || 'vp9'
-		
+		const videoFormat = state.currentSession.config.videoFormat || "webm";
+		const videoCodec = state.currentSession.config.videoCodec || "vp9";
+
 		// Determine MIME type based on format and codec
-		let mimeType = 'video/webm;codecs=vp9'
-		if (videoFormat === 'mp4') {
-			mimeType = videoCodec === 'h264' ? 'video/mp4;codecs=avc1' : 'video/mp4'
-		} else if (videoFormat === 'webm') {
-			mimeType = videoCodec === 'vp8' ? 'video/webm;codecs=vp8' : 'video/webm;codecs=vp9'
+		let mimeType = "video/webm;codecs=vp9";
+		if (videoFormat === "mp4") {
+			mimeType = videoCodec === "h264" ? "video/mp4;codecs=avc1" : "video/mp4";
+		} else if (videoFormat === "webm") {
+			mimeType =
+				videoCodec === "vp8"
+					? "video/webm;codecs=vp8"
+					: "video/webm;codecs=vp9";
 		}
-		
+
 		// Check if format is supported
 		if (!MediaRecorder.isTypeSupported(mimeType)) {
-			console.warn(`Format ${mimeType} not supported, falling back to default`)
-			mimeType = 'video/webm;codecs=vp9'
+			console.warn(`Format ${mimeType} not supported, falling back to default`);
+			mimeType = "video/webm;codecs=vp9";
 		}
 
 		const options: MediaRecorderOptions = {
@@ -241,8 +280,8 @@ export const startRecording = async (): Promise<void> => {
 /**
  * Stop screen recording
  */
-export const stopRecording = async (): Promise<void> => {
-	requireBrowser('stopRecording');
+export const stopRecording = async (): Promise<SessionInfo | null> => {
+	requireBrowser("stopRecording");
 
 	const state = getState();
 	if (!state.isRecording || !mediaRecorder) {
@@ -254,11 +293,19 @@ export const stopRecording = async (): Promise<void> => {
 		mediaRecorder = null;
 
 		if (state.currentSession) {
-			// Update session end time
+			// Update session end time and status
 			const updatedSession = {
 				...state.currentSession,
 				endTime: Date.now(),
+				status: "completed" as const,
 			};
+
+			// Update metadata duration if it exists
+			if (updatedSession.metadata) {
+				updatedSession.metadata.duration =
+					updatedSession.endTime - updatedSession.startTime;
+			}
+
 			await saveSession(updatedSession);
 
 			// Save recording stop event
@@ -271,9 +318,13 @@ export const stopRecording = async (): Promise<void> => {
 			await saveEvent(recordingStopEvent);
 
 			dispatch({ type: "ADD_EVENT", payload: recordingStopEvent });
+			dispatch({ type: "STOP_RECORDING" });
+
+			return updatedSession;
 		}
 
 		dispatch({ type: "STOP_RECORDING" });
+		return null;
 	} catch (error) {
 		const errorMessage =
 			error instanceof Error ? error.message : "Failed to stop recording";
@@ -286,7 +337,7 @@ export const stopRecording = async (): Promise<void> => {
  * Add gaze data point with automatic browser/screen info collection
  */
 export const addGazeData = async (gazeInput: GazePointInput): Promise<void> => {
-	requireBrowser('addGazeData');
+	requireBrowser("addGazeData");
 
 	const state = getState();
 	if (!state.currentSession) {
@@ -297,25 +348,25 @@ export const addGazeData = async (gazeInput: GazePointInput): Promise<void> => {
 		// Get current browser and screen information
 		const browserWindow = getBrowserWindowInfo();
 		const screen = getScreenInfo();
-		
-		// Calculate window coordinates for main gaze point
-		const { windowX, windowY } = screenToWindowCoordinates(
+
+		// Calculate window coordinates for main gaze point using Window Management API
+		const { windowX, windowY } = await screenToWindowCoordinates(
 			gazeInput.screenX,
 			gazeInput.screenY,
-			browserWindow
+			browserWindow,
 		);
 
-		// Calculate window coordinates for eye data
-		const leftEyeWindow = screenToWindowCoordinates(
+		// Calculate window coordinates for eye data using Window Management API
+		const leftEyeWindow = await screenToWindowCoordinates(
 			gazeInput.leftEye.screenX,
 			gazeInput.leftEye.screenY,
-			browserWindow
+			browserWindow,
 		);
-		
-		const rightEyeWindow = screenToWindowCoordinates(
+
+		const rightEyeWindow = await screenToWindowCoordinates(
 			gazeInput.rightEye.screenX,
 			gazeInput.rightEye.screenY,
-			browserWindow
+			browserWindow,
 		);
 
 		// Create complete GazePoint with all required fields
@@ -368,7 +419,7 @@ export const addEvent = async (
 	type: string,
 	data?: Record<string, unknown>,
 ): Promise<void> => {
-	requireBrowser('addEvent');
+	requireBrowser("addEvent");
 
 	const state = getState();
 	if (!state.currentSession) {
@@ -398,7 +449,7 @@ export const addEvent = async (
  * Export session data as ZIP
  */
 export const exportSessionData = async (sessionId?: string): Promise<Blob> => {
-	requireBrowser('exportSessionData');
+	requireBrowser("exportSessionData");
 
 	const state = getState();
 	const targetSessionId = sessionId || state.currentSession?.sessionId;
@@ -440,7 +491,7 @@ export const downloadSessionData = async (
 	sessionId?: string,
 	filename?: string,
 ): Promise<void> => {
-	requireBrowser('downloadSessionData');
+	requireBrowser("downloadSessionData");
 
 	try {
 		const blob = await exportSessionData(sessionId);
@@ -472,18 +523,20 @@ export const downloadSessionData = async (
 /**
  * Download complete session data as multiple files (JSON + CSV + Video)
  */
-export const downloadCompleteSession = async (sessionId?: string): Promise<void> => {
-	requireBrowser('downloadCompleteSession');
-	
+export const downloadCompleteSession = async (
+	sessionId?: string,
+): Promise<void> => {
+	requireBrowser("downloadCompleteSession");
+
 	const state = getState();
 	const targetSessionId = sessionId || state.currentSession?.sessionId;
-	
+
 	if (!targetSessionId) {
 		throw new Error("No session ID provided and no active session");
 	}
 
 	try {
-		const { downloadCompleteSessionData } = await import('./export');
+		const { downloadCompleteSessionData } = await import("./export");
 		await downloadCompleteSessionData(targetSessionId);
 	} catch (error) {
 		const errorMessage =

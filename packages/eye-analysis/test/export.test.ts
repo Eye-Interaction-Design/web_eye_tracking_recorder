@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { gazeDataToCSV, eventsToCSV, createMetadataJSON } from '../src/recorder/export'
-import type { GazePoint, SessionEvent, SessionData } from '../src/recorder/types'
+import { gazeDataToCSV, eventsToCSV, createMetadataJSON } from '../recorder/export'
+import type { GazePoint, SessionEvent, SessionData } from '../recorder/types'
 
 describe('Export Utilities', () => {
   const mockGazeData: GazePoint[] = [

@@ -7,7 +7,7 @@ import {
   resetSynchronizationState,
   validateDataSync,
   calculateSyncQuality
-} from '../src/services/synchronization';
+} from '../services/synchronization';
 
 describe('Synchronization', () => {
   beforeEach(() => {

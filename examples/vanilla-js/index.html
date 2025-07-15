@@ -168,12 +168,15 @@
                 <input type="text" id="participantId" value="demo-participant-001">
             </div>
             <div class="form-group">
-                <label for="experimentType">Experiment Type:</label>
-                <select id="experimentType">
-                    <option value="simple-demo">Simple Demo</option>
-                    <option value="gaze-tracking">Gaze Tracking</option>
-                    <option value="interaction-study">Interaction Study</option>
-                </select>
+                <label for="eyeTrackingServerUrl">Eye Tracking Server URL:</label>
+                <input type="text" id="eyeTrackingServerUrl" placeholder="ws://localhost:8080 (leave empty for mouse simulation)" style="width: 300px;">
+                <div id="urlValidation" style="color: #d32f2f; font-size: 12px; margin-top: 5px; display: none;">Invalid WebSocket URL format. Use ws:// or wss://</div>
+            </div>
+            <div class="form-group">
+                <div id="trackingMode" style="background-color: #e8f5e8; padding: 10px; border-radius: 5px; font-size: 12px; margin-top: 10px;">
+                    <strong>Mode:</strong> <span id="modeText">Mouse Simulation</span>
+                    <span id="connectionStatus" style="color: #388e3c; margin-left: 10px; display: none;">✓ Connected</span>
+                </div>
             </div>
         </div>
         
@@ -214,8 +217,9 @@
         </div>
 
         <div class="demo-area" id="demoArea">
-            <h3>Demo Area - Move your mouse to simulate gaze</h3>
-            <p>During recording, mouse movements will simulate gaze data points</p>
+            <h3 id="demoTitle">Demo Area - Move your mouse to simulate gaze</h3>
+            <p id="demoDescription">During recording, mouse movements will simulate gaze data points</p>
+            <p id="serverInfo" style="color: #388e3c; display: none;"></p>
         </div>
         
         <div>

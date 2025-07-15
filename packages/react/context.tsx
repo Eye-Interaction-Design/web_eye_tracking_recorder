@@ -3,7 +3,7 @@
 import React, { createContext, useContext } from 'react';
 import type { ReactNode } from 'react';
 import { useEyeTracker } from './hooks';
-import type { SessionConfig, RecordingConfig } from '../../src/index';
+import type { SessionConfig, RecordingConfig } from 'eye-analysis';
 
 interface EyeTrackerContextType {
   // State

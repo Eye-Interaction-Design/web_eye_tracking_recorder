@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { generateSessionId, getBrowserWindowInfo, getScreenInfo, convertScreenToWindowCoordinates } from '../src/utils';
+import { generateSessionId, getBrowserWindowInfo, getScreenInfo, convertScreenToWindowCoordinates } from '../utils';
 
 describe('Utils', () => {
   describe('generateSessionId', () => {

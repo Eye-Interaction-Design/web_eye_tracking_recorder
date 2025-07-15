@@ -2,10 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
   getBrowserWindowInfo,
   getScreenInfo,
-  screenToWindowCoordinates,
-  windowToScreenCoordinates,
+  screenToWindowCoordinatesSync,
+  windowToScreenCoordinatesSync,
   windowToContentCoordinates
-} from '../src/recorder/browser-info'
+} from '../recorder/browser-info'
 
 describe('Browser Info Utilities', () => {
   // Mock window and screen objects
@@ -131,7 +131,7 @@ describe('Browser Info Utilities', () => {
 
     describe('screenToWindowCoordinates', () => {
       it('should convert screen coordinates to window coordinates correctly', () => {
-        const result = screenToWindowCoordinates(800, 400, windowInfo)
+        const result = screenToWindowCoordinatesSync(800, 400, windowInfo)
         
         expect(result).toEqual({
           windowX: 500, // 800 - 300
@@ -140,7 +140,7 @@ describe('Browser Info Utilities', () => {
       })
 
       it('should handle negative window coordinates', () => {
-        const result = screenToWindowCoordinates(200, 50, windowInfo)
+        const result = screenToWindowCoordinatesSync(200, 50, windowInfo)
         
         expect(result).toEqual({
           windowX: -100, // 200 - 300
@@ -151,7 +151,7 @@ describe('Browser Info Utilities', () => {
 
     describe('windowToScreenCoordinates', () => {
       it('should convert window coordinates to screen coordinates correctly', () => {
-        const result = windowToScreenCoordinates(500, 300, windowInfo)
+        const result = windowToScreenCoordinatesSync(500, 300, windowInfo)
         
         expect(result).toEqual({
           screenX: 800, // 500 + 300
@@ -160,7 +160,7 @@ describe('Browser Info Utilities', () => {
       })
 
       it('should handle negative window coordinates', () => {
-        const result = windowToScreenCoordinates(-100, -50, windowInfo)
+        const result = windowToScreenCoordinatesSync(-100, -50, windowInfo)
         
         expect(result).toEqual({
           screenX: 200, // -100 + 300
@@ -209,8 +209,8 @@ describe('Browser Info Utilities', () => {
       const originalScreenY = 400
 
       // Screen -> Window -> Screen
-      const windowCoords = screenToWindowCoordinates(originalScreenX, originalScreenY, windowInfo)
-      const backToScreen = windowToScreenCoordinates(windowCoords.windowX, windowCoords.windowY, windowInfo)
+      const windowCoords = screenToWindowCoordinatesSync(originalScreenX, originalScreenY, windowInfo)
+      const backToScreen = windowToScreenCoordinatesSync(windowCoords.windowX, windowCoords.windowY, windowInfo)
 
       expect(backToScreen.screenX).toBe(originalScreenX)
       expect(backToScreen.screenY).toBe(originalScreenY)

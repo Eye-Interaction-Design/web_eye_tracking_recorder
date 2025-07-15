@@ -9,7 +9,7 @@ import { saveGazeData } from "./database";
 import {
 	getBrowserWindowInfo,
 	getScreenInfo,
-	convertScreenToWindowCoordinates,
+	convertScreenToWindowCoordinatesEnhanced,
 } from "../utils";
 import {
 	getStore,
@@ -76,10 +76,10 @@ export const initializeEyeTracking = (
 			reject(new Error("Failed to connect to eye tracking server"));
 		};
 
-		gazeState.websocket.onmessage = (event) => {
+		gazeState.websocket.onmessage = async (event) => {
 			try {
 				const data = JSON.parse(event.data);
-				handleGazeData(data);
+				await handleGazeData(data);
 			} catch (error) {
 				console.error("Failed to parse gaze data:", error);
 			}
@@ -196,13 +196,13 @@ export const calibrate = (): Promise<CalibrationResult> => {
 	});
 };
 
-const handleGazeData = (data: unknown): void => {
+const handleGazeData = async (data: unknown): Promise<void> => {
 	if (!gazeState.isTracking) {
 		return;
 	}
 
 	try {
-		const gazeData = parseGazeData(data);
+		const gazeData = await parseGazeData(data);
 		if (gazeData) {
 			addToGazeBuffer(gazeData);
 			emitGazeData(gazeData);
@@ -212,7 +212,7 @@ const handleGazeData = (data: unknown): void => {
 	}
 };
 
-const parseGazeData = (data: unknown): GazePoint | null => {
+const parseGazeData = async (data: unknown): Promise<GazePoint | null> => {
 	if (!data || typeof data !== "object") {
 		return null;
 	}
@@ -228,7 +228,7 @@ const parseGazeData = (data: unknown): GazePoint | null => {
 
 	const windowInfo = getBrowserWindowInfo();
 	const screenInfo = getScreenInfo();
-	const windowCoords = convertScreenToWindowCoordinates(
+	const windowCoords = await convertScreenToWindowCoordinatesEnhanced(
 		gazeData.screenX,
 		gazeData.screenY,
 		windowInfo,
@@ -242,11 +242,11 @@ const parseGazeData = (data: unknown): GazePoint | null => {
 		windowX: windowCoords.windowX,
 		windowY: windowCoords.windowY,
 		confidence: (gazeData.confidence as number) || 0,
-		leftEye: parseEyeData(
+		leftEye: await parseEyeData(
 			gazeData.leftEye as Record<string, unknown>,
 			windowInfo,
 		),
-		rightEye: parseEyeData(
+		rightEye: await parseEyeData(
 			gazeData.rightEye as Record<string, unknown>,
 			windowInfo,
 		),
@@ -257,11 +257,11 @@ const parseGazeData = (data: unknown): GazePoint | null => {
 	return gazePoint;
 };
 
-const parseEyeData = (
+const parseEyeData = async (
 	eyeData: Record<string, unknown>,
 	windowInfo: WindowInfo,
-): EyeData => {
-	const screenCoords = convertScreenToWindowCoordinates(
+): Promise<EyeData> => {
+	const screenCoords = await convertScreenToWindowCoordinatesEnhanced(
 		(eyeData?.screenX as number) || 0,
 		(eyeData?.screenY as number) || 0,
 		windowInfo,

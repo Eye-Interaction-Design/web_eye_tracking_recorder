@@ -58,3 +58,46 @@ export function convertScreenToWindowCoordinates(
 		windowY: screenY - windowInfo.screenY,
 	};
 }
+
+/**
+ * Enhanced version using Window Management API when available
+ */
+export async function convertScreenToWindowCoordinatesEnhanced(
+	screenX: number,
+	screenY: number,
+	windowInfo: ReturnType<typeof getBrowserWindowInfo>,
+): Promise<{ windowX: number; windowY: number }> {
+	// Try to use Window Management API
+	if (typeof window !== "undefined" && "getScreenDetails" in window) {
+		try {
+			const screenDetails = await (window as any).getScreenDetails();
+			const windowCenterX = windowInfo.screenX + windowInfo.outerWidth / 2;
+			const windowCenterY = windowInfo.screenY + windowInfo.outerHeight / 2;
+
+			// Find the screen that contains the window center
+			for (const screen of screenDetails.screens) {
+				if (
+					windowCenterX >= screen.left &&
+					windowCenterX < screen.left + screen.width &&
+					windowCenterY >= screen.top &&
+					windowCenterY < screen.top + screen.height
+				) {
+					// Convert desktop coordinates to screen-relative coordinates
+					const screenRelativeX = screenX - screen.left;
+					const screenRelativeY = screenY - screen.top;
+
+					// Then convert to window coordinates
+					return {
+						windowX: screenRelativeX - (windowInfo.screenX - screen.left),
+						windowY: screenRelativeY - (windowInfo.screenY - screen.top),
+					};
+				}
+			}
+		} catch (error) {
+			console.warn("Failed to use Window Management API:", error);
+		}
+	}
+
+	// Fallback to original behavior
+	return convertScreenToWindowCoordinates(screenX, screenY, windowInfo);
+}

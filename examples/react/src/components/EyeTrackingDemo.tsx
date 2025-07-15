@@ -9,7 +9,15 @@ import {
   saveExperimentData,
   downloadSessionJSON,
   recordTaskInteraction,
-  generateTimestamp
+  generateTimestamp,
+  isValidWebSocketUrl,
+  getTrackingMode,
+  isEyeTrackingConnected,
+  getCurrentEyeTrackingServerUrl,
+  createNewSession,
+  startRecordingSession,
+  stopRecordingSession,
+  type DemoConfig
 } from '../../../shared/demo-logic'
 // Simple inline components to avoid circular import issues
 
@@ -34,7 +42,7 @@ const EyeTrackingDemo: React.FC = () => {
 
   const [logs, setLogs] = useState<string[]>([])
   const [participantId, setParticipantId] = useState('participant-001')
-  const [experimentType, setExperimentType] = useState('usability-test')
+  const [eyeTrackingServerUrl, setEyeTrackingServerUrl] = useState('')
 
   const log = (message: string) => {
     const timestamp = generateTimestamp()
@@ -74,19 +82,19 @@ const EyeTrackingDemo: React.FC = () => {
   const handleCreateSession = async () => {
     try {
       log('Creating session...')
-      const sessionId = await createSession(
-        {
-          participantId,
-          experimentType
-        },
-        {
-          frameRate: 30,
-          quality: 'high',
-          videoFormat: 'webm',
-          chunkDuration: 5
-        }
-      )
+      const config: DemoConfig = {
+        participantId,
+        eyeTrackingServerUrl: eyeTrackingServerUrl.trim()
+      }
+      
+      const sessionId = await createNewSession(config)
       log(`Session created: ${sessionId}`)
+      
+      if (config.eyeTrackingServerUrl) {
+        log(`Eye tracking mode: ${config.eyeTrackingServerUrl}`)
+      } else {
+        log('Mouse simulation mode')
+      }
     } catch (err) {
       log(`Session creation failed: ${err}`)
     }
@@ -95,9 +103,19 @@ const EyeTrackingDemo: React.FC = () => {
   const handleStartRecording = async () => {
     try {
       log('Starting recording...')
-      await startRecording()
+      const config: DemoConfig = {
+        participantId,
+        eyeTrackingServerUrl: eyeTrackingServerUrl.trim()
+      }
+      
+      await startRecordingSession(config)
       log('Recording started successfully')
-      log('Move your mouse around to generate mock gaze data')
+      
+      if (config.eyeTrackingServerUrl && isValidWebSocketUrl(config.eyeTrackingServerUrl)) {
+        log(`Connecting to eye tracking server: ${config.eyeTrackingServerUrl}`)
+      } else {
+        log('Move your mouse around to generate mock gaze data')
+      }
     } catch (err) {
       log(`Recording start failed: ${err}`)
     }
@@ -106,7 +124,7 @@ const EyeTrackingDemo: React.FC = () => {
   const handleStopRecording = async () => {
     try {
       log('Stopping recording...')
-      await stopRecording()
+      await stopRecordingSession()
       log('Recording stopped successfully')
     } catch (err) {
       log(`Recording stop failed: ${err}`)
@@ -168,7 +186,8 @@ const EyeTrackingDemo: React.FC = () => {
       await saveExperimentData({
         completedAt: new Date().toISOString(),
         participantId,
-        experimentType
+        trackingMode: getTrackingMode(),
+        eyeTrackingServerUrl: getCurrentEyeTrackingServerUrl()
       }, currentSession.sessionId)
       log('Experiment data auto-saved successfully')
     } catch (err) {
@@ -201,25 +220,34 @@ const EyeTrackingDemo: React.FC = () => {
                 type="text"
                 value={participantId}
                 onChange={(e) => setParticipantId(e.target.value)}
-                disabled={!!currentSession}
+                disabled={!!state.currentSession}
                 style={{ padding: '5px', marginLeft: '10px', border: '1px solid #ccc', borderRadius: '3px' }}
               />
             </label>
           </div>
           <div style={{ margin: '10px 0' }}>
-            <label style={{ display: 'inline-block', width: '150px', fontWeight: 'bold' }}>
-              Experiment Type:
-              <select
-                value={experimentType}
-                onChange={(e) => setExperimentType(e.target.value)}
-                disabled={!!currentSession}
-                style={{ padding: '5px', marginLeft: '10px', border: '1px solid #ccc', borderRadius: '3px' }}
-              >
-                <option value="usability-test">Usability Test</option>
-                <option value="gaze-tracking">Gaze Tracking</option>
-                <option value="interaction-study">Interaction Study</option>
-              </select>
+            <label style={{ display: 'block', fontWeight: 'bold' }}>
+              Eye Tracking Server URL:
+              <input
+                type="text"
+                value={eyeTrackingServerUrl}
+                onChange={(e) => setEyeTrackingServerUrl(e.target.value)}
+                disabled={!!state.currentSession}
+                placeholder="ws://localhost:8080 (leave empty for mouse simulation)"
+                style={{ padding: '5px', marginLeft: '10px', border: '1px solid #ccc', borderRadius: '3px', width: '300px' }}
+              />
             </label>
+            {eyeTrackingServerUrl && !isValidWebSocketUrl(eyeTrackingServerUrl) && (
+              <div style={{ color: '#d32f2f', fontSize: '12px', marginTop: '5px' }}>
+                Invalid WebSocket URL format. Use ws:// or wss://
+              </div>
+            )}
+          </div>
+          <div style={{ backgroundColor: '#e8f5e8', padding: '10px', borderRadius: '5px', fontSize: '12px' }}>
+            <strong>Mode:</strong> {eyeTrackingServerUrl.trim() ? 'Eye Tracking' : 'Mouse Simulation'}
+            {isEyeTrackingConnected() && (
+              <span style={{ color: '#388e3c', marginLeft: '10px' }}>✓ Connected</span>
+            )}
           </div>
         </div>
 
@@ -319,8 +347,11 @@ const EyeTrackingDemo: React.FC = () => {
           onClick={() => currentSession && handleTaskClick('Demo Area Click')}
           style={{ backgroundColor: '#f0f8ff', padding: '20px', margin: '20px 0', borderRadius: '10px', border: '2px dashed #1976d2', textAlign: 'center', position: 'relative', height: '200px', cursor: 'crosshair' }}
         >
-          <h3>Demo Area - Move your mouse to simulate gaze</h3>
-          <p>During recording, mouse movements will simulate gaze data points</p>
+          <h3>Demo Area - {getTrackingMode() === 'eye-tracking' ? 'Eye tracking active' : 'Move your mouse to simulate gaze'}</h3>
+          <p>Current mode: {getTrackingMode()}</p>
+          {getTrackingMode() === 'eye-tracking' && (
+            <p style={{ color: '#388e3c' }}>Connected to: {getCurrentEyeTrackingServerUrl()}</p>
+          )}
         </div>
 
         {/* Latest Gaze Data */}

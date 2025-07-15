@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useEyeTrackerContext } from './context';
 import { useMouseGazeTracking } from './hooks';
-import type { SessionConfig, RecordingConfig } from '../../src/index';
+import type { SessionConfig, RecordingConfig } from 'eye-analysis';
 
 interface RecordingControlsProps {
   participantId?: string;

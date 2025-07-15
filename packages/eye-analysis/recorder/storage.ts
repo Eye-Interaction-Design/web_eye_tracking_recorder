@@ -33,57 +33,63 @@ export const initializeStorage = (): Promise<void> => {
 	});
 };
 
-const setupDatabase = (request: IDBOpenDBRequest, resolve: () => void, reject: (error: Error) => void) => {
-		request.onerror = () => {
-			reject(new Error("Failed to open database"));
-		};
+const setupDatabase = (
+	request: IDBOpenDBRequest,
+	resolve: () => void,
+	reject: (error: Error) => void,
+) => {
+	request.onerror = () => {
+		reject(new Error("Failed to open database"));
+	};
 
-		request.onsuccess = () => {
-			db = request.result;
-			resolve();
-		};
+	request.onsuccess = () => {
+		db = request.result;
+		resolve();
+	};
 
-		request.onupgradeneeded = () => {
-			const database = request.result;
+	request.onupgradeneeded = () => {
+		const database = request.result;
 
-			// Sessions store
-			if (!database.objectStoreNames.contains("sessions")) {
-				const sessionStore = database.createObjectStore("sessions", {
-					keyPath: "sessionId",
-				});
-				sessionStore.createIndex("participantId", "participantId", {
-					unique: false,
-				});
-				sessionStore.createIndex("startTime", "startTime", { unique: false });
-			}
+		// Sessions store
+		if (!database.objectStoreNames.contains("sessions")) {
+			const sessionStore = database.createObjectStore("sessions", {
+				keyPath: "sessionId",
+			});
+			sessionStore.createIndex("participantId", "participantId", {
+				unique: false,
+			});
+			sessionStore.createIndex("startTime", "startTime", { unique: false });
+		}
 
-			// Events store
-			if (!database.objectStoreNames.contains("events")) {
-				const eventStore = database.createObjectStore("events", {
-					keyPath: "id",
-				});
-				eventStore.createIndex("sessionId", "sessionId", { unique: false });
-				eventStore.createIndex("timestamp", "timestamp", { unique: false });
-			}
+		// Events store
+		if (!database.objectStoreNames.contains("events")) {
+			const eventStore = database.createObjectStore("events", {
+				keyPath: "id",
+			});
+			eventStore.createIndex("sessionId", "sessionId", { unique: false });
+			eventStore.createIndex("timestamp", "timestamp", { unique: false });
+		}
 
-			// Gaze data store
-			if (!database.objectStoreNames.contains("gazeData")) {
-				const gazeStore = database.createObjectStore("gazeData", {
-					keyPath: "id",
-				});
-				gazeStore.createIndex("sessionId", "sessionId", { unique: false });
-				gazeStore.createIndex("systemTimestamp", "systemTimestamp", { unique: false });
-			}
+		// Gaze data store
+		if (!database.objectStoreNames.contains("gazeData")) {
+			const gazeStore = database.createObjectStore("gazeData", {
+				keyPath: "id",
+			});
+			gazeStore.createIndex("sessionId", "sessionId", { unique: false });
+			gazeStore.createIndex("systemTimestamp", "systemTimestamp", {
+				unique: false,
+			});
+		}
 
-			// Video chunks store
-			if (!database.objectStoreNames.contains("videoChunks")) {
-				const videoStore = database.createObjectStore("videoChunks", {
-					keyPath: "id",
-				});
-				videoStore.createIndex("sessionId", "sessionId", { unique: false });
-				videoStore.createIndex("timestamp", "timestamp", { unique: false });
-			}
-		};
+		// Video chunks store
+		if (!database.objectStoreNames.contains("videoChunks")) {
+			const videoStore = database.createObjectStore("videoChunks", {
+				keyPath: "id",
+			});
+			videoStore.createIndex("sessionId", "sessionId", { unique: false });
+			videoStore.createIndex("timestamp", "timestamp", { unique: false });
+		}
+	};
 };
 
 // Database management
@@ -94,7 +100,7 @@ export const resetDatabase = (): Promise<void> => {
 			db.close();
 			db = null;
 		}
-		
+
 		// Delete the database
 		const deleteRequest = indexedDB.deleteDatabase(DB_NAME);
 		deleteRequest.onsuccess = () => {
@@ -167,12 +173,12 @@ export const saveGazeData = (
 			return;
 		}
 
-		const dataWithSession = { 
+		const dataWithSession = {
 			id: `${sessionId}-${gazePoint.systemTimestamp}-${Math.random()}`,
-			sessionId, 
-			...gazePoint 
+			sessionId,
+			...gazePoint,
 		};
-		
+
 		const transaction = db.transaction(["gazeData"], "readwrite");
 		const store = transaction.objectStore("gazeData");
 		const request = store.add(dataWithSession);
@@ -207,7 +213,9 @@ export const saveVideoChunk = (chunk: {
 };
 
 // Get complete session data
-export const getSessionData = async (sessionId: string): Promise<SessionData> => {
+export const getSessionData = async (
+	sessionId: string,
+): Promise<SessionData> => {
 	if (!db) {
 		throw new Error("Database not initialized");
 	}
@@ -230,34 +238,30 @@ export const getSessionData = async (sessionId: string): Promise<SessionData> =>
 			const request = index.getAll(sessionId);
 
 			request.onsuccess = () => resolveEvents(request.result);
-			request.onerror = () =>
-				rejectEvents(new Error("Failed to get events"));
+			request.onerror = () => rejectEvents(new Error("Failed to get events"));
 		},
 	);
 
 	// Get gaze data
-	const gazeData = await new Promise<GazePoint[]>(
-		(resolveGaze, rejectGaze) => {
-			if (!db) {
-				rejectGaze(new Error("Database not initialized"));
-				return;
-			}
-			const transaction = db.transaction(["gazeData"], "readonly");
-			const store = transaction.objectStore("gazeData");
-			const index = store.index("sessionId");
-			const request = index.getAll(sessionId);
+	const gazeData = await new Promise<GazePoint[]>((resolveGaze, rejectGaze) => {
+		if (!db) {
+			rejectGaze(new Error("Database not initialized"));
+			return;
+		}
+		const transaction = db.transaction(["gazeData"], "readonly");
+		const store = transaction.objectStore("gazeData");
+		const index = store.index("sessionId");
+		const request = index.getAll(sessionId);
 
-			request.onsuccess = () => {
-				const data = request.result.map((item) => {
-					const { sessionId: _, ...gazePoint } = item;
-					return gazePoint as GazePoint;
-				});
-				resolveGaze(data);
-			};
-			request.onerror = () =>
-				rejectGaze(new Error("Failed to get gaze data"));
-		},
-	);
+		request.onsuccess = () => {
+			const data = request.result.map((item) => {
+				const { sessionId: _, ...gazePoint } = item;
+				return gazePoint as GazePoint;
+			});
+			resolveGaze(data);
+		};
+		request.onerror = () => rejectGaze(new Error("Failed to get gaze data"));
+	});
 
 	// Get video chunks info
 	const videoChunks = await new Promise<VideoChunkInfo[]>(
@@ -293,9 +297,7 @@ export const getSessionData = async (sessionId: string): Promise<SessionData> =>
 		gazeData,
 		videoChunks,
 		metadata: {
-			totalDuration: session.endTime
-				? session.endTime - session.startTime
-				: 0,
+			totalDuration: session.endTime ? session.endTime - session.startTime : 0,
 			gazeDataPoints: gazeData.length,
 			eventsCount: events.length,
 			chunksCount: videoChunks.length,
@@ -329,16 +331,20 @@ export const getVideoChunkData = (chunkId: string): Promise<Blob | null> => {
 /**
  * Get database storage usage estimate
  */
-export const getStorageUsage = async (): Promise<{ used: number; available: number; percentage: number }> => {
-	if ('storage' in navigator && 'estimate' in navigator.storage) {
+export const getStorageUsage = async (): Promise<{
+	used: number;
+	available: number;
+	percentage: number;
+}> => {
+	if ("storage" in navigator && "estimate" in navigator.storage) {
 		const estimate = await navigator.storage.estimate();
 		const used = estimate.usage || 0;
 		const available = estimate.quota || 0;
 		const percentage = available > 0 ? (used / available) * 100 : 0;
-		
+
 		return { used, available, percentage };
 	}
-	
+
 	// Fallback for browsers without storage API
 	return { used: 0, available: 0, percentage: 0 };
 };
@@ -346,12 +352,14 @@ export const getStorageUsage = async (): Promise<{ used: number; available: numb
 /**
  * Clean up old video chunks to free space
  */
-export const cleanupOldVideoChunks = async (keepRecentHours: number = 24): Promise<number> => {
+export const cleanupOldVideoChunks = async (
+	keepRecentHours: number = 24,
+): Promise<number> => {
 	if (!db) {
 		throw new Error("Database not initialized");
 	}
 
-	const cutoffTime = Date.now() - (keepRecentHours * 60 * 60 * 1000);
+	const cutoffTime = Date.now() - keepRecentHours * 60 * 60 * 1000;
 	let deletedCount = 0;
 
 	return new Promise((resolve, reject) => {
@@ -370,29 +378,36 @@ export const cleanupOldVideoChunks = async (keepRecentHours: number = 24): Promi
 		};
 
 		transaction.oncomplete = () => resolve(deletedCount);
-		transaction.onerror = () => reject(new Error("Failed to cleanup video chunks"));
+		transaction.onerror = () =>
+			reject(new Error("Failed to cleanup video chunks"));
 	});
 };
 
 /**
  * Auto-cleanup when storage is getting full
  */
-export const autoCleanupStorage = async (triggerPercentage: number = 80): Promise<void> => {
+export const autoCleanupStorage = async (
+	triggerPercentage: number = 80,
+): Promise<void> => {
 	const usage = await getStorageUsage();
-	
+
 	if (usage.percentage >= triggerPercentage) {
-		console.warn(`Storage usage at ${usage.percentage.toFixed(1)}%, starting cleanup...`);
-		
+		console.warn(
+			`Storage usage at ${usage.percentage.toFixed(1)}%, starting cleanup...`,
+		);
+
 		// Clean up old video chunks (keep recent 12 hours)
 		const deletedChunks = await cleanupOldVideoChunks(12);
 		console.log(`Cleaned up ${deletedChunks} old video chunks`);
-		
+
 		// Check if we need more aggressive cleanup
 		const newUsage = await getStorageUsage();
 		if (newUsage.percentage >= triggerPercentage) {
 			// More aggressive cleanup - keep only 6 hours
 			const moreDeleted = await cleanupOldVideoChunks(6);
-			console.log(`Performed aggressive cleanup, deleted ${moreDeleted} more chunks`);
+			console.log(
+				`Performed aggressive cleanup, deleted ${moreDeleted} more chunks`,
+			);
 		}
 	}
 };
@@ -406,11 +421,11 @@ export const getAllSessions = (): Promise<SessionInfo[]> => {
 			reject(new Error("Database not initialized"));
 			return;
 		}
-		
+
 		const transaction = db.transaction(["sessions"], "readonly");
 		const store = transaction.objectStore("sessions");
 		const request = store.getAll();
-		
+
 		request.onsuccess = () => resolve(request.result);
 		request.onerror = () => reject(new Error("Failed to get sessions"));
 	});
@@ -424,12 +439,15 @@ export const deleteSession = async (sessionId: string): Promise<void> => {
 		throw new Error("Database not initialized");
 	}
 
-	const transaction = db!.transaction(["sessions", "events", "gazeData", "videoChunks"], "readwrite");
-	
+	const transaction = db!.transaction(
+		["sessions", "events", "gazeData", "videoChunks"],
+		"readwrite",
+	);
+
 	// Delete session
 	const sessionStore = transaction.objectStore("sessions");
 	sessionStore.delete(sessionId);
-	
+
 	// Delete events
 	const eventStore = transaction.objectStore("events");
 	const eventIndex = eventStore.index("sessionId");
@@ -441,7 +459,7 @@ export const deleteSession = async (sessionId: string): Promise<void> => {
 			cursor.continue();
 		}
 	};
-	
+
 	// Delete gaze data
 	const gazeStore = transaction.objectStore("gazeData");
 	const gazeIndex = gazeStore.index("sessionId");
@@ -453,7 +471,7 @@ export const deleteSession = async (sessionId: string): Promise<void> => {
 			cursor.continue();
 		}
 	};
-	
+
 	// Delete video chunks
 	const videoStore = transaction.objectStore("videoChunks");
 	const videoIndex = videoStore.index("sessionId");
@@ -465,7 +483,7 @@ export const deleteSession = async (sessionId: string): Promise<void> => {
 			cursor.continue();
 		}
 	};
-	
+
 	return new Promise((resolve, reject) => {
 		transaction.oncomplete = () => resolve();
 		transaction.onerror = () => reject(new Error("Failed to delete session"));

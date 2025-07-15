@@ -1,4 +1,4 @@
-// React hooks for Web Eye Tracking Recorder
+// React hooks for Eye Analysis
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import {
@@ -20,7 +20,7 @@ import {
   type RecorderState,
   type SessionInfo,
   type DownloadOptions,
-} from '../../src/index';
+} from 'eye-analysis';
 
 /**
  * Hook for managing recorder state with automatic re-renders

@@ -1,4 +1,4 @@
-// React integration exports for Web Eye Tracking Recorder
+// React integration exports for Eye Analysis
 
 export * from './hooks';
 export * from './context';
@@ -12,4 +12,4 @@ export type {
   RecorderState,
   SessionInfo,
   DownloadOptions,
-} from '../../src/index';
+} from 'eye-analysis';

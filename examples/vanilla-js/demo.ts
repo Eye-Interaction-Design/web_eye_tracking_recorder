@@ -1,32 +1,56 @@
 import {
-  type DemoConfig,
-  type DemoState,
-  subscribeToDemoState,
-  getCurrentDemoState,
-  initializeRecorder,
-  createNewSession,
-  startRecordingSession,
-  stopRecordingSession,
+  initializeExperiment,
+  createExperimentSession,
+  startExperiment,
+  stopExperiment,
+  subscribeToExperiment,
+  getCurrentExperimentState,
+  getCurrentExperimentSession,
+  isExperimentRecording,
   recordTaskInteraction,
   downloadSessionJSON,
   downloadSessionComponents,
-  downloadSessionZip,
+  downloadSessionAsZip,
   saveExperimentData,
   formatDuration,
-  generateTimestamp
-} from '../shared/demo-logic.js'
+  generateTimestamp,
+  isValidWebSocketUrl,
+  getTrackingMode,
+  isEyeTrackingConnected,
+  getCurrentEyeTrackingServerUrl,
+  type ExperimentConfig,
+  type RecorderState
+} from '../../src/index.js'
 
 // Application state
 interface AppState {
   logs: string[]
   participantId: string
-  experimentType: string
+  eyeTrackingServerUrl: string
+  experimentState: {
+    isInitialized: boolean
+    isRecording: boolean
+    currentSession: any
+    gazeDataCount: number
+    eventsCount: number
+    recordingDuration: number
+    error: string | null
+  }
 }
 
 const appState: AppState = {
   logs: [],
   participantId: 'participant-001',
-  experimentType: 'usability-test'
+  eyeTrackingServerUrl: '',
+  experimentState: {
+    isInitialized: false,
+    isRecording: false,
+    currentSession: null,
+    gazeDataCount: 0,
+    eventsCount: 0,
+    recordingDuration: 0,
+    error: null
+  }
 }
 
 // DOM elements
@@ -44,7 +68,14 @@ interface Elements {
   downloadZipBtn: HTMLButtonElement
   autoSaveBtn: HTMLButtonElement
   participantId: HTMLInputElement
-  experimentType: HTMLInputElement
+  eyeTrackingServerUrl: HTMLInputElement
+  urlValidation: HTMLElement
+  trackingMode: HTMLElement
+  modeText: HTMLElement
+  connectionStatus: HTMLElement
+  demoTitle: HTMLElement
+  demoDescription: HTMLElement
+  serverInfo: HTMLElement
 }
 
 let elements: Elements
@@ -86,7 +117,14 @@ function initializeDOMElements(): void {
     
     // Input fields
     participantId: document.getElementById('participantId') as HTMLInputElement,
-    experimentType: document.getElementById('experimentType') as HTMLInputElement
+    eyeTrackingServerUrl: document.getElementById('eyeTrackingServerUrl') as HTMLInputElement,
+    urlValidation: document.getElementById('urlValidation')!,
+    trackingMode: document.getElementById('trackingMode')!,
+    modeText: document.getElementById('modeText')!,
+    connectionStatus: document.getElementById('connectionStatus')!,
+    demoTitle: document.getElementById('demoTitle')!,
+    demoDescription: document.getElementById('demoDescription')!,
+    serverInfo: document.getElementById('serverInfo')!
   }
 }
 
@@ -94,7 +132,7 @@ function initializeDOMElements(): void {
 async function handleInitialize(): Promise<void> {
   try {
     log('Initializing recorder...')
-    await initializeRecorder()
+    await initializeExperiment()
     log('Recorder initialized successfully')
   } catch (error) {
     log(`Initialization failed: ${error}`)
@@ -104,12 +142,19 @@ async function handleInitialize(): Promise<void> {
 async function handleCreateSession(): Promise<void> {
   try {
     log('Creating session...')
-    const config: DemoConfig = {
+    const config: ExperimentConfig = {
       participantId: appState.participantId,
-      experimentType: appState.experimentType
+      experimentType: appState.eyeTrackingServerUrl.trim() ? 'eye-tracking' : 'mouse-simulation',
+      eyeTrackingServerUrl: appState.eyeTrackingServerUrl.trim()
     }
-    const sessionId = await createNewSession(config)
+    const sessionId = await createExperimentSession(config)
     log(`Session created: ${sessionId}`)
+    
+    if (config.eyeTrackingServerUrl) {
+      log(`Eye tracking mode: ${config.eyeTrackingServerUrl}`)
+    } else {
+      log('Mouse simulation mode')
+    }
   } catch (error) {
     log(`Session creation failed: ${error}`)
   }
@@ -118,9 +163,17 @@ async function handleCreateSession(): Promise<void> {
 async function handleStartRecording(): Promise<void> {
   try {
     log('Starting recording...')
-    await startRecordingSession()
+    
+    await startExperiment({
+      eyeTrackingServerUrl: appState.eyeTrackingServerUrl.trim()
+    })
     log('Recording started successfully')
-    log('Move your mouse around to generate mock gaze data')
+    
+    if (appState.eyeTrackingServerUrl.trim() && isValidWebSocketUrl(appState.eyeTrackingServerUrl.trim())) {
+      log(`Connecting to eye tracking server: ${appState.eyeTrackingServerUrl.trim()}`)
+    } else {
+      log('Move your mouse around to generate mock gaze data')
+    }
   } catch (error) {
     log(`Recording start failed: ${error}`)
   }
@@ -129,7 +182,7 @@ async function handleStartRecording(): Promise<void> {
 async function handleStopRecording(): Promise<void> {
   try {
     log('Stopping recording...')
-    await stopRecordingSession()
+    await stopExperiment()
     log('Recording stopped successfully')
   } catch (error) {
     log(`Recording stop failed: ${error}`)
@@ -168,7 +221,7 @@ async function handleDownloadComponents(): Promise<void> {
 async function handleDownloadZip(): Promise<void> {
   try {
     log('Downloading session as ZIP...')
-    await downloadSessionZip()
+    await downloadSessionAsZip()
     log('ZIP download completed')
   } catch (error) {
     log(`ZIP download failed: ${error}`)
@@ -180,7 +233,8 @@ async function handleAutoSave(): Promise<void> {
     log('Auto-saving experiment data...')
     await saveExperimentData({
       participantId: appState.participantId,
-      experimentType: appState.experimentType
+      trackingMode: getTrackingMode(),
+      eyeTrackingServerUrl: getCurrentEyeTrackingServerUrl()
     })
     log('Experiment data auto-saved successfully')
   } catch (error) {
@@ -204,8 +258,10 @@ function setupEventListeners(): void {
     appState.participantId = (e.target as HTMLInputElement).value
   })
   
-  elements.experimentType.addEventListener('input', (e) => {
-    appState.experimentType = (e.target as HTMLInputElement).value
+  elements.eyeTrackingServerUrl.addEventListener('input', (e) => {
+    appState.eyeTrackingServerUrl = (e.target as HTMLInputElement).value
+    updateUrlValidation()
+    updateTrackingMode()
   })
 
   setupDemoTasks()
@@ -214,7 +270,7 @@ function setupEventListeners(): void {
 function setupDemoTasks(): void {
   // Just add a simple click handler for the demo area
   elements.demoArea.addEventListener('click', (e) => {
-    if (getCurrentDemoState().currentSession) {
+    if (appState.experimentState.currentSession) {
       handleTaskClick('Demo Area Click')
     }
   })
@@ -222,7 +278,7 @@ function setupDemoTasks(): void {
 
 // UI updates
 function updateUI(): void {
-  const state = getCurrentDemoState()
+  const state = appState.experimentState
   
   // Update button states
   elements.initBtn.disabled = state.isInitialized
@@ -239,12 +295,16 @@ function updateUI(): void {
   
   // Update input fields
   elements.participantId.disabled = !!state.currentSession
-  elements.experimentType.disabled = !!state.currentSession
+  elements.eyeTrackingServerUrl.disabled = !!state.currentSession
   elements.participantId.value = appState.participantId
-  elements.experimentType.value = appState.experimentType
+  elements.eyeTrackingServerUrl.value = appState.eyeTrackingServerUrl
+  
+  // Update tracking mode display
+  updateTrackingMode()
+  updateDemoArea()
 }
 
-function updateStatus(state: DemoState): void {
+function updateStatus(state: typeof appState.experimentState): void {
   const statusText = `
     <strong>Status:</strong> ${state.isRecording ? 'Recording' : state.isInitialized ? 'Ready' : 'Not Initialized'}<br>
     <strong>Session:</strong> ${state.currentSession ? state.currentSession.sessionId : 'None'}<br>
@@ -255,7 +315,7 @@ function updateStatus(state: DemoState): void {
   elements.status.innerHTML = statusText
 }
 
-function updateGazeData(state: DemoState): void {
+function updateGazeData(state: typeof appState.experimentState): void {
   if (state.gazeDataCount > 0) {
     elements.gazeData.textContent = `Collecting gaze data... (${state.gazeDataCount} points)`
   } else {
@@ -263,17 +323,72 @@ function updateGazeData(state: DemoState): void {
   }
 }
 
+function updateUrlValidation(): void {
+  const url = appState.eyeTrackingServerUrl.trim()
+  if (url && !isValidWebSocketUrl(url)) {
+    elements.urlValidation.style.display = 'block'
+  } else {
+    elements.urlValidation.style.display = 'none'
+  }
+}
+
+function updateTrackingMode(): void {
+  const url = appState.eyeTrackingServerUrl.trim()
+  const mode = url ? 'Eye Tracking' : 'Mouse Simulation'
+  elements.modeText.textContent = mode
+  
+  if (isEyeTrackingConnected()) {
+    elements.connectionStatus.style.display = 'inline'
+  } else {
+    elements.connectionStatus.style.display = 'none'
+  }
+}
+
+function updateDemoArea(): void {
+  const trackingMode = getTrackingMode()
+  const currentServerUrl = getCurrentEyeTrackingServerUrl()
+  
+  if (trackingMode === 'eye-tracking') {
+    elements.demoTitle.textContent = 'Demo Area - Eye tracking active'
+    elements.demoDescription.textContent = `Current mode: ${trackingMode}`
+    if (currentServerUrl) {
+      elements.serverInfo.textContent = `Connected to: ${currentServerUrl}`
+      elements.serverInfo.style.display = 'block'
+    }
+  } else {
+    elements.demoTitle.textContent = 'Demo Area - Move your mouse to simulate gaze'
+    elements.demoDescription.textContent = `Current mode: ${trackingMode}`
+    elements.serverInfo.style.display = 'none'
+  }
+}
+
 // State subscription
 function setupStateSubscription(): void {
-  subscribeToDemoState((state) => {
+  subscribeToExperiment((state: RecorderState) => {
+    // Update local state
+    appState.experimentState = {
+      isInitialized: state.status === 'initialized' || state.status === 'recording' || state.status === 'stopped',
+      isRecording: state.isRecording,
+      currentSession: state.currentSession,
+      gazeDataCount: state.gazeDataCount,
+      eventsCount: state.eventsCount,
+      recordingDuration: state.recordingDuration,
+      error: state.error
+    }
+    
     updateUI()
-    updateStatus(state)
-    updateGazeData(state)
+    updateStatus(appState.experimentState)
+    updateGazeData(appState.experimentState)
     
     if (state.error) {
       log(`Error: ${state.error}`)
     }
   })
+  
+  // Initial UI update
+  updateUrlValidation()
+  updateTrackingMode()
+  updateDemoArea()
 }
 
 // Initialize the application
@@ -283,7 +398,7 @@ function initializeApp(): void {
   // Check if all required elements exist
   if (!elements.initBtn || !elements.createBtn || !elements.startBtn || !elements.stopBtn ||
       !elements.downloadBtn || !elements.downloadComponentsBtn || !elements.downloadZipBtn ||
-      !elements.autoSaveBtn || !elements.participantId || !elements.experimentType) {
+      !elements.autoSaveBtn || !elements.participantId || !elements.eyeTrackingServerUrl) {
     console.error('Required DOM elements not found')
     return
   }

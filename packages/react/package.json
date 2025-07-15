@@ -1,7 +1,7 @@
 {
-  "name": "@web-eye-tracking-recorder/react",
-  "version": "1.0.0",
-  "description": "React integration for Web Eye Tracking Recorder",
+  "name": "@eye-analysis/react",
+  "version": "0.0.1",
+  "description": "React integration for Eye Analysis library",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "module": "dist/index.js",
@@ -12,6 +12,9 @@
     "lint": "bunx @biomejs/biome lint .",
     "format": "bunx @biomejs/biome format . --write"
   },
+  "dependencies": {
+    "eye-analysis": "workspace:*"
+  },
   "peerDependencies": {
     "react": ">=16.8.0",
     "react-dom": ">=16.8.0"
@@ -19,7 +22,11 @@
   "devDependencies": {
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "@testing-library/react": "^14.0.0",
+    "@testing-library/jest-dom": "^6.0.0",
+    "vitest": "^3.2.4",
+    "happy-dom": "^18.0.1"
   },
   "keywords": [
     "eye-tracking", 
@@ -27,7 +34,9 @@
     "react", 
     "hooks", 
     "experiment", 
-    "research"
+    "research",
+    "eye-analysis",
+    "gaze-tracking"
   ],
   "author": "shikibu9419",
   "license": "MIT",
