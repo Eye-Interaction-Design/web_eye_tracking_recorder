@@ -1,10 +1,10 @@
 // Data storage layer (IndexedDB wrapper)
 
 import type {
-	SessionInfo,
-	SessionEvent,
 	GazePoint,
 	SessionData,
+	SessionEvent,
+	SessionInfo,
 	VideoChunkInfo,
 } from "./types";
 
@@ -363,7 +363,11 @@ export const cleanupOldVideoChunks = async (
 	let deletedCount = 0;
 
 	return new Promise((resolve, reject) => {
-		const transaction = db!.transaction(["videoChunks"], "readwrite");
+		if (!db) {
+			reject(new Error("Database not available"));
+			return;
+		}
+		const transaction = db.transaction(["videoChunks"], "readwrite");
 		const store = transaction.objectStore("videoChunks");
 		const index = store.index("timestamp");
 		const request = index.openCursor(IDBKeyRange.upperBound(cutoffTime));
@@ -439,7 +443,7 @@ export const deleteSession = async (sessionId: string): Promise<void> => {
 		throw new Error("Database not initialized");
 	}
 
-	const transaction = db!.transaction(
+	const transaction = db?.transaction(
 		["sessions", "events", "gazeData", "videoChunks"],
 		"readwrite",
 	);

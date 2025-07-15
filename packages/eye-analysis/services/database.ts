@@ -1,9 +1,9 @@
 import type {
 	ExperimentSession,
-	VideoChunk,
 	GazePoint,
 	SessionEvent,
 	SyncMarker,
+	VideoChunk,
 } from "../types";
 
 let db: IDBDatabase | null = null;

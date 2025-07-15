@@ -1,8 +1,13 @@
 // Data export utilities for improved data structure
 
-import type { SessionData, GazePoint, SessionEvent } from "./types";
+import { strToU8, zipSync } from "fflate";
 import { getSessionData, getVideoChunkData } from "./storage";
-import { zipSync, strToU8 } from "fflate";
+import type {
+	GazePoint,
+	SessionData,
+	SessionEvent,
+	MetadataJSON,
+} from "./types";
 
 /**
  * Convert gaze data to CSV format
@@ -118,7 +123,7 @@ export const eventsToCSV = (events: SessionEvent[]): string => {
 /**
  * Create metadata JSON (excluding time-series data)
  */
-export const createMetadataJSON = (sessionData: SessionData): object => {
+export const createMetadataJSON = (sessionData: SessionData): MetadataJSON => {
 	return {
 		sessionInfo: sessionData.session,
 		metadata: sessionData.metadata,
@@ -258,7 +263,7 @@ export const downloadSessionComponents = async (
 		includeGazeData = true,
 		includeEvents = true,
 		includeVideo = true,
-		videoFormat = "webm",
+		videoFormat: _videoFormat = "webm",
 	} = options;
 
 	const components = await getSessionComponents(sessionId);
@@ -316,7 +321,7 @@ export const downloadSessionAsZip = async (
 		includeGazeData = true,
 		includeEvents = true,
 		includeVideo = true,
-		videoFormat = "webm",
+		videoFormat: _videoFormat = "webm",
 	} = options;
 
 	const components = await getSessionComponents(sessionId);
@@ -356,7 +361,7 @@ export const downloadSessionAsZip = async (
  */
 export const saveExperimentData = async (
 	sessionId: string,
-	experimentMetadata?: Record<string, any>,
+	experimentMetadata?: Record<string, unknown>,
 ): Promise<void> => {
 	const sessionData = await getSessionData(sessionId);
 

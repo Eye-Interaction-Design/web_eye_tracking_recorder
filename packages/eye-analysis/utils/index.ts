@@ -19,7 +19,7 @@ export function getBrowserWindowInfo(): {
 	outerWidth: number;
 	outerHeight: number;
 } {
-	const win = typeof window !== "undefined" ? window : ({} as any);
+	const win = typeof window !== "undefined" ? window : ({} as Partial<Window>);
 	return {
 		innerWidth: win.innerWidth || 1920,
 		innerHeight: win.innerHeight || 1080,
@@ -39,7 +39,7 @@ export function getScreenInfo(): {
 	availWidth: number;
 	availHeight: number;
 } {
-	const scr = typeof screen !== "undefined" ? screen : ({} as any);
+	const scr = typeof screen !== "undefined" ? screen : ({} as Partial<Screen>);
 	return {
 		width: scr.width || 1920,
 		height: scr.height || 1080,
@@ -70,7 +70,11 @@ export async function convertScreenToWindowCoordinatesEnhanced(
 	// Try to use Window Management API
 	if (typeof window !== "undefined" && "getScreenDetails" in window) {
 		try {
-			const screenDetails = await (window as any).getScreenDetails();
+			const screenDetails = await window.getScreenDetails?.();
+			if (!screenDetails) {
+				return convertScreenToWindowCoordinates(screenX, screenY, windowInfo);
+			}
+
 			const windowCenterX = windowInfo.screenX + windowInfo.outerWidth / 2;
 			const windowCenterY = windowInfo.screenY + windowInfo.outerHeight / 2;
 

@@ -1,8 +1,8 @@
 import type {
+	CalibrationResult,
 	ExperimentSession,
 	GazePoint,
 	SessionEvent,
-	CalibrationResult,
 } from "../types";
 
 export interface ExperimentStore {

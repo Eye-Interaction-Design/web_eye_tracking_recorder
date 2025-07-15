@@ -1,30 +1,29 @@
 // Core recorder logic functions (pure functions)
 
-import type {
-	SessionConfig,
-	RecordingConfig,
-	SessionInfo,
-	SessionEvent,
-	GazePoint,
-	GazePointInput,
-} from "./types";
-import { dispatch, getState } from "./state";
-import {
-	initializeStorage,
-	saveSession,
-	saveEvent,
-	saveGazeData,
-	saveVideoChunk,
-	getSessionData,
-} from "./storage";
 import {
 	getBrowserWindowInfo,
 	getScreenInfo,
 	screenToWindowCoordinates,
 } from "./browser-info";
-
 // SSR Detection
 import { requireBrowser } from "./ssr-guard";
+import { dispatch, getState } from "./state";
+import {
+	getSessionData,
+	initializeStorage,
+	saveEvent,
+	saveGazeData,
+	saveSession,
+	saveVideoChunk,
+} from "./storage";
+import type {
+	GazePoint,
+	GazePointInput,
+	RecordingConfig,
+	SessionConfig,
+	SessionEvent,
+	SessionInfo,
+} from "./types";
 
 // Current MediaRecorder instance
 let mediaRecorder: MediaRecorder | null = null;
@@ -176,7 +175,7 @@ export const startRecording = async (): Promise<void> => {
 				preferCurrentTab: true,
 				selfBrowserSurface: "include",
 				surfaceSwitching: "exclude",
-			} as any; // Chrome-specific properties not in standard types
+			} as MediaStreamConstraints; // Chrome-specific properties not in standard types
 			recordingStream =
 				await navigator.mediaDevices.getDisplayMedia(extendedConstraints);
 		} catch (_error) {

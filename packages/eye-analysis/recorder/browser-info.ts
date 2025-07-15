@@ -1,6 +1,6 @@
 // Browser and screen information collection utilities
 
-import type { WindowInfo, ScreenInfo } from "./types";
+import type { ScreenInfo, WindowInfo } from "./types";
 
 // Screen details interface for Window Management API
 export interface ScreenDetailed {
@@ -25,7 +25,7 @@ export interface ScreenDetails {
 
 // Cache for screen details to avoid repeated API calls
 let cachedScreenDetails: ScreenDetails | null = null;
-let screenDetailsPromise: Promise<ScreenDetails> | null = null;
+let screenDetailsPromise: Promise<ScreenDetails | null> | null = null;
 
 /**
  * Get current browser window information
@@ -108,9 +108,12 @@ export const getScreenDetails = async (): Promise<ScreenDetails | null> => {
 
 	screenDetailsPromise = (async () => {
 		try {
-			const screenDetails = await (window as any).getScreenDetails();
-			cachedScreenDetails = screenDetails;
-			return screenDetails;
+			const screenDetails = await window.getScreenDetails?.();
+			if (screenDetails) {
+				cachedScreenDetails = screenDetails;
+				return screenDetails;
+			}
+			return null;
 		} catch (error) {
 			console.warn("Failed to get screen details:", error);
 			return null;

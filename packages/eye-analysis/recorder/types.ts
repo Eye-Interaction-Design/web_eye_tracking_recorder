@@ -208,6 +208,27 @@ export interface ExperimentConfig {
 	enableEyeTracking?: boolean;
 }
 
+// Metadata JSON structure for export
+export interface MetadataJSON {
+	sessionInfo: SessionInfo;
+	metadata: {
+		totalDuration: number;
+		gazeDataPoints: number;
+		eventsCount: number;
+		chunksCount: number;
+		exportedAt: string;
+	};
+	videoChunks: Array<VideoChunkInfo & { note: string }>;
+	summary: {
+		totalGazePoints: number;
+		totalEvents: number;
+		totalVideoChunks: number;
+		sessionDuration: number;
+		recordingStartTime: string;
+		recordingEndTime: string | null;
+	};
+}
+
 export type RecorderAction =
 	| { type: "INITIALIZE" }
 	| { type: "CREATE_SESSION"; payload: SessionInfo }

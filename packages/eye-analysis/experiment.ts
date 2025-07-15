@@ -1,40 +1,37 @@
 // High-level experiment API that wraps core functionality
 // Integrates experiment-recorder.ts and demo-logic.ts functionality
 
-import type {
-	SessionConfig,
-	RecordingConfig,
-	SessionInfo,
-	SessionEvent,
-	GazePoint,
-	GazePointInput,
-	RecorderState,
-	ExperimentConfig,
-	CalibrationResult,
-	QualityMetrics,
-	EyeTrackingConfig,
-} from "./recorder/types";
-
 import {
-	initialize as coreInitialize,
+	addEvent as coreAddEvent,
+	addGazeData as coreAddGazeData,
 	createSession as coreCreateSession,
+	downloadSessionData as coreDownloadSessionData,
+	initialize as coreInitialize,
 	startRecording as coreStartRecording,
 	stopRecording as coreStopRecording,
-	addGazeData as coreAddGazeData,
-	addEvent as coreAddEvent,
-	getCurrentState,
 	getCurrentSession,
+	getCurrentState,
 	isRecording,
-	downloadSessionData as coreDownloadSessionData,
 } from "./recorder/core";
-
 import {
-	downloadSessionComponents as coreDownloadSessionComponents,
 	downloadSessionAsZip as coreDownloadSessionAsZip,
+	downloadSessionComponents as coreDownloadSessionComponents,
 	saveExperimentData as coreSaveExperimentData,
 } from "./recorder/export";
-
 import { subscribe } from "./recorder/state";
+import type {
+	CalibrationResult,
+	ExperimentConfig,
+	EyeTrackingConfig,
+	GazePoint,
+	GazePointInput,
+	QualityMetrics,
+	RecorderState,
+	RecordingConfig,
+	SessionConfig,
+	SessionEvent,
+	SessionInfo,
+} from "./recorder/types";
 
 // Callback types for experiment API
 export type GazeDataCallback = (gazePoint: GazePoint) => void;

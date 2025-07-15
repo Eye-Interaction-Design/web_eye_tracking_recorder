@@ -1,23 +1,23 @@
-import type {
-	GazePoint,
-	EyeTrackingConfig,
-	CalibrationResult,
-	WindowInfo,
-	EyeData,
-} from "../types";
-import { saveGazeData } from "./database";
 import {
-	getBrowserWindowInfo,
-	getScreenInfo,
-	convertScreenToWindowCoordinatesEnhanced,
-} from "../utils";
-import {
-	getStore,
 	addToGazeBuffer,
 	clearGazeBuffer,
-	emitGazeData,
 	emitCalibrationResult,
+	emitGazeData,
+	getStore,
 } from "../store";
+import type {
+	CalibrationResult,
+	EyeData,
+	EyeTrackingConfig,
+	GazePoint,
+	WindowInfo,
+} from "../types";
+import {
+	convertScreenToWindowCoordinatesEnhanced,
+	getBrowserWindowInfo,
+	getScreenInfo,
+} from "../utils";
+import { saveGazeData } from "./database";
 
 interface GazeTrackingState {
 	websocket: WebSocket | null;

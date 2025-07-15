@@ -1,6 +1,6 @@
 // State management with subscriber pattern (React-friendly)
 
-import type { RecorderState, StateSubscriber, RecorderAction } from "./types";
+import type { RecorderAction, RecorderState, StateSubscriber } from "./types";
 
 // Initial state
 const getInitialState = (): RecorderState => ({

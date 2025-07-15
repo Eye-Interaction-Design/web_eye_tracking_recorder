@@ -1,0 +1,13 @@
+{
+  "files": {
+    "ignoreUnknown": true,
+    "includes": ["**"],
+    "experimentalScannerIgnores": ["node_modules", "dist"]
+  },
+  "linter": {
+    "includes": ["**", "!dist/**", "!node_modules/**"]
+  },
+  "formatter": {
+    "includes": ["**", "!dist/**", "!node_modules/**"]
+  }
+}

@@ -68,7 +68,7 @@ export const safeExecute = <T>(
 /**
  * Create a safe API wrapper that works in SSR
  */
-export const createSSRSafeAPI = <T extends Record<string, any>>(
+export const createSSRSafeAPI = <T extends Record<string, unknown>>(
 	browserAPI: T,
 	fallbackAPI?: Partial<T>,
 ): T => {
@@ -83,7 +83,7 @@ export const createSSRSafeAPI = <T extends Record<string, any>>(
 		const original = browserAPI[key];
 
 		if (typeof original === "function") {
-			ssrSafeAPI[key] = ((...args: any[]) => {
+			(ssrSafeAPI as Record<string, unknown>)[key] = (...args: unknown[]) => {
 				console.warn(
 					`Function ${key} called in SSR environment. ` +
 						`This function is browser-only and will not execute.`,
@@ -106,9 +106,9 @@ export const createSSRSafeAPI = <T extends Record<string, any>>(
 					return false;
 				}
 				return Promise.resolve();
-			}) as any;
+			};
 		} else {
-			ssrSafeAPI[key] = (fallbackAPI?.[key] ?? null) as any;
+			(ssrSafeAPI as Record<string, unknown>)[key] = fallbackAPI?.[key] ?? null;
 		}
 	}
 
