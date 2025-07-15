@@ -1,9 +1,9 @@
 // React components for Web Eye Tracking Recorder
 
+import type { RecordingConfig, SessionConfig } from "eye-analysis"
 import React, { useState } from "react"
 import { useEyeTrackerContext } from "./context"
 import { useMouseGazeTracking } from "./hooks"
-import type { SessionConfig, RecordingConfig } from "eye-analysis"
 
 interface RecordingControlsProps {
   participantId?: string

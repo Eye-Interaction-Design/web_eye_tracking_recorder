@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
-import { renderHook, act } from "@testing-library/react"
-import { useRecorderState, useRecording, useGazeTracking } from "../hooks"
+import { act, renderHook } from "@testing-library/react"
 import * as eyeAnalysis from "eye-analysis"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+import { useGazeTracking, useRecorderState, useRecording } from "../hooks"
 
 // Mock eye-analysis module
 vi.mock("eye-analysis")
@@ -83,6 +83,7 @@ describe("React Hooks", () => {
       const sessionConfig = {
         participantId: "test-participant",
         experimentType: "test-experiment",
+        sessionId: undefined,
       }
 
       let sessionId: string = ""
@@ -90,10 +91,12 @@ describe("React Hooks", () => {
         sessionId = await result.current.createSession(sessionConfig)
       })
 
-      expect(eyeAnalysis.createSession).toHaveBeenCalledWith(
-        sessionConfig,
-        undefined,
-      )
+      expect(eyeAnalysis.createSession).toHaveBeenCalledWith({
+        participantId: sessionConfig.participantId,
+        experimentType: sessionConfig.experimentType,
+        sessionId: sessionConfig.sessionId,
+        recording: undefined,
+      })
       expect(sessionId).toBe(mockSessionId)
     })
 
@@ -122,7 +125,10 @@ describe("React Hooks", () => {
     })
 
     it("should stop recording", async () => {
-      vi.mocked(eyeAnalysis.stopRecording).mockResolvedValue(null)
+      vi.mocked(eyeAnalysis.stopRecording).mockResolvedValue({
+        sessionId: "test-session",
+        sessionInfo: null,
+      })
       vi.mocked(eyeAnalysis.getCurrentState).mockReturnValue({
         status: "idle" as const,
         isRecording: false,

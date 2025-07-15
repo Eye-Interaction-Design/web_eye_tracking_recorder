@@ -25,8 +25,6 @@ vi.mock("eye-analysis", () => ({
   })),
   isRecording: vi.fn(() => false),
   getCurrentSession: vi.fn(() => null),
-  downloadSessionAsZip: vi.fn(),
-  saveExperimentData: vi.fn(),
 }))
 
 // Mock React

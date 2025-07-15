@@ -13,7 +13,7 @@ import type {
   WindowInfo,
 } from "../types"
 import {
-  convertScreenToWindowCoordinatesEnhanced,
+  convertScreenToWindowCoordinates,
   getBrowserWindowInfo,
   getScreenInfo,
 } from "../utils"
@@ -228,7 +228,7 @@ const parseGazeData = async (data: unknown): Promise<GazePoint | null> => {
 
   const windowInfo = getBrowserWindowInfo()
   const screenInfo = getScreenInfo()
-  const windowCoords = await convertScreenToWindowCoordinatesEnhanced(
+  const windowCoords = convertScreenToWindowCoordinates(
     gazeData.screenX,
     gazeData.screenY,
     windowInfo,
@@ -261,7 +261,7 @@ const parseEyeData = async (
   eyeData: Record<string, unknown>,
   windowInfo: WindowInfo,
 ): Promise<EyeData> => {
-  const screenCoords = await convertScreenToWindowCoordinatesEnhanced(
+  const screenCoords = convertScreenToWindowCoordinates(
     (eyeData?.screenX as number) || 0,
     (eyeData?.screenY as number) || 0,
     windowInfo,

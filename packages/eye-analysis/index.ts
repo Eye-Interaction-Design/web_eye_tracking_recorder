@@ -10,39 +10,20 @@ export type {
 export {
   addExperimentEvent,
   addGazeData,
-  connectToEyeTrackingServer,
-  createExperimentSession,
-  disconnectFromEyeTrackingServer,
-  downloadSessionAsZip,
-  downloadSessionComponents,
-  // Download and export
-  downloadSessionJSON,
-  // Utilities
-  formatDuration,
-  generateTimestamp,
-  getCurrentExperimentSession,
-  getCurrentExperimentState,
-  getCurrentEyeTrackingServerUrl,
-  getTrackingMode,
-  // Core experiment functions
-  initializeExperiment,
-  isExperimentRecording,
-  isEyeTrackingConnected,
-  isMouseTrackingActive,
-  isValidWebSocketUrl,
-  onCalibration,
-  // Callbacks
+  createSession,
+  type DownloadSessionOptions,
+  downloadSession,
+  downloadSessionData,
+  getCurrentSession,
+  getCurrentState,
+  initialize,
+  isRecording,
   onGazeData,
   onSessionEvent,
+  onStateChanged,
   recordTaskInteraction,
-  saveExperimentData,
-  startExperiment,
-  // Tracking modes
-  startMouseTracking,
-  stopExperiment,
-  stopMouseTracking,
-  // State management
-  subscribeToExperiment,
+  startRecording,
+  stopRecording,
 } from "./experiment"
 // Browser utilities
 export {
@@ -56,33 +37,30 @@ export {
 export {
   addEvent,
   addGazeData as coreAddGazeData,
-  createSession,
+  createSession as coreCreateSession,
   downloadCompleteSession,
-  downloadSessionData,
+  downloadSessionData as coreDownloadSessionData,
   exportSessionData,
-  getCurrentSession,
-  getCurrentState,
-  initialize,
-  isRecording,
+  getCurrentSession as coreGetCurrentSession,
+  getCurrentState as coreGetCurrentState,
+  initialize as coreInitialize,
+  isRecording as coreIsRecording,
   reset,
-  startRecording,
-  stopRecording,
+  startRecording as coreStartRecording,
+  stopRecording as coreStopRecording,
 } from "./recorder/core"
 // Export types for download options
-export type { DownloadOptions } from "./recorder/export"
 // Export utilities (for advanced users)
 export {
   createMetadataJSON,
   createSessionSummaryText,
+  type DownloadSessionOptions as CoreDownloadSessionOptions,
   downloadCompleteSessionData,
   downloadFile,
-  downloadSessionAsZip as coreDownloadSessionAsZip,
-  downloadSessionComponents as coreDownloadSessionComponents,
+  downloadSession as coreDownloadSession,
   eventsToCSV,
   exportExperimentDataset,
   gazeDataToCSV,
-  getSessionComponents,
-  saveExperimentData as coreSaveExperimentData,
 } from "./recorder/export"
 // SSR utilities
 export {
@@ -140,6 +118,24 @@ export type {
   VideoChunkInfo,
   WindowInfo,
 } from "./recorder/types"
+// Tracking utilities
+export {
+  connectToEyeTrackingServer,
+  disconnectFromEyeTrackingServer,
+  getCurrentEyeTrackingServerUrl,
+  getTrackingMode,
+  isEyeTrackingConnected,
+  isMouseTrackingActive,
+  onCalibration,
+  startMouseTracking,
+  stopMouseTracking,
+} from "./tracking"
+// Utility functions
+export {
+  formatDuration,
+  generateTimestamp,
+  isValidWebSocketUrl,
+} from "./utils"
 
 // Note: React integration is available as a separate package:
 // npm install @web-eye-tracking-recorder/react

@@ -5,18 +5,16 @@ import {
   addEvent as coreAddEvent,
   addGazeData as coreAddGazeData,
   createSession as coreCreateSession,
-  downloadSessionData as coreDownloadSessionData,
   initialize as coreInitialize,
   startRecording as coreStartRecording,
   stopRecording as coreStopRecording,
-  getCurrentSession,
-  getCurrentState,
-  isRecording,
+  isRecording as getCoreRecording,
+  getCurrentSession as getCoreSession,
+  getCurrentState as getCoreState,
 } from "./recorder/core"
 import {
-  downloadSessionAsZip as coreDownloadSessionAsZip,
-  downloadSessionComponents as coreDownloadSessionComponents,
-  saveExperimentData as coreSaveExperimentData,
+  downloadSession as coreDownloadSession,
+  type DownloadSessionOptions,
 } from "./recorder/export"
 import { subscribe } from "./recorder/state"
 import type {
@@ -42,18 +40,10 @@ export type CalibrationCallback = (result: CalibrationResult) => void
 interface ExperimentState {
   onGazeDataCallback?: GazeDataCallback
   onSessionEventCallback?: SessionEventCallback
-  onCalibrationCallback?: CalibrationCallback
   eyeTrackingServerUrl?: string
-  mouseTrackingActive: boolean
-  eyeTrackingConnected: boolean
-  mouseTrackingCleanup?: () => void
-  eyeTrackingCleanup?: () => void
 }
 
-const experimentState: ExperimentState = {
-  mouseTrackingActive: false,
-  eyeTrackingConnected: false,
-}
+const experimentState: ExperimentState = {}
 
 // Enhanced gaze data handler that triggers callbacks
 const handleGazeData = (gazePoint: GazePoint) => {
@@ -72,9 +62,7 @@ const handleSessionEvent = (event: SessionEvent) => {
 /**
  * Initialize the experiment system
  */
-export const initializeExperiment = async (
-  config?: ExperimentConfig,
-): Promise<void> => {
+export const initialize = async (config?: ExperimentConfig): Promise<void> => {
   await coreInitialize()
 
   // Store eye tracking server URL if provided
@@ -86,7 +74,7 @@ export const initializeExperiment = async (
 /**
  * Create a new experiment session
  */
-export const createExperimentSession = async (
+export const createSession = async (
   config: ExperimentConfig,
 ): Promise<string> => {
   const sessionConfig: SessionConfig = {
@@ -110,7 +98,7 @@ export const createExperimentSession = async (
 /**
  * Start experiment recording with automatic gaze tracking setup
  */
-export const startExperiment = async (config?: {
+export const startRecording = async (config?: {
   eyeTrackingServerUrl?: string
 }): Promise<void> => {
   await coreStartRecording()
@@ -119,6 +107,12 @@ export const startExperiment = async (config?: {
     config?.eyeTrackingServerUrl || experimentState.eyeTrackingServerUrl
 
   // Set up gaze tracking - either real eye tracking or mouse simulation
+  const {
+    isValidWebSocketUrl,
+    connectToEyeTrackingServer,
+    startMouseTracking,
+  } = await import("./tracking")
+
   if (serverUrl && isValidWebSocketUrl(serverUrl)) {
     await connectToEyeTrackingServer(serverUrl)
   } else {
@@ -129,10 +123,14 @@ export const startExperiment = async (config?: {
 /**
  * Stop experiment recording
  */
-export const stopExperiment = async (): Promise<{
+export const stopRecording = async (): Promise<{
   sessionId: string
   sessionInfo: SessionInfo | null
 }> => {
+  const { stopMouseTracking, disconnectFromEyeTrackingServer } = await import(
+    "./tracking"
+  )
+
   stopMouseTracking()
   disconnectFromEyeTrackingServer()
 
@@ -202,16 +200,9 @@ export const onSessionEvent = (callback: SessionEventCallback): void => {
 }
 
 /**
- * Set calibration callback
- */
-export const onCalibration = (callback: CalibrationCallback): void => {
-  experimentState.onCalibrationCallback = callback
-}
-
-/**
  * Subscribe to experiment state changes
  */
-export const subscribeToExperiment = (
+export const onStateChanged = (
   callback: (state: RecorderState) => void,
 ): (() => void) => {
   return subscribe(callback)
@@ -220,346 +211,67 @@ export const subscribeToExperiment = (
 /**
  * Get current experiment state
  */
-export const getCurrentExperimentState = (): RecorderState => {
-  return getCurrentState()
+export const getCurrentState = (): RecorderState => {
+  return getCoreState()
 }
 
 /**
  * Get current experiment session
  */
-export const getCurrentExperimentSession = (): SessionInfo | null => {
-  return getCurrentSession()
+export const getCurrentSession = (): SessionInfo | null => {
+  return getCoreSession()
 }
 
 /**
  * Check if experiment is currently recording
  */
-export const isExperimentRecording = (): boolean => {
-  return isRecording()
+export const isRecording = (): boolean => {
+  return getCoreRecording()
 }
 
-// Download and export functions (demo-logic.ts integration)
+// Download and export functions with improved interface
 
 /**
- * Download session data as JSON
+ * Re-export DownloadSessionOptions type
  */
-export const downloadSessionJSON = async (
+export type { DownloadSessionOptions } from "./recorder/export"
+
+/**
+ * Download session data with flexible options
+ */
+export const downloadSession = async (
   sessionId?: string,
+  options: DownloadSessionOptions = {},
 ): Promise<void> => {
   const targetSessionId = sessionId || getCurrentSession()?.sessionId
   if (!targetSessionId) throw new Error("No session available")
 
-  await coreDownloadSessionData(targetSessionId)
+  await coreDownloadSession(targetSessionId, options)
 }
 
+// Legacy functions for backward compatibility
+
 /**
- * Download session components (JSON + CSV)
+ * Download session data as JSON (legacy)
  */
-export const downloadSessionComponents = async (
+export const downloadSessionData = async (
   sessionId?: string,
 ): Promise<void> => {
-  const targetSessionId = sessionId || getCurrentSession()?.sessionId
-  if (!targetSessionId) throw new Error("No session available")
-
-  await coreDownloadSessionComponents(targetSessionId, {
-    includeMetadata: true,
-    includeGazeData: true,
-    includeEvents: true,
-    includeVideo: true,
+  await downloadSession(sessionId, {
+    include: { metadata: true, gaze: false, events: false, video: false },
+    asZip: false,
   })
 }
 
 /**
- * Download session as ZIP
+ * Download session components (legacy)
  */
-export const downloadSessionAsZip = async (
-  sessionId?: string,
-): Promise<void> => {
-  const targetSessionId = sessionId || getCurrentSession()?.sessionId
-  if (!targetSessionId) throw new Error("No session available")
-
-  await coreDownloadSessionAsZip(targetSessionId, {
-    includeMetadata: true,
-    includeGazeData: true,
-    includeEvents: true,
-    includeVideo: true,
-  })
-}
-
-/**
- * Save experiment data with metadata
- */
-export const saveExperimentData = async (
-  experimentMetadata?: Record<string, unknown>,
-  sessionId?: string,
-): Promise<void> => {
-  const targetSessionId = sessionId || getCurrentSession()?.sessionId
-  if (!targetSessionId) throw new Error("No session available")
-
-  await coreSaveExperimentData(targetSessionId, {
-    completedAt: new Date().toISOString(),
-    ...experimentMetadata,
-  })
-}
 
 // Mouse tracking simulation (from demo-logic.ts)
 
-/**
- * Start mouse tracking for gaze simulation
- */
-export const startMouseTracking = (): void => {
-  if (experimentState.mouseTrackingActive) return
-
-  experimentState.mouseTrackingActive = true
-
-  const handleMouseMove = (event: MouseEvent) => {
-    if (!experimentState.mouseTrackingActive) return
-
-    // Generate simulated gaze data from mouse position
-    const gazePoint: GazePointInput = {
-      screenX: event.screenX,
-      screenY: event.screenY,
-      confidence: 0.8 + Math.random() * 0.2,
-      leftEye: {
-        screenX: event.screenX - 2 + Math.random() * 2,
-        screenY: event.screenY + Math.random() * 2,
-        pupilSize: 3 + Math.random() * 2,
-      },
-      rightEye: {
-        screenX: event.screenX + 2 + Math.random() * 2,
-        screenY: event.screenY + Math.random() * 2,
-        pupilSize: 3 + Math.random() * 2,
-      },
-    }
-
-    addGazeData(gazePoint).catch(console.error)
-  }
-
-  document.addEventListener("mousemove", handleMouseMove)
-
-  experimentState.mouseTrackingCleanup = () => {
-    document.removeEventListener("mousemove", handleMouseMove)
-    experimentState.mouseTrackingCleanup = undefined
-  }
-}
-
-/**
- * Stop mouse tracking
- */
-export const stopMouseTracking = (): void => {
-  experimentState.mouseTrackingActive = false
-  if (experimentState.mouseTrackingCleanup) {
-    experimentState.mouseTrackingCleanup()
-  }
-}
-
-/**
- * Check if mouse tracking is active
- */
-export const isMouseTrackingActive = (): boolean => {
-  return experimentState.mouseTrackingActive
-}
-
 // Eye tracking server connection (from demo-logic.ts)
 
-/**
- * Validate WebSocket URL
- */
-export const isValidWebSocketUrl = (url: string): boolean => {
-  if (!url || url.trim() === "") return false
-
-  try {
-    const urlObj = new URL(url)
-    return urlObj.protocol === "ws:" || urlObj.protocol === "wss:"
-  } catch {
-    return false
-  }
-}
-
-/**
- * Connect to eye tracking server
- */
-export const connectToEyeTrackingServer = async (
-  serverUrl: string,
-): Promise<void> => {
-  if (experimentState.eyeTrackingConnected) {
-    disconnectFromEyeTrackingServer()
-  }
-
-  return new Promise((resolve, reject) => {
-    try {
-      const websocket = new WebSocket(serverUrl)
-
-      const timeout = setTimeout(() => {
-        websocket.close()
-        reject(new Error("Connection timeout"))
-      }, 10000)
-
-      websocket.onopen = () => {
-        clearTimeout(timeout)
-        experimentState.eyeTrackingConnected = true
-        experimentState.eyeTrackingServerUrl = serverUrl
-        console.log("Connected to eye tracking server:", serverUrl)
-        resolve()
-      }
-
-      websocket.onerror = (error) => {
-        clearTimeout(timeout)
-        console.error("WebSocket error:", error)
-        reject(new Error("Failed to connect to eye tracking server"))
-      }
-
-      websocket.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data)
-          handleEyeTrackingData(data)
-        } catch (error) {
-          console.error("Failed to parse eye tracking data:", error)
-        }
-      }
-
-      websocket.onclose = () => {
-        experimentState.eyeTrackingConnected = false
-        console.log("Disconnected from eye tracking server")
-      }
-
-      experimentState.eyeTrackingCleanup = () => {
-        websocket.close()
-      }
-    } catch (error) {
-      reject(error)
-    }
-  })
-}
-
-/**
- * Disconnect from eye tracking server
- */
-export const disconnectFromEyeTrackingServer = (): void => {
-  if (experimentState.eyeTrackingCleanup) {
-    experimentState.eyeTrackingCleanup()
-    experimentState.eyeTrackingCleanup = undefined
-  }
-
-  experimentState.eyeTrackingConnected = false
-  experimentState.eyeTrackingServerUrl = undefined
-}
-
-/**
- * Check if eye tracking is connected
- */
-export const isEyeTrackingConnected = (): boolean => {
-  return experimentState.eyeTrackingConnected
-}
-
-/**
- * Get current eye tracking server URL
- */
-export const getCurrentEyeTrackingServerUrl = (): string | undefined => {
-  return experimentState.eyeTrackingServerUrl
-}
-
-/**
- * Get current tracking mode
- */
-export const getTrackingMode = ():
-  | "eye-tracking"
-  | "mouse-simulation"
-  | "idle" => {
-  if (experimentState.eyeTrackingConnected) {
-    return "eye-tracking"
-  } else if (experimentState.mouseTrackingActive) {
-    return "mouse-simulation"
-  } else {
-    return "idle"
-  }
-}
-
-// Handle eye tracking data from server
-const handleEyeTrackingData = async (data: unknown): Promise<void> => {
-  if (!data || typeof data !== "object") {
-    return
-  }
-
-  const messageData = data as Record<string, unknown>
-
-  if (messageData.type === "gaze_data") {
-    const gazePoint: GazePointInput = {
-      screenX: (messageData.screenX as number) || 0,
-      screenY: (messageData.screenY as number) || 0,
-      confidence: (messageData.confidence as number) || 0.5,
-      leftEye: {
-        screenX:
-          ((messageData.leftEye as Record<string, unknown>)
-            ?.screenX as number) ||
-          (messageData.screenX as number) ||
-          0,
-        screenY:
-          ((messageData.leftEye as Record<string, unknown>)
-            ?.screenY as number) ||
-          (messageData.screenY as number) ||
-          0,
-        pupilSize:
-          ((messageData.leftEye as Record<string, unknown>)
-            ?.pupilSize as number) || 3,
-      },
-      rightEye: {
-        screenX:
-          ((messageData.rightEye as Record<string, unknown>)
-            ?.screenX as number) ||
-          (messageData.screenX as number) ||
-          0,
-        screenY:
-          ((messageData.rightEye as Record<string, unknown>)
-            ?.screenY as number) ||
-          (messageData.screenY as number) ||
-          0,
-        pupilSize:
-          ((messageData.rightEye as Record<string, unknown>)
-            ?.pupilSize as number) || 3,
-      },
-    }
-
-    try {
-      await addGazeData(gazePoint)
-    } catch (error) {
-      console.error("Failed to add gaze data:", error)
-    }
-  } else if (messageData.type === "calibration_result") {
-    const result = {
-      success: (messageData.success as boolean) || false,
-      accuracy: messageData.accuracy as number,
-      precision: messageData.precision as number,
-      errorMessage: messageData.errorMessage as string,
-      points: messageData.points as Array<{
-        x: number
-        y: number
-        accuracy: number
-      }>,
-    } as CalibrationResult
-    if (experimentState.onCalibrationCallback) {
-      experimentState.onCalibrationCallback(result)
-    }
-  }
-}
-
 // Utility functions
-
-/**
- * Format duration in seconds to MM:SS format
- */
-export const formatDuration = (seconds: number): string => {
-  const mins = Math.floor(seconds / 60)
-  const secs = seconds % 60
-  return `${mins}:${secs.toString().padStart(2, "0")}`
-}
-
-/**
- * Generate timestamp string
- */
-export const generateTimestamp = (): string => {
-  return new Date().toLocaleTimeString()
-}
 
 /**
  * Record task interaction event

@@ -4,9 +4,9 @@ import { strToU8, zipSync } from "fflate"
 import { getSessionData, getVideoChunkData } from "./storage"
 import type {
   GazePoint,
+  MetadataJSON,
   SessionData,
   SessionEvent,
-  MetadataJSON,
 } from "./types"
 
 /**
@@ -166,51 +166,154 @@ export const downloadFile = (
 }
 
 /**
- * Download options for selective file download
+ * Export all session data for research purposes
  */
-export interface DownloadOptions {
-  includeMetadata?: boolean
-  includeGazeData?: boolean
-  includeEvents?: boolean
-  includeVideo?: boolean
-  videoFormat?: "webm" | "mp4"
+export const exportExperimentDataset = async (
+  sessionIds: string[],
+  options: DownloadSessionOptions = {},
+): Promise<void> => {
+  const allFiles: Record<string, Uint8Array> = {}
+
+  // Default include options
+  const includeOptions = {
+    metadata: true,
+    gaze: true,
+    events: true,
+    video: true,
+    ...options.include,
+  }
+
+  for (const sessionId of sessionIds) {
+    const sessionFolder = `session_${sessionId}`
+    const filesToDownload = await collectSessionFiles(sessionId, {
+      includeOptions,
+      prefix: sessionFolder,
+    })
+
+    // Add files to the ZIP with session folder prefix
+    for (const file of filesToDownload) {
+      if (file.content instanceof Blob) {
+        allFiles[file.filename] = new Uint8Array(
+          await file.content.arrayBuffer(),
+        )
+      } else {
+        allFiles[file.filename] = strToU8(file.content)
+      }
+    }
+  }
+
+  // Create combined dataset summary
+  const datasetSummary = {
+    exportedAt: new Date().toISOString(),
+    totalSessions: sessionIds.length,
+    sessionIds: sessionIds,
+    description: "Combined dataset from Eye Analysis",
+    includeOptions: includeOptions,
+  }
+  allFiles["dataset-summary.json"] = strToU8(
+    JSON.stringify(datasetSummary, null, 2),
+  )
+
+  // Create ZIP
+  const zipped = zipSync(allFiles)
+  const zipBlob = new Blob([zipped], { type: "application/zip" })
+
+  const filename = `experiment-dataset-${new Date().toISOString().split("T")[0]}.zip`
+  downloadFile(zipBlob, filename, "application/zip")
 }
 
 /**
- * Get session data as individual downloadable components
+ * Download session options interface
  */
-export const getSessionComponents = async (
+export interface DownloadSessionOptions {
+  include?: {
+    metadata?: boolean
+    gaze?: boolean
+    events?: boolean
+    video?: boolean
+  }
+  asZip?: boolean
+  prefix?: string
+}
+
+/**
+ * Generate session name for files
+ */
+const getSessionName = (sessionId: string): string => {
+  return `session-${sessionId}-${new Date().toISOString().split("T")[0]}`
+}
+
+/**
+ * Shared function to collect files for download with optional prefix
+ */
+const collectSessionFiles = async (
   sessionId: string,
-): Promise<{
-  metadata: string
-  gazeDataCSV: string | null
-  eventsCSV: string | null
-  videoBlob: Blob | null
-  sessionName: string
-  videoFormat: string
-}> => {
+  options: {
+    includeOptions: {
+      metadata: boolean
+      gaze: boolean
+      events: boolean
+      video: boolean
+    }
+    prefix?: string
+  },
+): Promise<
+  Array<{
+    content: string | Blob
+    filename: string
+    mimeType: string
+  }>
+> => {
   const sessionData = await getSessionData(sessionId)
-  const sessionName = `session-${sessionId}-${new Date().toISOString().split("T")[0]}`
+  const sessionName = getSessionName(sessionId)
+  const filesToDownload: Array<{
+    content: string | Blob
+    filename: string
+    mimeType: string
+  }> = []
 
-  // 1. Metadata JSON
-  const metadata = createMetadataJSON(sessionData)
-  const metadataString = JSON.stringify(metadata, null, 2)
+  const getFilename = (baseName: string) => {
+    if (options.prefix) {
+      return `${options.prefix}/${baseName}`
+    }
+    return `${sessionName}-${baseName}`
+  }
 
-  // 2. Gaze data CSV
-  const gazeDataCSV =
-    sessionData.gazeData.length > 0 ? gazeDataToCSV(sessionData.gazeData) : null
+  // Add metadata if requested
+  if (options.includeOptions.metadata) {
+    const metadata = createMetadataJSON(sessionData)
+    filesToDownload.push({
+      content: JSON.stringify(metadata, null, 2),
+      filename: getFilename("metadata.json"),
+      mimeType: "application/json",
+    })
+  }
 
-  // 3. Events CSV
-  const eventsCSV =
-    sessionData.events.length > 0 ? eventsToCSV(sessionData.events) : null
+  // Add gaze data if requested and available
+  if (options.includeOptions.gaze && sessionData.gazeData.length > 0) {
+    const gazeDataCSV = gazeDataToCSV(sessionData.gazeData)
+    filesToDownload.push({
+      content: gazeDataCSV,
+      filename: getFilename("gaze-data.csv"),
+      mimeType: "text/csv",
+    })
+  }
 
-  // 4. Video blob with format detection
-  let videoBlob: Blob | null = null
-  let videoFormat = "webm" // Default format
+  // Add events if requested and available
+  if (options.includeOptions.events && sessionData.events.length > 0) {
+    const eventsCSV = eventsToCSV(sessionData.events)
+    filesToDownload.push({
+      content: eventsCSV,
+      filename: getFilename("events.csv"),
+      mimeType: "text/csv",
+    })
+  }
 
-  if (sessionData.videoChunks.length > 0) {
+  // Add video if requested and available
+  if (options.includeOptions.video && sessionData.videoChunks.length > 0) {
     try {
       const videoBlobs: Blob[] = []
+      let videoFormat = "webm" // Default format
 
       for (const chunk of sessionData.videoChunks) {
         const chunkData = await getVideoChunkData(chunk.id)
@@ -231,206 +334,76 @@ export const getSessionComponents = async (
           sessionData.session.config.videoFormat || videoFormat
         const mimeType =
           sessionVideoFormat === "mp4" ? "video/mp4" : "video/webm"
-        videoBlob = new Blob(videoBlobs, { type: mimeType })
-        videoFormat = sessionVideoFormat
+        const videoBlob = new Blob(videoBlobs, { type: mimeType })
+
+        filesToDownload.push({
+          content: videoBlob,
+          filename: getFilename(`recording.${sessionVideoFormat}`),
+          mimeType: mimeType,
+        })
       }
     } catch (error) {
       console.error("Failed to prepare video data:", error)
     }
   }
 
-  return {
-    metadata: metadataString,
-    gazeDataCSV,
-    eventsCSV,
-    videoBlob,
-    sessionName,
-    videoFormat,
-  }
+  return filesToDownload
 }
 
 /**
- * Download individual components based on options
+ * Download session data with flexible options
  */
-export const downloadSessionComponents = async (
+export const downloadSession = async (
   sessionId: string,
-  options: DownloadOptions = {},
+  options: DownloadSessionOptions = {},
 ): Promise<void> => {
-  const {
-    includeMetadata = true,
-    includeGazeData = true,
-    includeEvents = true,
-    includeVideo = true,
-    videoFormat: _videoFormat = "webm",
-  } = options
-
-  const components = await getSessionComponents(sessionId)
-
-  // Download metadata JSON
-  if (includeMetadata) {
-    downloadFile(
-      components.metadata,
-      `${components.sessionName}-metadata.json`,
-      "application/json",
-    )
+  // Default all include options to true
+  const includeOptions = {
+    metadata: true,
+    gaze: true,
+    events: true,
+    video: true,
+    ...options.include,
   }
 
-  // Download gaze data CSV
-  if (includeGazeData && components.gazeDataCSV) {
-    downloadFile(
-      components.gazeDataCSV,
-      `${components.sessionName}-gaze-data.csv`,
-      "text/csv",
-    )
-  }
+  // Default asZip to false
+  const asZip = options.asZip ?? false
 
-  // Download events CSV
-  if (includeEvents && components.eventsCSV) {
-    downloadFile(
-      components.eventsCSV,
-      `${components.sessionName}-events.csv`,
-      "text/csv",
-    )
-  }
-
-  // Download video
-  if (includeVideo && components.videoBlob) {
-    const videoExtension = components.videoFormat
-    const videoMimeType =
-      components.videoFormat === "mp4" ? "video/mp4" : "video/webm"
-
-    downloadFile(
-      components.videoBlob,
-      `${components.sessionName}-recording.${videoExtension}`,
-      videoMimeType,
-    )
-  }
-}
-
-/**
- * Download session data as ZIP file
- */
-export const downloadSessionAsZip = async (
-  sessionId: string,
-  options: DownloadOptions = {},
-): Promise<void> => {
-  const {
-    includeMetadata = true,
-    includeGazeData = true,
-    includeEvents = true,
-    includeVideo = true,
-    videoFormat: _videoFormat = "webm",
-  } = options
-
-  const components = await getSessionComponents(sessionId)
-  const files: Record<string, Uint8Array> = {}
-
-  // Add metadata JSON
-  if (includeMetadata) {
-    files["metadata.json"] = strToU8(components.metadata)
-  }
-
-  // Add gaze data CSV
-  if (includeGazeData && components.gazeDataCSV) {
-    files["gaze-data.csv"] = strToU8(components.gazeDataCSV)
-  }
-
-  // Add events CSV
-  if (includeEvents && components.eventsCSV) {
-    files["events.csv"] = strToU8(components.eventsCSV)
-  }
-
-  // Add video
-  if (includeVideo && components.videoBlob) {
-    const videoExtension = components.videoFormat
-    const videoData = new Uint8Array(await components.videoBlob.arrayBuffer())
-    files[`recording.${videoExtension}`] = videoData
-  }
-
-  // Create ZIP
-  const zipped = zipSync(files)
-  const zipBlob = new Blob([zipped], { type: "application/zip" })
-
-  downloadFile(zipBlob, `${components.sessionName}.zip`, "application/zip")
-}
-
-/**
- * Save experiment data and automatically download as ZIP
- */
-export const saveExperimentData = async (
-  sessionId: string,
-  experimentMetadata?: Record<string, unknown>,
-): Promise<void> => {
-  const sessionData = await getSessionData(sessionId)
-
-  // Update session with experiment completion
-  const updatedSession = {
-    ...sessionData.session,
-    experimentCompleted: true,
-    experimentMetadata: experimentMetadata || {},
-    completedAt: Date.now(),
-  }
-
-  // Save updated session
-  const { saveSession } = await import("./storage")
-  await saveSession(updatedSession)
-
-  // Automatically download as ZIP
-  await downloadSessionAsZip(sessionId, {
-    includeMetadata: true,
-    includeGazeData: true,
-    includeEvents: true,
-    includeVideo: true,
+  const filesToDownload = await collectSessionFiles(sessionId, {
+    includeOptions,
+    prefix: options.prefix,
   })
-}
 
-/**
- * Export all session data for research purposes
- */
-export const exportExperimentDataset = async (
-  sessionIds: string[],
-): Promise<void> => {
-  const allFiles: Record<string, Uint8Array> = {}
-
-  for (const sessionId of sessionIds) {
-    const components = await getSessionComponents(sessionId)
-    const sessionFolder = `session_${sessionId}`
-
-    // Add files with session folder prefix
-    if (components.metadata) {
-      allFiles[`${sessionFolder}/metadata.json`] = strToU8(components.metadata)
-    }
-    if (components.gazeDataCSV) {
-      allFiles[`${sessionFolder}/gaze-data.csv`] = strToU8(
-        components.gazeDataCSV,
-      )
-    }
-    if (components.eventsCSV) {
-      allFiles[`${sessionFolder}/events.csv`] = strToU8(components.eventsCSV)
-    }
-    if (components.videoBlob) {
-      const videoData = new Uint8Array(await components.videoBlob.arrayBuffer())
-      allFiles[`${sessionFolder}/recording.webm`] = videoData
-    }
+  // Download logic
+  if (filesToDownload.length === 0) {
+    console.warn("No files to download")
+    return
   }
 
-  // Create combined dataset summary
-  const datasetSummary = {
-    exportedAt: new Date().toISOString(),
-    totalSessions: sessionIds.length,
-    sessionIds: sessionIds,
-    description: "Combined dataset from Web Eye Tracking Recorder",
+  if (asZip) {
+    // Download as ZIP
+    const files: Record<string, Uint8Array> = {}
+    for (const file of filesToDownload) {
+      const filename = options.prefix
+        ? file.filename.split("/").pop() || file.filename
+        : file.filename.split("-").pop() || file.filename
+      const content =
+        file.content instanceof Blob
+          ? new Uint8Array(await file.content.arrayBuffer())
+          : strToU8(file.content)
+      files[filename] = content
+    }
+
+    const sessionName = getSessionName(sessionId)
+    const zipped = zipSync(files)
+    const zipBlob = new Blob([zipped], { type: "application/zip" })
+    downloadFile(zipBlob, `${sessionName}.zip`, "application/zip")
+  } else {
+    // Download as separate files
+    for (const file of filesToDownload) {
+      downloadFile(file.content, file.filename, file.mimeType)
+    }
   }
-  allFiles["dataset-summary.json"] = strToU8(
-    JSON.stringify(datasetSummary, null, 2),
-  )
-
-  // Create ZIP
-  const zipped = zipSync(allFiles)
-  const zipBlob = new Blob([zipped], { type: "application/zip" })
-
-  const filename = `experiment-dataset-${new Date().toISOString().split("T")[0]}.zip`
-  downloadFile(zipBlob, filename, "application/zip")
 }
 
 /**

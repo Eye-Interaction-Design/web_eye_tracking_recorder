@@ -1,14 +1,15 @@
 // React Context Provider for Web Eye Tracking Recorder
 
-import type React from "react"
-import { createContext, useContext } from "react"
-import type { ReactNode } from "react"
-import { useEyeTracker } from "./hooks"
 import type {
-  SessionConfig,
-  RecordingConfig,
+  DownloadSessionOptions,
   GazePointInput,
+  RecordingConfig,
+  SessionConfig,
 } from "eye-analysis"
+import type React from "react"
+import type { ReactNode } from "react"
+import { createContext, useContext } from "react"
+import { useEyeTracker } from "./hooks"
 
 interface EyeTrackerContextType {
   // State
@@ -53,7 +54,10 @@ interface EyeTrackerContextType {
   addEvent: (type: string, data?: Record<string, unknown>) => Promise<void>
 
   // Export
-  downloadSession: (sessionId?: string, options?: unknown) => Promise<void>
+  downloadSession: (
+    sessionId?: string,
+    options?: DownloadSessionOptions,
+  ) => Promise<void>
   saveExperiment: (
     sessionId?: string,
     experimentMetadata?: Record<string, unknown>,

@@ -1,15 +1,13 @@
 // React integration exports for Eye Analysis
 
-export * from "./hooks"
-export * from "./context"
-export * from "./components"
-
 // Re-export core types that are commonly used in React components
 export type {
-  SessionConfig,
-  RecordingConfig,
   GazePointInput,
   RecorderState,
+  RecordingConfig,
+  SessionConfig,
   SessionInfo,
-  DownloadOptions,
 } from "eye-analysis"
+export * from "./components"
+export * from "./context"
+export * from "./hooks"

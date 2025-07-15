@@ -1,23 +1,23 @@
 // React hooks for Eye Analysis
 
-import { useEffect, useState, useCallback, useRef } from "react"
 import {
-  initialize,
+  addEvent,
+  addGazeData,
   createSession,
+  type DownloadSessionOptions,
+  downloadSession,
+  type GazePointInput,
+  getCurrentSession,
+  getCurrentState,
+  initialize,
+  type RecorderState,
+  type RecordingConfig,
+  type SessionConfig,
   startRecording,
   stopRecording,
-  addGazeData,
-  addEvent,
   subscribe,
-  getCurrentState,
-  getCurrentSession,
-  downloadSessionAsZip,
-  saveExperimentData,
-  type SessionConfig,
-  type RecordingConfig,
-  type GazePointInput,
-  type RecorderState,
 } from "eye-analysis"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 /**
  * Hook for managing recorder state with automatic re-renders
@@ -62,7 +62,14 @@ export const useRecording = () => {
     ): Promise<string> => {
       try {
         setError(null)
-        return await createSession(config, recordingConfig)
+        // Convert to ExperimentConfig format
+        const experimentConfig = {
+          participantId: config.participantId,
+          experimentType: config.experimentType,
+          sessionId: config.sessionId,
+          recording: recordingConfig,
+        }
+        return await createSession(experimentConfig)
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Failed to create session",
@@ -166,33 +173,36 @@ export const useSessionExport = () => {
   const [isExporting, setIsExporting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const downloadSession = useCallback(async (sessionId?: string) => {
-    try {
-      setIsExporting(true)
-      setError(null)
+  const downloadSessionData = useCallback(
+    async (sessionId?: string, options?: DownloadSessionOptions) => {
+      try {
+        setIsExporting(true)
+        setError(null)
 
-      const currentSession = getCurrentSession()
-      const targetSessionId = sessionId || currentSession?.sessionId
+        const currentSession = getCurrentSession()
+        const targetSessionId = sessionId || currentSession?.sessionId
 
-      if (!targetSessionId) {
-        throw new Error("No session ID provided and no active session")
+        if (!targetSessionId) {
+          throw new Error("No session ID provided and no active session")
+        }
+
+        await downloadSession(targetSessionId, options)
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to download session",
+        )
+        throw err
+      } finally {
+        setIsExporting(false)
       }
-
-      await downloadSessionAsZip(targetSessionId)
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to download session",
-      )
-      throw err
-    } finally {
-      setIsExporting(false)
-    }
-  }, [])
+    },
+    [],
+  )
 
   const saveAndDownloadExperiment = useCallback(
     async (
       sessionId?: string,
-      experimentMetadata?: Record<string, unknown>,
+      _experimentMetadata?: Record<string, unknown>,
     ) => {
       try {
         setIsExporting(true)
@@ -205,7 +215,11 @@ export const useSessionExport = () => {
           throw new Error("No session ID provided and no active session")
         }
 
-        await saveExperimentData(experimentMetadata, targetSessionId)
+        // Download as ZIP by default for save experiment
+        await downloadSession(targetSessionId, {
+          include: { metadata: true, gaze: true, events: true, video: true },
+          asZip: true,
+        })
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Failed to save experiment data",
@@ -224,7 +238,7 @@ export const useSessionExport = () => {
     error,
 
     // Actions
-    downloadSession,
+    downloadSession: downloadSessionData,
     saveExperiment: saveAndDownloadExperiment,
   }
 }

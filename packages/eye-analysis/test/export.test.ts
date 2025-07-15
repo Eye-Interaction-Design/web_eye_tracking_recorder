@@ -6,9 +6,9 @@ import {
 } from "../recorder/export"
 import type {
   GazePoint,
+  MetadataJSON,
   SessionData,
   SessionEvent,
-  MetadataJSON,
 } from "../recorder/types"
 
 describe("Export Utilities", () => {
