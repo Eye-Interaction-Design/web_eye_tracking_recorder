@@ -1,7 +1,7 @@
 {
-  "name": "web-eye-tracking-recorder-vanilla-js-example",
+  "name": "eye-analysis-vanilla-js-example",
   "version": "1.0.0",
-  "description": "Vanilla JS example for web-eye-tracking-recorder library",
+  "description": "Vanilla JS example for Eye Analysis library",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,7 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "typescript": "^5"
+    "typescript": "^5",
+    "eye-analysis": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",

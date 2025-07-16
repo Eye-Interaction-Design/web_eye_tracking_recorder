@@ -19,12 +19,16 @@
     "test:core": "cd packages/eye-analysis && bun run test",
     "test:react": "cd packages/react && bun run test",
     "lint": "bun run lint:core && bun run lint:react",
+    "lint:fix": "bun run lint:core --write && bun run lint:react --write",
     "lint:core": "cd packages/eye-analysis && bun run lint",
     "lint:react": "cd packages/react && bun run lint",
     "format": "bun run format:core && bun run format:react",
     "format:core": "cd packages/eye-analysis && bun run format",
     "format:react": "cd packages/react && bun run format",
-    "install:all": "bun install && cd packages/eye-analysis && bun install && cd ../react && bun install"
+    "install:all": "bun install && cd packages/eye-analysis && bun install && cd ../react && bun install",
+    "publish:all": "bun run publish:core && bun run publish:react",
+    "publish:core": "cd packages/eye-analysis && npm publish",
+    "publish:react": "cd packages/react && npm publish"
   },
   "keywords": [
     "eye-tracking",
@@ -43,12 +47,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Eye-Interaction-Design/web-eye-tracking-recorder.git"
+    "url": "git+https://github.com/EyeXD/eye-analysis.web.git"
   },
   "bugs": {
-    "url": "https://github.com/Eye-Interaction-Design/web-eye-tracking-recorder/issues"
+    "url": "https://github.com/EyeXD/eye-analysis.web/issues"
   },
-  "homepage": "https://github.com/Eye-Interaction-Design/web-eye-tracking-recorder#readme",
+  "homepage": "https://github.com/EyeXD/eye-analysis.web#readme",
   "engines": {
     "node": ">=18.0.0"
   },

@@ -88,7 +88,7 @@ const captureScreen = async (): Promise<MediaStream> => {
   if (recordingState.config.captureEntireScreen) {
     return await navigator.mediaDevices.getDisplayMedia(constraints)
   } else {
-    // ブラウザウィンドウのみをキャプチャ
+    // Capture only browser window
     const stream = await navigator.mediaDevices.getDisplayMedia(constraints)
     return stream
   }

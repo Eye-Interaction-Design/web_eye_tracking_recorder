@@ -5,7 +5,7 @@ import type {
   GazePointInput,
   RecordingConfig,
   SessionConfig,
-} from "eye-analysis"
+} from "../eye-analysis/dist/types"
 import type React from "react"
 import type { ReactNode } from "react"
 import { createContext, useContext } from "react"

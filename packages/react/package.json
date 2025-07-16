@@ -1,6 +1,6 @@
 {
   "name": "@eye-analysis/react",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "React integration for Eye Analysis library",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -43,7 +43,22 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/shikibu9419/web-eye-tracking-recorder.git",
+    "url": "git+https://github.com/EyeXD/eye-analysis.web.git",
     "directory": "packages/react"
-  }
+  },
+  "bugs": {
+    "url": "https://github.com/EyeXD/eye-analysis.web/issues"
+  },
+  "homepage": "https://github.com/EyeXD/eye-analysis.web#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ]
 }

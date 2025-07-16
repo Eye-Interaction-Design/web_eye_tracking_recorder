@@ -1,17 +1,20 @@
 // Core types for the new simplified recorder
 
 export interface GazePoint {
-  systemTimestamp: number // 視線追跡システムのタイムスタンプ
-  browserTimestamp: number // ブラウザのperformance.now()
-  screenX: number // 画面全体基準のピクセル座標X
-  screenY: number // 画面全体基準のピクセル座標Y
-  windowX: number // ブラウザウィンドウ内座標X（計算値）
-  windowY: number // ブラウザウィンドウ内座標Y（計算値）
-  confidence: number // 信頼度 0.0-1.0
+  id: string
+  sessionId: string
+  systemTimestamp: number // Eye tracking system timestamp
+  browserTimestamp: number // Browser performance.now()
+  screenX: number // Screen-based pixel coordinate X
+  screenY: number // Screen-based pixel coordinate Y
+  contentX: number // Recording video coordinate X (calculated value)
+  contentY: number // Recording video coordinate Y (calculated value)
+  confidence: number // Confidence level 0.0-1.0
   leftEye: EyeData
   rightEye: EyeData
-  browserWindow: WindowInfo
-  screen: ScreenInfo
+
+  // Only for current-tab/browser-window cases
+  windowState?: WindowState
 }
 
 // Simplified input for addGazeData - missing fields will be auto-filled
@@ -31,17 +34,23 @@ export interface EyeDataInput {
   positionY?: number // Optional
   positionZ?: number // Optional
   pupilSize?: number // Optional
+  rotateX?: number // Optional - Gaze direction angle (rad)
+  rotateY?: number // Optional
+  rotateZ?: number // Optional
 }
 
 export interface EyeData {
-  screenX: number // 画面全体基準のピクセル座標X
-  screenY: number // 画面全体基準のピクセル座標Y
-  windowX: number // ブラウザウィンドウ内座標X（計算値）
-  windowY: number // ブラウザウィンドウ内座標Y（計算値）
-  positionX?: number // アイトラッカーを原点とした眼球の相対座標X（mm）
-  positionY?: number // アイトラッカーを原点とした眼球の相対座標Y（mm）
-  positionZ?: number // アイトラッカーを原点とした眼球の相対座標Z（mm）
-  pupilSize?: number // 瞳孔サイズ（mm）
+  screenX: number // Screen-based pixel coordinate X
+  screenY: number // Screen-based pixel coordinate Y
+  contentX: number // Recording video coordinate X (calculated value)
+  contentY: number // Recording video coordinate Y (calculated value)
+  positionX?: number // Eyeball relative coordinate X from eye tracker origin (mm)
+  positionY?: number // Eyeball relative coordinate Y from eye tracker origin (mm)
+  positionZ?: number // Eyeball relative coordinate Z from eye tracker origin (mm)
+  pupilSize?: number // Pupil size (mm)
+  rotateX?: number // Gaze direction angle (rad) with front as (0,0,0)
+  rotateY?: number
+  rotateZ?: number
 }
 
 export interface SessionEvent {
@@ -92,6 +101,16 @@ export interface SessionInfo {
   endTime?: number
   config: RecordingConfig
   status?: "recording" | "completed" | "error"
+
+  // Recording mode (fixed for entire session)
+  recordingMode: "current-tab" | "browser-window" | "full-screen"
+
+  // Reference information according to recording mode (undefined for full-screen)
+  recordingReference?: {
+    screen: ScreenInfo
+    window: WindowInfo
+  }
+
   metadata?: {
     browser?: string
     screen?: string
@@ -142,17 +161,27 @@ export interface WindowInfo {
   scrollX: number // window.scrollX
   scrollY: number // window.scrollY
   devicePixelRatio: number // window.devicePixelRatio
-  screenX: number // window.screenX（ブラウザ位置X）
-  screenY: number // window.screenY（ブラウザ位置Y）
-  outerWidth: number // window.outerWidth（ブラウザ全体幅）
-  outerHeight: number // window.outerHeight（ブラウザ全体高さ）
+  screenX: number // window.screenX (browser position X)
+  screenY: number // window.screenY (browser position Y)
+  outerWidth: number // window.outerWidth (browser total width)
+  outerHeight: number // window.outerHeight (browser total height)
 }
 
 export interface ScreenInfo {
-  width: number // screen.width（画面全体幅）
-  height: number // screen.height（画面全体高さ）
-  availWidth: number // screen.availWidth（利用可能幅）
-  availHeight: number // screen.availHeight（利用可能高さ）
+  width: number // screen.width (total screen width)
+  height: number // screen.height (total screen height)
+  availWidth: number // screen.availWidth (available width)
+  availHeight: number // screen.availHeight (available height)
+}
+
+// Window state (recorded as time series data due to dynamic changes)
+export interface WindowState {
+  screenX: number
+  screenY: number
+  scrollX: number
+  scrollY: number
+  innerWidth: number
+  innerHeight: number
 }
 
 export type StateSubscriber = (state: RecorderState) => void

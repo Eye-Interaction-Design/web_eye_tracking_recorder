@@ -14,49 +14,48 @@ import type {
 describe("Export Utilities", () => {
   const mockGazeData: GazePoint[] = [
     {
+      id: "gaze-1",
+      sessionId: "session123",
       systemTimestamp: 1234567890123,
       browserTimestamp: 123.456,
       screenX: 800,
       screenY: 400,
-      windowX: 500,
-      windowY: 300,
+      contentX: 500,
+      contentY: 300,
       confidence: 0.95,
       leftEye: {
         screenX: 795,
         screenY: 398,
-        windowX: 495,
-        windowY: 298,
+        contentX: 495,
+        contentY: 298,
         positionX: 1254,
         positionY: 521,
         positionZ: 700,
         pupilSize: 3.2,
+        rotateX: 0.1,
+        rotateY: 0.2,
+        rotateZ: 0.3,
       },
       rightEye: {
         screenX: 805,
         screenY: 402,
-        windowX: 505,
-        windowY: 302,
+        contentX: 505,
+        contentY: 302,
         positionX: 1256,
         positionY: 519,
         positionZ: 702,
         pupilSize: 3.0,
+        rotateX: 0.15,
+        rotateY: 0.25,
+        rotateZ: 0.35,
       },
-      browserWindow: {
+      windowState: {
         innerWidth: 1200,
         innerHeight: 800,
         scrollX: 0,
         scrollY: 0,
-        devicePixelRatio: 1.0,
         screenX: 300,
         screenY: 100,
-        outerWidth: 1220,
-        outerHeight: 850,
-      },
-      screen: {
-        width: 1920,
-        height: 1080,
-        availWidth: 1920,
-        availHeight: 1040,
       },
     },
   ]
@@ -85,6 +84,7 @@ describe("Export Utilities", () => {
       experimentType: "demo",
       startTime: 1234567890000,
       endTime: 1234567950000,
+      recordingMode: "current-tab",
       config: {
         frameRate: 30,
         quality: "medium",
@@ -123,14 +123,14 @@ describe("Export Utilities", () => {
       expect(headers).toContain("browserTimestamp")
       expect(headers).toContain("screenX")
       expect(headers).toContain("screenY")
-      expect(headers).toContain("windowX")
-      expect(headers).toContain("windowY")
+      expect(headers).toContain("contentX")
+      expect(headers).toContain("contentY")
       expect(headers).toContain("confidence")
       expect(headers).toContain("leftEye - screenX")
       expect(headers).toContain("leftEye - positionX")
       expect(headers).toContain("rightEye - pupilSize")
-      expect(headers).toContain("browserWindow - innerWidth")
-      expect(headers).toContain("screen - width")
+      expect(headers).toContain("windowState - innerWidth")
+      expect(headers).toContain("windowState - screenX")
     })
 
     it("should generate correct CSV data rows", () => {
@@ -142,9 +142,17 @@ describe("Export Utilities", () => {
       expect(dataRow[1]).toBe("123.456") // browserTimestamp
       expect(dataRow[2]).toBe("800") // screenX
       expect(dataRow[3]).toBe("400") // screenY
+      expect(dataRow[4]).toBe("500") // contentX
+      expect(dataRow[5]).toBe("300") // contentY
       expect(dataRow[6]).toBe("0.95") // confidence
       expect(dataRow[14]).toBe("3.2") // leftEye pupilSize
-      expect(dataRow[22]).toBe("3") // rightEye pupilSize
+      expect(dataRow[15]).toBe("0.1") // leftEye rotateX
+      expect(dataRow[16]).toBe("0.2") // leftEye rotateY
+      expect(dataRow[17]).toBe("0.3") // leftEye rotateZ
+      expect(dataRow[25]).toBe("3") // rightEye pupilSize
+      expect(dataRow[26]).toBe("0.15") // rightEye rotateX
+      expect(dataRow[27]).toBe("0.25") // rightEye rotateY
+      expect(dataRow[28]).toBe("0.35") // rightEye rotateZ
     })
 
     it("should handle empty optional fields", () => {
@@ -154,12 +162,15 @@ describe("Export Utilities", () => {
           leftEye: {
             screenX: mockGazeData[0]?.leftEye.screenX,
             screenY: mockGazeData[0]?.leftEye.screenY,
-            windowX: mockGazeData[0]?.leftEye.windowX,
-            windowY: mockGazeData[0]?.leftEye.windowY,
+            contentX: mockGazeData[0]?.leftEye.contentX,
+            contentY: mockGazeData[0]?.leftEye.contentY,
             positionX: undefined,
             positionY: undefined,
             positionZ: undefined,
             pupilSize: undefined,
+            rotateX: undefined,
+            rotateY: undefined,
+            rotateZ: undefined,
           },
         },
       ]
@@ -172,6 +183,9 @@ describe("Export Utilities", () => {
       expect(dataRow[12]).toBe("") // positionY should be empty
       expect(dataRow[13]).toBe("") // positionZ should be empty
       expect(dataRow[14]).toBe("") // pupilSize should be empty
+      expect(dataRow[15]).toBe("") // rotateX should be empty
+      expect(dataRow[16]).toBe("") // rotateY should be empty
+      expect(dataRow[17]).toBe("") // rotateZ should be empty
     })
 
     it("should handle empty gaze data array", () => {

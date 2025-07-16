@@ -31,21 +31,6 @@ let screenDetailsPromise: Promise<ScreenDetails | null> | null = null
  * Get current browser window information
  */
 export const getBrowserWindowInfo = (): WindowInfo => {
-  if (typeof window === "undefined") {
-    // Fallback for SSR or non-browser environments
-    return {
-      innerWidth: 1920,
-      innerHeight: 1080,
-      scrollX: 0,
-      scrollY: 0,
-      devicePixelRatio: 1.0,
-      screenX: 0,
-      screenY: 0,
-      outerWidth: 1920,
-      outerHeight: 1080,
-    }
-  }
-
   return {
     innerWidth: window.innerWidth,
     innerHeight: window.innerHeight,
@@ -63,16 +48,6 @@ export const getBrowserWindowInfo = (): WindowInfo => {
  * Get current screen information
  */
 export const getScreenInfo = (): ScreenInfo => {
-  if (typeof screen === "undefined") {
-    // Fallback for SSR or non-browser environments
-    return {
-      width: 1920,
-      height: 1080,
-      availWidth: 1920,
-      availHeight: 1040,
-    }
-  }
-
   return {
     width: screen.width,
     height: screen.height,
@@ -85,7 +60,7 @@ export const getScreenInfo = (): ScreenInfo => {
  * Check if Window Management API is supported
  */
 export const isWindowManagementAPISupported = (): boolean => {
-  return typeof window !== "undefined" && "getScreenDetails" in window
+  return "getScreenDetails" in window
 }
 
 /**

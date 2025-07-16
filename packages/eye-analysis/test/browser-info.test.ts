@@ -61,27 +61,19 @@ describe("Browser Info Utilities", () => {
       })
     })
 
-    it("should return fallback values when window is undefined", () => {
-      const originalWindow = global.window
-      // @ts-ignore
-      global.window = undefined
-
+    // This test is unnecessary since SSR guard was removed
+    it("should work with real window object", () => {
       const windowInfo = getBrowserWindowInfo()
 
-      expect(windowInfo).toEqual({
-        innerWidth: 1920,
-        innerHeight: 1080,
-        scrollX: 0,
-        scrollY: 0,
-        devicePixelRatio: 1.0,
-        screenX: 0,
-        screenY: 0,
-        outerWidth: 1920,
-        outerHeight: 1080,
-      })
-
-      // Restore original
-      global.window = originalWindow
+      expect(typeof windowInfo.innerWidth).toBe("number")
+      expect(typeof windowInfo.innerHeight).toBe("number")
+      expect(typeof windowInfo.scrollX).toBe("number")
+      expect(typeof windowInfo.scrollY).toBe("number")
+      expect(typeof windowInfo.devicePixelRatio).toBe("number")
+      expect(typeof windowInfo.screenX).toBe("number")
+      expect(typeof windowInfo.screenY).toBe("number")
+      expect(typeof windowInfo.outerWidth).toBe("number")
+      expect(typeof windowInfo.outerHeight).toBe("number")
     })
   })
 
@@ -97,22 +89,14 @@ describe("Browser Info Utilities", () => {
       })
     })
 
-    it("should return fallback values when screen is undefined", () => {
-      const originalScreen = global.screen
-      // @ts-ignore
-      global.screen = undefined
-
+    // This test is unnecessary since SSR guard was removed
+    it("should work with real screen object", () => {
       const screenInfo = getScreenInfo()
 
-      expect(screenInfo).toEqual({
-        width: 1920,
-        height: 1080,
-        availWidth: 1920,
-        availHeight: 1040,
-      })
-
-      // Restore original
-      global.screen = originalScreen
+      expect(typeof screenInfo.width).toBe("number")
+      expect(typeof screenInfo.height).toBe("number")
+      expect(typeof screenInfo.availWidth).toBe("number")
+      expect(typeof screenInfo.availHeight).toBe("number")
     })
   })
 

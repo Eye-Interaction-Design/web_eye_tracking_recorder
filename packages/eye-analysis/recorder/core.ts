@@ -1,10 +1,7 @@
 // Core recorder logic functions (pure functions)
 
-import {
-  getBrowserWindowInfo,
-  getScreenInfo,
-  screenToWindowCoordinates,
-} from "./browser-info"
+import { getBrowserWindowInfo, getScreenInfo } from "./browser-info"
+import { transformToContentCoordinates } from "./coordinate-transform"
 // SSR Detection
 import { requireBrowser } from "./ssr-guard"
 import { dispatch, getState } from "./state"
@@ -23,6 +20,9 @@ import type {
   SessionConfig,
   SessionEvent,
   SessionInfo,
+  ScreenInfo,
+  WindowInfo,
+  WindowState,
 } from "./types"
 
 // Current MediaRecorder instance
@@ -59,6 +59,11 @@ export const createSession = async (
   config: SessionConfig,
   recordingConfig?: RecordingConfig,
   includeMetadata?: boolean,
+  options?: {
+    recordingMode?: "current-tab" | "browser-window" | "full-screen"
+    screenInfo?: ScreenInfo
+    windowInfo?: WindowInfo
+  },
 ): Promise<string> => {
   requireBrowser("createSession")
 
@@ -68,12 +73,27 @@ export const createSession = async (
   }
 
   const sessionId = config.sessionId || generateId()
+
+  // Default recording mode is current-tab
+  const recordingMode = options?.recordingMode || "current-tab"
+
+  // Set reference information according to recording mode
+  let recordingReference: SessionInfo["recordingReference"]
+  if (recordingMode !== "full-screen") {
+    recordingReference = {
+      screen: options?.screenInfo || getScreenInfo(),
+      window: options?.windowInfo || getBrowserWindowInfo(),
+    }
+  }
+
   const sessionInfo: SessionInfo = {
     sessionId,
     participantId: config.participantId,
     experimentType: config.experimentType,
     startTime: Date.now(),
     status: "recording",
+    recordingMode,
+    recordingReference,
     config: {
       frameRate: 30,
       quality: "medium",
@@ -86,31 +106,20 @@ export const createSession = async (
   // Add metadata if requested (for experiment API)
   if (includeMetadata) {
     sessionInfo.metadata = {
-      browser:
-        typeof navigator !== "undefined" ? navigator.userAgent : "Unknown",
-      screen:
-        typeof screen !== "undefined"
-          ? `${screen.width}x${screen.height}`
-          : "1920x1080",
-      displayWidth: typeof window !== "undefined" ? window.innerWidth : 1920,
-      displayHeight: typeof window !== "undefined" ? window.innerHeight : 1080,
-      userAgent:
-        typeof navigator !== "undefined" ? navigator.userAgent : "Unknown",
+      browser: navigator.userAgent,
+      screen: `${screen.width}x${screen.height}`,
+      displayWidth: window.innerWidth,
+      displayHeight: window.innerHeight,
+      userAgent: navigator.userAgent,
       settings: {
         screenRecording: recordingConfig || {},
       },
       environment: {
-        browser:
-          typeof navigator !== "undefined" ? navigator.userAgent : "Unknown",
-        screen:
-          typeof screen !== "undefined"
-            ? `${screen.width}x${screen.height}`
-            : "1920x1080",
-        displayWidth: typeof window !== "undefined" ? window.innerWidth : 1920,
-        displayHeight:
-          typeof window !== "undefined" ? window.innerHeight : 1080,
-        userAgent:
-          typeof navigator !== "undefined" ? navigator.userAgent : "Unknown",
+        browser: navigator.userAgent,
+        screen: `${screen.width}x${screen.height}`,
+        displayWidth: window.innerWidth,
+        displayHeight: window.innerHeight,
+        userAgent: navigator.userAgent,
       },
     }
   }
@@ -335,6 +344,9 @@ export const stopRecording = async (): Promise<SessionInfo | null> => {
  */
 export const addGazeData = async (
   gazeInput: GazePointInput,
+  options?: {
+    getWindowState?: () => WindowState
+  },
 ): Promise<GazePoint> => {
   requireBrowser("addGazeData")
 
@@ -344,64 +356,93 @@ export const addGazeData = async (
   }
 
   try {
-    // Get current browser and screen information
-    const browserWindow = getBrowserWindowInfo()
-    const screen = getScreenInfo()
+    const session = state.currentSession
 
-    // Calculate window coordinates for main gaze point using Window Management API
-    const { windowX, windowY } = await screenToWindowCoordinates(
+    // Get window state (only for current-tab/browser-window cases)
+    let windowState: WindowState | undefined
+    if (session.recordingMode !== "full-screen") {
+      if (options?.getWindowState) {
+        windowState = options.getWindowState()
+      } else {
+        // Get default window state
+        windowState = {
+          screenX: window.screenX,
+          screenY: window.screenY,
+          scrollX: window.scrollX,
+          scrollY: window.scrollY,
+          innerWidth: window.innerWidth,
+          innerHeight: window.innerHeight,
+        }
+      }
+    }
+
+    // Coordinate transformation (screenX/Y → contentX/Y)
+    const { contentX, contentY } = transformToContentCoordinates(
       gazeInput.screenX,
       gazeInput.screenY,
-      browserWindow,
+      session,
+      windowState,
     )
 
-    // Calculate window coordinates for eye data using Window Management API
-    const leftEyeWindow = await screenToWindowCoordinates(
+    // Left eye coordinate transformation
+    const leftEyeContent = transformToContentCoordinates(
       gazeInput.leftEye.screenX,
       gazeInput.leftEye.screenY,
-      browserWindow,
+      session,
+      windowState,
     )
 
-    const rightEyeWindow = await screenToWindowCoordinates(
+    // Right eye coordinate transformation
+    const rightEyeContent = transformToContentCoordinates(
       gazeInput.rightEye.screenX,
       gazeInput.rightEye.screenY,
-      browserWindow,
+      session,
+      windowState,
     )
 
     // Create complete GazePoint with all required fields
     const completeGazePoint: GazePoint = {
+      id: generateId(),
+      sessionId: session.sessionId,
       systemTimestamp: gazeInput.systemTimestamp || Date.now(),
       browserTimestamp: performance.now(),
       screenX: gazeInput.screenX,
       screenY: gazeInput.screenY,
-      windowX,
-      windowY,
+      contentX,
+      contentY,
       confidence: gazeInput.confidence,
       leftEye: {
         screenX: gazeInput.leftEye.screenX,
         screenY: gazeInput.leftEye.screenY,
-        windowX: leftEyeWindow.windowX,
-        windowY: leftEyeWindow.windowY,
+        contentX: leftEyeContent.contentX,
+        contentY: leftEyeContent.contentY,
         positionX: gazeInput.leftEye.positionX,
         positionY: gazeInput.leftEye.positionY,
         positionZ: gazeInput.leftEye.positionZ,
         pupilSize: gazeInput.leftEye.pupilSize,
+        rotateX: gazeInput.leftEye.rotateX,
+        rotateY: gazeInput.leftEye.rotateY,
+        rotateZ: gazeInput.leftEye.rotateZ,
       },
       rightEye: {
         screenX: gazeInput.rightEye.screenX,
         screenY: gazeInput.rightEye.screenY,
-        windowX: rightEyeWindow.windowX,
-        windowY: rightEyeWindow.windowY,
+        contentX: rightEyeContent.contentX,
+        contentY: rightEyeContent.contentY,
         positionX: gazeInput.rightEye.positionX,
         positionY: gazeInput.rightEye.positionY,
         positionZ: gazeInput.rightEye.positionZ,
         pupilSize: gazeInput.rightEye.pupilSize,
+        rotateX: gazeInput.rightEye.rotateX,
+        rotateY: gazeInput.rightEye.rotateY,
+        rotateZ: gazeInput.rightEye.rotateZ,
       },
-      browserWindow,
-      screen,
+
+      // Window state (only when necessary)
+      windowState,
     }
 
-    await saveGazeData(state.currentSession.sessionId, completeGazePoint)
+    await saveGazeData(session.sessionId, completeGazePoint)
     dispatch({ type: "ADD_GAZE_DATA", payload: completeGazePoint })
 
     return completeGazePoint

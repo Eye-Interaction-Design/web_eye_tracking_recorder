@@ -174,9 +174,9 @@ export const saveGazeData = (
     }
 
     const dataWithSession = {
-      id: `${sessionId}-${gazePoint.systemTimestamp}-${Math.random()}`,
-      sessionId,
       ...gazePoint,
+      // Override with storage-specific id if needed
+      storageId: `${sessionId}-${gazePoint.systemTimestamp}-${Math.random()}`,
     }
 
     const transaction = db.transaction(["gazeData"], "readwrite")

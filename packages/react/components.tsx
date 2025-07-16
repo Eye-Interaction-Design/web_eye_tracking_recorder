@@ -1,6 +1,6 @@
 // React components for Web Eye Tracking Recorder
 
-import type { RecordingConfig, SessionConfig } from "eye-analysis"
+import type { RecordingConfig, SessionConfig } from "../eye-analysis/dist/types"
 import React, { useState } from "react"
 import { useEyeTrackerContext } from "./context"
 import { useMouseGazeTracking } from "./hooks"

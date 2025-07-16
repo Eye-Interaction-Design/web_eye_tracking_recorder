@@ -68,7 +68,7 @@ export const validateDataSync = (
   videoTimestamp: number,
 ): boolean => {
   const timeDiff = Math.abs(gazeTimestamp - videoTimestamp)
-  return timeDiff <= 16 // 1フレーム以内
+  return timeDiff <= 16 // Within 1 frame
 }
 
 export const getSynchronizationMarkers = (): SyncMarker[] => {
@@ -81,7 +81,7 @@ const startAutomaticSyncMarkers = (): void => {
       markerId: `sync_${Date.now()}`,
       timestamp: getRelativeTimestamp(),
     })
-  }, 1000) as unknown as number // 1秒ごと
+  }, 1000) as unknown as number // Every 1 second
 }
 
 const generateSyncMarkerId = (): string => {

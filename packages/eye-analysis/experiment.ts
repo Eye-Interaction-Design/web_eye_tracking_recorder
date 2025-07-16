@@ -42,7 +42,7 @@ export type CalibrationCallback = (result: CalibrationResult) => void
 export const initialize = async (): Promise<void> => {
   await coreInitialize()
 
-  // TODO: eye tracking server urlなどは本来ここで設定されるべき
+  // TODO: eye tracking server url etc. should be configured here
 }
 
 /**
@@ -65,8 +65,10 @@ export const createSession = async (
     ...config.recording,
   }
 
-  // Create session with metadata
-  return await coreCreateSession(sessionConfig, recordingConfig, true)
+  // Create session with metadata (default is current-tab)
+  return await coreCreateSession(sessionConfig, recordingConfig, true, {
+    recordingMode: "current-tab",
+  })
 }
 
 /**

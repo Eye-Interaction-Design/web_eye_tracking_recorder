@@ -1,6 +1,6 @@
 {
   "name": "eye-analysis",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Eye Analysis - Browser-based eye tracking and screen recording library for research and experiments",
   "author": "shikibu9419",
   "license": "MIT",
@@ -14,6 +14,26 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./experiment": {
+      "types": "./dist/experiment.d.ts",
+      "import": "./dist/experiment.js",
+      "default": "./dist/experiment.js"
+    },
+    "./tracking": {
+      "types": "./dist/tracking.d.ts",
+      "import": "./dist/tracking.js",
+      "default": "./dist/tracking.js"
+    },
+    "./utils": {
+      "types": "./dist/utils.d.ts",
+      "import": "./dist/utils.js",
+      "default": "./dist/utils.js"
+    },
+    "./recorder/*": {
+      "types": "./dist/recorder/*.d.ts",
+      "import": "./dist/recorder/*.js",
+      "default": "./dist/recorder/*.js"
     }
   },
   "files": [
@@ -45,13 +65,13 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Eye-Interaction-Design/web-eye-tracking-recorder.git",
+    "url": "git+https://github.com/EyeXD/eye-analysis.web.git",
     "directory": "packages/eye-analysis"
   },
   "bugs": {
-    "url": "https://github.com/Eye-Interaction-Design/web-eye-tracking-recorder/issues"
+    "url": "https://github.com/EyeXD/eye-analysis.web/issues"
   },
-  "homepage": "https://github.com/Eye-Interaction-Design/web-eye-tracking-recorder#readme",
+  "homepage": "https://github.com/EyeXD/eye-analysis.web#readme",
   "engines": {
     "node": ">=18.0.0"
   },

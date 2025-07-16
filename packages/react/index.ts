@@ -7,7 +7,7 @@ export type {
   RecordingConfig,
   SessionConfig,
   SessionInfo,
-} from "eye-analysis"
-export * from "./components"
-export * from "./context"
-export * from "./hooks"
+} from "../eye-analysis/dist/types";
+export * from "./components";
+export * from "./context";
+export * from "./hooks";

@@ -1,5 +1,5 @@
 import { act, renderHook } from "@testing-library/react"
-import * as eyeAnalysis from "eye-analysis"
+import * as eyeAnalysis from "../../eye-analysis/dist/types"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { useGazeTracking, useRecorderState, useRecording } from "../hooks"
 
