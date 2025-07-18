@@ -114,6 +114,35 @@ describe("Coordinate Transform Functions", () => {
       })
     })
 
+    it("should handle normalized coordinates for current-tab recording", () => {
+      const result = transformToContentCoordinates(
+        0.5, // normalized X (50% of screen)
+        0.25, // normalized Y (25% of screen)
+        mockSessionCurrentTab,
+        mockWindowState,
+        true, // isNormalized
+        1920, // screenWidth
+        1080, // screenHeight
+      )
+
+      expect(result).toEqual({
+        contentX: 860, // (0.5 * 1920) - 100 = 960 - 100 = 860
+        contentY: 220, // (0.25 * 1080) - 50 = 270 - 50 = 220
+      })
+    })
+
+    it("should throw error for normalized coordinates without screen dimensions", () => {
+      expect(() => {
+        transformToContentCoordinates(
+          0.5,
+          0.25,
+          mockSessionCurrentTab,
+          mockWindowState,
+          true,
+        )
+      }).toThrow("Screen dimensions are required for normalized coordinates")
+    })
+
     it("should throw error for window-based recording without windowState", () => {
       expect(() => {
         transformToContentCoordinates(500, 300, mockSessionCurrentTab)
@@ -145,6 +174,29 @@ describe("Coordinate Transform Functions", () => {
       expect(result).toEqual({
         pageX: 700, // (600 - 100) + 200 (scroll)
         pageY: 400, // (350 - 50) + 100 (scroll)
+      })
+    })
+
+    it("should handle normalized coordinates for page transformation", () => {
+      const windowStateWithScroll: WindowState = {
+        ...mockWindowState,
+        scrollX: 200,
+        scrollY: 100,
+      }
+
+      const result = transformToPageCoordinates(
+        0.5, // normalized X
+        0.25, // normalized Y
+        mockSessionCurrentTab,
+        windowStateWithScroll,
+        true, // isNormalized
+        1920, // screenWidth
+        1080, // screenHeight
+      )
+
+      expect(result).toEqual({
+        pageX: 1060, // (0.5 * 1920) - 100 + 200 = 960 - 100 + 200 = 1060
+        pageY: 320, // (0.25 * 1080) - 50 + 100 = 270 - 50 + 100 = 320
       })
     })
 

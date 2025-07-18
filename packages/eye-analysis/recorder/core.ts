@@ -401,12 +401,18 @@ export const addGazeData = async (
       }
     }
 
+    // Get screen dimensions at time of recording
+    const screenInfo = getScreenInfo()
+
     // Coordinate transformation (screenX/Y → contentX/Y)
     const { contentX, contentY } = transformToContentCoordinates(
       gazeInput.screenX ?? 0,
       gazeInput.screenY ?? 0,
       session,
       windowState,
+      gazeInput.normalized,
+      screenInfo.width,
+      screenInfo.height,
     )
 
     // Left eye coordinate transformation (if available)
@@ -416,6 +422,9 @@ export const addGazeData = async (
           gazeInput.leftEye.screenY ?? 0,
           session,
           windowState,
+          gazeInput.normalized,
+          screenInfo.width,
+          screenInfo.height,
         )
       : undefined
 
@@ -426,11 +435,11 @@ export const addGazeData = async (
           gazeInput.rightEye.screenY ?? 0,
           session,
           windowState,
+          gazeInput.normalized,
+          screenInfo.width,
+          screenInfo.height,
         )
       : undefined
-
-    // Get screen dimensions at time of recording
-    const screenInfo = getScreenInfo()
 
     // Create complete GazePoint with all required fields
     const completeGazePoint: GazePoint = {
