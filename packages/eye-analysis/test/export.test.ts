@@ -14,12 +14,13 @@ import type {
 describe("Export Utilities", () => {
   const mockGazeData: GazePoint[] = [
     {
-      id: "gaze-1",
       sessionId: "session123",
       systemTimestamp: 1234567890123,
       browserTimestamp: 123.456,
       screenX: 800,
       screenY: 400,
+      screenWidth: 1920,
+      screenHeight: 1080,
       contentX: 500,
       contentY: 300,
       confidence: 0.95,
@@ -52,6 +53,8 @@ describe("Export Utilities", () => {
       windowState: {
         innerWidth: 1200,
         innerHeight: 800,
+        outerWidth: 1220,
+        outerHeight: 850,
         scrollX: 0,
         scrollY: 0,
         screenX: 300,
@@ -130,6 +133,7 @@ describe("Export Utilities", () => {
       expect(headers).toContain("leftEye - positionX")
       expect(headers).toContain("rightEye - pupilSize")
       expect(headers).toContain("windowState - innerWidth")
+      expect(headers).toContain("windowState - outerWidth")
       expect(headers).toContain("windowState - screenX")
     })
 
@@ -178,10 +182,10 @@ describe("Export Utilities", () => {
         {
           ...mockGazeData[0],
           leftEye: {
-            screenX: mockGazeData[0]?.leftEye?.screenX || 0,
-            screenY: mockGazeData[0]?.leftEye?.screenY || 0,
-            contentX: mockGazeData[0]?.leftEye?.contentX || 0,
-            contentY: mockGazeData[0]?.leftEye?.contentY || 0,
+            screenX: mockGazeData[0]?.leftEye?.screenX,
+            screenY: mockGazeData[0]?.leftEye?.screenY,
+            contentX: mockGazeData[0]?.leftEye?.contentX ?? 0,
+            contentY: mockGazeData[0]?.leftEye?.contentY ?? 0,
             positionX: undefined,
             positionY: undefined,
             positionZ: undefined,

@@ -395,85 +395,99 @@ export const addGazeData = async (
           scrollY: window.scrollY,
           innerWidth: window.innerWidth,
           innerHeight: window.innerHeight,
+          outerWidth: window.outerWidth,
+          outerHeight: window.outerHeight,
         }
       }
     }
 
     // Coordinate transformation (screenX/Y → contentX/Y)
     const { contentX, contentY } = transformToContentCoordinates(
-      gazeInput.screenX,
-      gazeInput.screenY,
+      gazeInput.screenX ?? 0,
+      gazeInput.screenY ?? 0,
       session,
       windowState,
     )
 
     // Left eye coordinate transformation (if available)
-    const leftEyeContent = gazeInput.leftEye ? transformToContentCoordinates(
-      gazeInput.leftEye.screenX,
-      gazeInput.leftEye.screenY,
-      session,
-      windowState,
-    ) : { contentX: 0, contentY: 0 }
+    const leftEyeContent = gazeInput.leftEye
+      ? transformToContentCoordinates(
+          gazeInput.leftEye.screenX ?? 0,
+          gazeInput.leftEye.screenY ?? 0,
+          session,
+          windowState,
+        )
+      : undefined
 
     // Right eye coordinate transformation (if available)
-    const rightEyeContent = gazeInput.rightEye ? transformToContentCoordinates(
-      gazeInput.rightEye.screenX,
-      gazeInput.rightEye.screenY,
-      session,
-      windowState,
-    ) : { contentX: 0, contentY: 0 }
+    const rightEyeContent = gazeInput.rightEye
+      ? transformToContentCoordinates(
+          gazeInput.rightEye.screenX ?? 0,
+          gazeInput.rightEye.screenY ?? 0,
+          session,
+          windowState,
+        )
+      : undefined
+
+    // Get screen dimensions at time of recording
+    const screenInfo = getScreenInfo()
 
     // Create complete GazePoint with all required fields
     const completeGazePoint: GazePoint = {
-      id: generateId(),
       sessionId: session.sessionId,
       deviceTimeStamp: gazeInput.deviceTimeStamp,
-      systemTimestamp: gazeInput.systemTimestamp || Date.now(),
+      systemTimestamp: gazeInput.systemTimestamp ?? Date.now(),
       browserTimestamp: performance.now(),
       normalized: gazeInput.normalized,
       screenX: session.recordingMode === "full-screen" ? 0 : gazeInput.screenX,
       screenY: session.recordingMode === "full-screen" ? 0 : gazeInput.screenY,
+      screenWidth: screenInfo.width,
+      screenHeight: screenInfo.height,
       contentX,
       contentY,
       confidence: gazeInput.confidence,
-      leftEye: gazeInput.leftEye ? {
-        screenX:
-          session.recordingMode === "full-screen"
-            ? 0
-            : gazeInput.leftEye.screenX,
-        screenY:
-          session.recordingMode === "full-screen"
-            ? 0
-            : gazeInput.leftEye.screenY,
-        contentX: leftEyeContent.contentX,
-        contentY: leftEyeContent.contentY,
-        positionX: gazeInput.leftEye.positionX,
-        positionY: gazeInput.leftEye.positionY,
-        positionZ: gazeInput.leftEye.positionZ,
-        pupilSize: gazeInput.leftEye.pupilSize,
-        rotateX: gazeInput.leftEye.rotateX,
-        rotateY: gazeInput.leftEye.rotateY,
-        rotateZ: gazeInput.leftEye.rotateZ,
-      } : undefined,
-      rightEye: gazeInput.rightEye ? {
-        screenX:
-          session.recordingMode === "full-screen"
-            ? 0
-            : gazeInput.rightEye.screenX,
-        screenY:
-          session.recordingMode === "full-screen"
-            ? 0
-            : gazeInput.rightEye.screenY,
-        contentX: rightEyeContent.contentX,
-        contentY: rightEyeContent.contentY,
-        positionX: gazeInput.rightEye.positionX,
-        positionY: gazeInput.rightEye.positionY,
-        positionZ: gazeInput.rightEye.positionZ,
-        pupilSize: gazeInput.rightEye.pupilSize,
-        rotateX: gazeInput.rightEye.rotateX,
-        rotateY: gazeInput.rightEye.rotateY,
-        rotateZ: gazeInput.rightEye.rotateZ,
-      } : undefined,
+      leftEye: gazeInput.leftEye
+        ? {
+            screenX:
+              session.recordingMode === "full-screen"
+                ? 0
+                : gazeInput.leftEye.screenX,
+            screenY:
+              session.recordingMode === "full-screen"
+                ? 0
+                : gazeInput.leftEye.screenY,
+            contentX: leftEyeContent?.contentX || 0,
+            contentY: leftEyeContent?.contentY || 0,
+            positionX: gazeInput.leftEye.positionX,
+            positionY: gazeInput.leftEye.positionY,
+            positionZ: gazeInput.leftEye.positionZ,
+            pupilSize: gazeInput.leftEye.pupilSize,
+            rotateX: gazeInput.leftEye.rotateX,
+            rotateY: gazeInput.leftEye.rotateY,
+            rotateZ: gazeInput.leftEye.rotateZ,
+          }
+        : undefined,
+      rightEye: gazeInput.rightEye
+        ? {
+            screenX:
+              session.recordingMode === "full-screen"
+                ? 0
+                : gazeInput.rightEye.screenX,
+            screenY:
+              session.recordingMode === "full-screen"
+                ? 0
+                : gazeInput.rightEye.screenY,
+            contentX: rightEyeContent?.contentX || 0,
+            contentY: rightEyeContent?.contentY || 0,
+            positionX: gazeInput.rightEye.positionX,
+            positionY: gazeInput.rightEye.positionY,
+            positionZ: gazeInput.rightEye.positionZ,
+            pupilSize: gazeInput.rightEye.pupilSize,
+            rotateX: gazeInput.rightEye.rotateX,
+            rotateY: gazeInput.rightEye.rotateY,
+            rotateZ: gazeInput.rightEye.rotateZ,
+          }
+        : undefined,
 
       // Window state (only when necessary)
       windowState,

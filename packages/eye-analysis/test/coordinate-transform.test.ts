@@ -82,6 +82,8 @@ describe("Coordinate Transform Functions", () => {
     scrollY: 0,
     innerWidth: 1200,
     innerHeight: 800,
+    outerWidth: 1220,
+    outerHeight: 850,
   }
 
   describe("transformToContentCoordinates", () => {

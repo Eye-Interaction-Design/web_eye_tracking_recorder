@@ -1,17 +1,18 @@
 // Core types for the new simplified recorder
 
 export interface GazePoint {
-  id: string
   sessionId: string
   deviceTimeStamp?: number // Device timestamp (int)
   systemTimestamp: number // Eye tracking system timestamp
   browserTimestamp: number // Browser performance.now()
   normalized?: boolean // Whether coordinates are normalized (0-1)
-  screenX: number // Screen-based pixel coordinate X
-  screenY: number // Screen-based pixel coordinate Y
+  screenX: number | undefined // Screen-based pixel coordinate X
+  screenY: number | undefined // Screen-based pixel coordinate Y
+  screenWidth: number // Screen width at time of recording
+  screenHeight: number // Screen height at time of recording
   contentX: number // Recording video coordinate X (calculated value)
   contentY: number // Recording video coordinate Y (calculated value)
-  confidence: number // Confidence level 0.0-1.0
+  confidence: number | undefined // Confidence level 0.0-1.0
   leftEye?: EyeData // Optional - some eye trackers may not provide individual eye data
   rightEye?: EyeData // Optional - some eye trackers may not provide individual eye data
 
@@ -24,16 +25,16 @@ export interface GazePointInput {
   deviceTimeStamp?: number // Optional - device timestamp (int)
   systemTimestamp?: number // Optional - will use current time if not provided
   normalized?: boolean // Optional - whether coordinates are normalized (0-1)
-  screenX: number // Required
-  screenY: number // Required
-  confidence: number // Required
+  screenX: number | undefined // Optional - can be missing
+  screenY: number | undefined // Optional - can be missing
+  confidence: number | undefined // Optional - can be missing
   leftEye?: EyeDataInput // Optional - some eye trackers may not provide individual eye data
   rightEye?: EyeDataInput // Optional - some eye trackers may not provide individual eye data
 }
 
 export interface EyeDataInput {
-  screenX: number // Required
-  screenY: number // Required
+  screenX: number | undefined // Optional - can be missing
+  screenY: number | undefined // Optional - can be missing
   positionX?: number // Optional
   positionY?: number // Optional
   positionZ?: number // Optional
@@ -44,8 +45,8 @@ export interface EyeDataInput {
 }
 
 export interface EyeData {
-  screenX: number // Screen-based pixel coordinate X
-  screenY: number // Screen-based pixel coordinate Y
+  screenX: number | undefined // Screen-based pixel coordinate X
+  screenY: number | undefined // Screen-based pixel coordinate Y
   contentX: number // Recording video coordinate X (calculated value)
   contentY: number // Recording video coordinate Y (calculated value)
   positionX?: number // Eyeball relative coordinate X from eye tracker origin (mm)
@@ -192,6 +193,8 @@ export interface WindowState {
   scrollY: number
   innerWidth: number
   innerHeight: number
+  outerWidth: number
+  outerHeight: number
 }
 
 export type StateSubscriber = (state: RecorderState) => void

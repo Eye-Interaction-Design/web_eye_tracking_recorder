@@ -21,18 +21,19 @@ interface FieldExtractor<T = unknown> {
  * Type-safe field extractors for all GazePoint fields
  */
 const fieldExtractors: FieldExtractor[] = [
-  { header: "id", getValue: (p) => p.id },
   { header: "sessionId", getValue: (p) => p.sessionId },
   { header: "deviceTimeStamp", getValue: (p) => p.deviceTimeStamp },
   { header: "systemTimestamp", getValue: (p) => p.systemTimestamp },
   { header: "browserTimestamp", getValue: (p) => p.browserTimestamp },
-  { header: "normalized", getValue: (p) => p.normalized },
   { header: "screenX", getValue: (p) => p.screenX },
   { header: "screenY", getValue: (p) => p.screenY },
+  { header: "screenWidth", getValue: (p) => p.screenWidth },
+  { header: "screenHeight", getValue: (p) => p.screenHeight },
+  { header: "normalized", getValue: (p) => p.normalized },
   { header: "contentX", getValue: (p) => p.contentX },
   { header: "contentY", getValue: (p) => p.contentY },
   { header: "confidence", getValue: (p) => p.confidence },
-  
+
   // Left eye fields (optional)
   { header: "leftEye - screenX", getValue: (p) => p.leftEye?.screenX },
   { header: "leftEye - screenY", getValue: (p) => p.leftEye?.screenY },
@@ -45,7 +46,7 @@ const fieldExtractors: FieldExtractor[] = [
   { header: "leftEye - rotateX", getValue: (p) => p.leftEye?.rotateX },
   { header: "leftEye - rotateY", getValue: (p) => p.leftEye?.rotateY },
   { header: "leftEye - rotateZ", getValue: (p) => p.leftEye?.rotateZ },
-  
+
   // Right eye fields (optional)
   { header: "rightEye - screenX", getValue: (p) => p.rightEye?.screenX },
   { header: "rightEye - screenY", getValue: (p) => p.rightEye?.screenY },
@@ -58,14 +59,28 @@ const fieldExtractors: FieldExtractor[] = [
   { header: "rightEye - rotateX", getValue: (p) => p.rightEye?.rotateX },
   { header: "rightEye - rotateY", getValue: (p) => p.rightEye?.rotateY },
   { header: "rightEye - rotateZ", getValue: (p) => p.rightEye?.rotateZ },
-  
+
   // Window state fields (optional)
-  { header: "windowState - innerWidth", getValue: (p) => p.windowState?.innerWidth },
-  { header: "windowState - innerHeight", getValue: (p) => p.windowState?.innerHeight },
-  { header: "windowState - scrollX", getValue: (p) => p.windowState?.scrollX },
-  { header: "windowState - scrollY", getValue: (p) => p.windowState?.scrollY },
   { header: "windowState - screenX", getValue: (p) => p.windowState?.screenX },
   { header: "windowState - screenY", getValue: (p) => p.windowState?.screenY },
+  {
+    header: "windowState - innerWidth",
+    getValue: (p) => p.windowState?.innerWidth,
+  },
+  {
+    header: "windowState - innerHeight",
+    getValue: (p) => p.windowState?.innerHeight,
+  },
+  {
+    header: "windowState - outerWidth",
+    getValue: (p) => p.windowState?.outerWidth,
+  },
+  {
+    header: "windowState - outerHeight",
+    getValue: (p) => p.windowState?.outerHeight,
+  },
+  { header: "windowState - scrollX", getValue: (p) => p.windowState?.scrollX },
+  { header: "windowState - scrollY", getValue: (p) => p.windowState?.scrollY },
 ]
 
 /**
@@ -78,19 +93,19 @@ export const gazeDataToCSV = (gazeData: GazePoint[]): string => {
   }
 
   // Filter to only extractors that have data in at least one row
-  const activeExtractors = fieldExtractors.filter(extractor => 
-    gazeData.some(point => {
+  const activeExtractors = fieldExtractors.filter((extractor) =>
+    gazeData.some((point) => {
       const value = extractor.getValue(point)
       return value !== null && value !== undefined
-    })
+    }),
   )
 
   // Generate CSV rows
-  const headers = activeExtractors.map(extractor => extractor.header)
+  const headers = activeExtractors.map((extractor) => extractor.header)
   const csvRows = [headers.join(",")]
 
   for (const point of gazeData) {
-    const row = activeExtractors.map(extractor => {
+    const row = activeExtractors.map((extractor) => {
       const value = extractor.getValue(point)
       return value ?? ""
     })
