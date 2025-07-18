@@ -10,87 +10,90 @@ import type {
 } from "./types"
 
 /**
+ * Type-safe field extractor interface
+ */
+interface FieldExtractor<T = unknown> {
+  header: string
+  getValue: (point: GazePoint) => T | null | undefined
+}
+
+/**
+ * Type-safe field extractors for all GazePoint fields
+ */
+const fieldExtractors: FieldExtractor[] = [
+  { header: "id", getValue: (p) => p.id },
+  { header: "sessionId", getValue: (p) => p.sessionId },
+  { header: "deviceTimeStamp", getValue: (p) => p.deviceTimeStamp },
+  { header: "systemTimestamp", getValue: (p) => p.systemTimestamp },
+  { header: "browserTimestamp", getValue: (p) => p.browserTimestamp },
+  { header: "normalized", getValue: (p) => p.normalized },
+  { header: "screenX", getValue: (p) => p.screenX },
+  { header: "screenY", getValue: (p) => p.screenY },
+  { header: "contentX", getValue: (p) => p.contentX },
+  { header: "contentY", getValue: (p) => p.contentY },
+  { header: "confidence", getValue: (p) => p.confidence },
+  
+  // Left eye fields (optional)
+  { header: "leftEye - screenX", getValue: (p) => p.leftEye?.screenX },
+  { header: "leftEye - screenY", getValue: (p) => p.leftEye?.screenY },
+  { header: "leftEye - contentX", getValue: (p) => p.leftEye?.contentX },
+  { header: "leftEye - contentY", getValue: (p) => p.leftEye?.contentY },
+  { header: "leftEye - positionX", getValue: (p) => p.leftEye?.positionX },
+  { header: "leftEye - positionY", getValue: (p) => p.leftEye?.positionY },
+  { header: "leftEye - positionZ", getValue: (p) => p.leftEye?.positionZ },
+  { header: "leftEye - pupilSize", getValue: (p) => p.leftEye?.pupilSize },
+  { header: "leftEye - rotateX", getValue: (p) => p.leftEye?.rotateX },
+  { header: "leftEye - rotateY", getValue: (p) => p.leftEye?.rotateY },
+  { header: "leftEye - rotateZ", getValue: (p) => p.leftEye?.rotateZ },
+  
+  // Right eye fields (optional)
+  { header: "rightEye - screenX", getValue: (p) => p.rightEye?.screenX },
+  { header: "rightEye - screenY", getValue: (p) => p.rightEye?.screenY },
+  { header: "rightEye - contentX", getValue: (p) => p.rightEye?.contentX },
+  { header: "rightEye - contentY", getValue: (p) => p.rightEye?.contentY },
+  { header: "rightEye - positionX", getValue: (p) => p.rightEye?.positionX },
+  { header: "rightEye - positionY", getValue: (p) => p.rightEye?.positionY },
+  { header: "rightEye - positionZ", getValue: (p) => p.rightEye?.positionZ },
+  { header: "rightEye - pupilSize", getValue: (p) => p.rightEye?.pupilSize },
+  { header: "rightEye - rotateX", getValue: (p) => p.rightEye?.rotateX },
+  { header: "rightEye - rotateY", getValue: (p) => p.rightEye?.rotateY },
+  { header: "rightEye - rotateZ", getValue: (p) => p.rightEye?.rotateZ },
+  
+  // Window state fields (optional)
+  { header: "windowState - innerWidth", getValue: (p) => p.windowState?.innerWidth },
+  { header: "windowState - innerHeight", getValue: (p) => p.windowState?.innerHeight },
+  { header: "windowState - scrollX", getValue: (p) => p.windowState?.scrollX },
+  { header: "windowState - scrollY", getValue: (p) => p.windowState?.scrollY },
+  { header: "windowState - screenX", getValue: (p) => p.windowState?.screenX },
+  { header: "windowState - screenY", getValue: (p) => p.windowState?.screenY },
+]
+
+/**
  * Convert gaze data to CSV format
+ * Automatically removes columns that contain only undefined/null values
  */
 export const gazeDataToCSV = (gazeData: GazePoint[]): string => {
-  const headers = [
-    "systemTimestamp",
-    "browserTimestamp",
-    "screenX",
-    "screenY",
-    "contentX",
-    "contentY",
-    "confidence",
-    "leftEye - screenX",
-    "leftEye - screenY",
-    "leftEye - contentX",
-    "leftEye - contentY",
-    "leftEye - positionX",
-    "leftEye - positionY",
-    "leftEye - positionZ",
-    "leftEye - pupilSize",
-    "leftEye - rotateX",
-    "leftEye - rotateY",
-    "leftEye - rotateZ",
-    "rightEye - screenX",
-    "rightEye - screenY",
-    "rightEye - contentX",
-    "rightEye - contentY",
-    "rightEye - positionX",
-    "rightEye - positionY",
-    "rightEye - positionZ",
-    "rightEye - pupilSize",
-    "rightEye - rotateX",
-    "rightEye - rotateY",
-    "rightEye - rotateZ",
-    "windowState - innerWidth",
-    "windowState - innerHeight",
-    "windowState - scrollX",
-    "windowState - scrollY",
-    "windowState - screenX",
-    "windowState - screenY",
-  ]
+  if (gazeData.length === 0) {
+    return ""
+  }
 
+  // Filter to only extractors that have data in at least one row
+  const activeExtractors = fieldExtractors.filter(extractor => 
+    gazeData.some(point => {
+      const value = extractor.getValue(point)
+      return value !== null && value !== undefined
+    })
+  )
+
+  // Generate CSV rows
+  const headers = activeExtractors.map(extractor => extractor.header)
   const csvRows = [headers.join(",")]
 
   for (const point of gazeData) {
-    const row = [
-      point.systemTimestamp,
-      point.browserTimestamp,
-      point.screenX,
-      point.screenY,
-      point.contentX,
-      point.contentY,
-      point.confidence,
-      point.leftEye.screenX,
-      point.leftEye.screenY,
-      point.leftEye.contentX,
-      point.leftEye.contentY,
-      point.leftEye.positionX || "",
-      point.leftEye.positionY || "",
-      point.leftEye.positionZ || "",
-      point.leftEye.pupilSize || "",
-      point.leftEye.rotateX || "",
-      point.leftEye.rotateY || "",
-      point.leftEye.rotateZ || "",
-      point.rightEye.screenX,
-      point.rightEye.screenY,
-      point.rightEye.contentX,
-      point.rightEye.contentY,
-      point.rightEye.positionX || "",
-      point.rightEye.positionY || "",
-      point.rightEye.positionZ || "",
-      point.rightEye.pupilSize || "",
-      point.rightEye.rotateX || "",
-      point.rightEye.rotateY || "",
-      point.rightEye.rotateZ || "",
-      point.windowState?.innerWidth || "",
-      point.windowState?.innerHeight || "",
-      point.windowState?.scrollX || "",
-      point.windowState?.scrollY || "",
-      point.windowState?.screenX || "",
-      point.windowState?.screenY || "",
-    ]
+    const row = activeExtractors.map(extractor => {
+      const value = extractor.getValue(point)
+      return value ?? ""
+    })
     csvRows.push(row.join(","))
   }
 

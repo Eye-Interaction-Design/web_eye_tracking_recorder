@@ -3,7 +3,7 @@ import type {
   ExperimentSession,
   GazePoint,
   SessionEvent,
-} from "../types"
+} from "../recorder/types"
 
 export interface ExperimentStore {
   currentSession: ExperimentSession | null

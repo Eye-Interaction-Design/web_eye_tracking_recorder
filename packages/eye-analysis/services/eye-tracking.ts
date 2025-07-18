@@ -11,7 +11,7 @@ import type {
   EyeTrackingConfig,
   GazePoint,
   WindowInfo,
-} from "../types"
+} from "../recorder/types"
 import {
   convertScreenToWindowCoordinates,
   getBrowserWindowInfo,
@@ -34,7 +34,7 @@ let gazeState: GazeTrackingState = {
   config: {
     samplingRate: 60,
     calibrationPoints: 9,
-    deviceType: "eyetracker",
+    trackingMode: "external",
   },
   isTracking: false,
   bufferFlushInterval: null,
@@ -49,7 +49,7 @@ export const initializeEyeTracking = (
   gazeState.config = {
     samplingRate: 60,
     calibrationPoints: 9,
-    deviceType: "eyetracker",
+    trackingMode: "external",
     ...config,
   }
 
@@ -170,7 +170,7 @@ export const calibrate = (): Promise<CalibrationResult> => {
           const result: CalibrationResult = {
             accuracy: data.accuracy || 0,
             points: data.points || gazeState.config.calibrationPoints || 9,
-            timestamp: performance.now(),
+            // timestamp: performance.now(), // Remove timestamp as it's not in CalibrationResult type
             success: data.success || false,
             errorMessage: data.errorMessage,
           }
@@ -236,12 +236,14 @@ const parseGazeData = async (data: unknown): Promise<GazePoint | null> => {
   )
 
   const gazePoint: GazePoint = {
+    id: `gaze-${Date.now()}-${Math.random()}`,
+    sessionId: gazeState.sessionId,
     systemTimestamp: (gazeData.systemTimestamp as number) || Date.now(),
     browserTimestamp: performance.now(),
     screenX: gazeData.screenX,
     screenY: gazeData.screenY,
-    windowX: windowCoords.windowX,
-    windowY: windowCoords.windowY,
+    contentX: windowCoords.windowX,
+    contentY: windowCoords.windowY,
     confidence: (gazeData.confidence as number) || 0,
     leftEye: await parseEyeData(
       gazeData.leftEye as Record<string, unknown>,
@@ -251,8 +253,8 @@ const parseGazeData = async (data: unknown): Promise<GazePoint | null> => {
       gazeData.rightEye as Record<string, unknown>,
       windowInfo,
     ),
-    browserWindow: windowInfo,
-    screen: screenInfo,
+    // browserWindow: windowInfo, // Remove browserWindow as it's not in GazePoint type
+    // screen: screenInfo, // Remove screen as it's not in GazePoint type
   }
 
   return gazePoint
@@ -271,8 +273,8 @@ const parseEyeData = async (
   return {
     screenX: (eyeData?.screenX as number) || 0,
     screenY: (eyeData?.screenY as number) || 0,
-    windowX: screenCoords.windowX,
-    windowY: screenCoords.windowY,
+    contentX: screenCoords.windowX,
+    contentY: screenCoords.windowY,
     positionX: (eyeData?.positionX as number) || 0,
     positionY: (eyeData?.positionY as number) || 0,
     positionZ: (eyeData?.positionZ as number) || 0,
@@ -352,7 +354,7 @@ export const resetEyeTrackingState = (): void => {
     config: {
       samplingRate: 60,
       calibrationPoints: 9,
-      deviceType: "eyetracker",
+      trackingMode: "external",
     },
     isTracking: false,
     bufferFlushInterval: null,

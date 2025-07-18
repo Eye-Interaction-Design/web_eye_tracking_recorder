@@ -136,23 +136,41 @@ describe("Export Utilities", () => {
     it("should generate correct CSV data rows", () => {
       const csv = gazeDataToCSV(mockGazeData)
       const lines = csv.split("\n")
+      const headers = lines[0]?.split(",")
       const dataRow = lines[1]?.split(",")
 
-      expect(dataRow[0]).toBe("1234567890123") // systemTimestamp
-      expect(dataRow[1]).toBe("123.456") // browserTimestamp
-      expect(dataRow[2]).toBe("800") // screenX
-      expect(dataRow[3]).toBe("400") // screenY
-      expect(dataRow[4]).toBe("500") // contentX
-      expect(dataRow[5]).toBe("300") // contentY
-      expect(dataRow[6]).toBe("0.95") // confidence
-      expect(dataRow[14]).toBe("3.2") // leftEye pupilSize
-      expect(dataRow[15]).toBe("0.1") // leftEye rotateX
-      expect(dataRow[16]).toBe("0.2") // leftEye rotateY
-      expect(dataRow[17]).toBe("0.3") // leftEye rotateZ
-      expect(dataRow[25]).toBe("3") // rightEye pupilSize
-      expect(dataRow[26]).toBe("0.15") // rightEye rotateX
-      expect(dataRow[27]).toBe("0.25") // rightEye rotateY
-      expect(dataRow[28]).toBe("0.35") // rightEye rotateZ
+      // Check that all expected data is present by finding the column index
+      const systemTimestampIndex = headers?.indexOf("systemTimestamp")
+      const browserTimestampIndex = headers?.indexOf("browserTimestamp")
+      const screenXIndex = headers?.indexOf("screenX")
+      const screenYIndex = headers?.indexOf("screenY")
+      const contentXIndex = headers?.indexOf("contentX")
+      const contentYIndex = headers?.indexOf("contentY")
+      const confidenceIndex = headers?.indexOf("confidence")
+      const leftEyePupilSizeIndex = headers?.indexOf("leftEye - pupilSize")
+      const leftEyeRotateXIndex = headers?.indexOf("leftEye - rotateX")
+      const leftEyeRotateYIndex = headers?.indexOf("leftEye - rotateY")
+      const leftEyeRotateZIndex = headers?.indexOf("leftEye - rotateZ")
+      const rightEyePupilSizeIndex = headers?.indexOf("rightEye - pupilSize")
+      const rightEyeRotateXIndex = headers?.indexOf("rightEye - rotateX")
+      const rightEyeRotateYIndex = headers?.indexOf("rightEye - rotateY")
+      const rightEyeRotateZIndex = headers?.indexOf("rightEye - rotateZ")
+
+      expect(dataRow[systemTimestampIndex!]).toBe("1234567890123")
+      expect(dataRow[browserTimestampIndex!]).toBe("123.456")
+      expect(dataRow[screenXIndex!]).toBe("800")
+      expect(dataRow[screenYIndex!]).toBe("400")
+      expect(dataRow[contentXIndex!]).toBe("500")
+      expect(dataRow[contentYIndex!]).toBe("300")
+      expect(dataRow[confidenceIndex!]).toBe("0.95")
+      expect(dataRow[leftEyePupilSizeIndex!]).toBe("3.2")
+      expect(dataRow[leftEyeRotateXIndex!]).toBe("0.1")
+      expect(dataRow[leftEyeRotateYIndex!]).toBe("0.2")
+      expect(dataRow[leftEyeRotateZIndex!]).toBe("0.3")
+      expect(dataRow[rightEyePupilSizeIndex!]).toBe("3")
+      expect(dataRow[rightEyeRotateXIndex!]).toBe("0.15")
+      expect(dataRow[rightEyeRotateYIndex!]).toBe("0.25")
+      expect(dataRow[rightEyeRotateZIndex!]).toBe("0.35")
     })
 
     it("should handle empty optional fields", () => {
@@ -160,10 +178,10 @@ describe("Export Utilities", () => {
         {
           ...mockGazeData[0],
           leftEye: {
-            screenX: mockGazeData[0]?.leftEye.screenX,
-            screenY: mockGazeData[0]?.leftEye.screenY,
-            contentX: mockGazeData[0]?.leftEye.contentX,
-            contentY: mockGazeData[0]?.leftEye.contentY,
+            screenX: mockGazeData[0]?.leftEye?.screenX || 0,
+            screenY: mockGazeData[0]?.leftEye?.screenY || 0,
+            contentX: mockGazeData[0]?.leftEye?.contentX || 0,
+            contentY: mockGazeData[0]?.leftEye?.contentY || 0,
             positionX: undefined,
             positionY: undefined,
             positionZ: undefined,
@@ -177,23 +195,29 @@ describe("Export Utilities", () => {
 
       const csv = gazeDataToCSV(gazeDataWithMissingFields)
       const lines = csv.split("\n")
-      const dataRow = lines[1]?.split(",")
+      const headers = lines[0]?.split(",")
 
-      expect(dataRow[11]).toBe("") // positionX should be empty
-      expect(dataRow[12]).toBe("") // positionY should be empty
-      expect(dataRow[13]).toBe("") // positionZ should be empty
-      expect(dataRow[14]).toBe("") // pupilSize should be empty
-      expect(dataRow[15]).toBe("") // rotateX should be empty
-      expect(dataRow[16]).toBe("") // rotateY should be empty
-      expect(dataRow[17]).toBe("") // rotateZ should be empty
+      // Should not include columns that are entirely empty
+      expect(headers).not.toContain("leftEye - positionX")
+      expect(headers).not.toContain("leftEye - positionY")
+      expect(headers).not.toContain("leftEye - positionZ")
+      expect(headers).not.toContain("leftEye - pupilSize")
+      expect(headers).not.toContain("leftEye - rotateX")
+      expect(headers).not.toContain("leftEye - rotateY")
+      expect(headers).not.toContain("leftEye - rotateZ")
+
+      // Should include columns with data
+      expect(headers).toContain("systemTimestamp")
+      expect(headers).toContain("browserTimestamp")
+      expect(headers).toContain("screenX")
+      expect(headers).toContain("screenY")
     })
 
     it("should handle empty gaze data array", () => {
       const csv = gazeDataToCSV([])
-      const lines = csv.split("\n")
 
-      expect(lines).toHaveLength(1) // Only headers
-      expect(lines[0] || "").toContain("systemTimestamp")
+      // Empty data array should return empty string
+      expect(csv).toBe("")
     })
   })
 

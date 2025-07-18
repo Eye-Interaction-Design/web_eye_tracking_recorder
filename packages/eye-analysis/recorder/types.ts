@@ -3,15 +3,17 @@
 export interface GazePoint {
   id: string
   sessionId: string
+  deviceTimeStamp?: number // Device timestamp (int)
   systemTimestamp: number // Eye tracking system timestamp
   browserTimestamp: number // Browser performance.now()
+  normalized?: boolean // Whether coordinates are normalized (0-1)
   screenX: number // Screen-based pixel coordinate X
   screenY: number // Screen-based pixel coordinate Y
   contentX: number // Recording video coordinate X (calculated value)
   contentY: number // Recording video coordinate Y (calculated value)
   confidence: number // Confidence level 0.0-1.0
-  leftEye: EyeData
-  rightEye: EyeData
+  leftEye?: EyeData // Optional - some eye trackers may not provide individual eye data
+  rightEye?: EyeData // Optional - some eye trackers may not provide individual eye data
 
   // Only for current-tab/browser-window cases
   windowState?: WindowState
@@ -19,12 +21,14 @@ export interface GazePoint {
 
 // Simplified input for addGazeData - missing fields will be auto-filled
 export interface GazePointInput {
+  deviceTimeStamp?: number // Optional - device timestamp (int)
   systemTimestamp?: number // Optional - will use current time if not provided
+  normalized?: boolean // Optional - whether coordinates are normalized (0-1)
   screenX: number // Required
   screenY: number // Required
   confidence: number // Required
-  leftEye: EyeDataInput // Required
-  rightEye: EyeDataInput // Required
+  leftEye?: EyeDataInput // Optional - some eye trackers may not provide individual eye data
+  rightEye?: EyeDataInput // Optional - some eye trackers may not provide individual eye data
 }
 
 export interface EyeDataInput {
@@ -103,12 +107,18 @@ export interface SessionInfo {
   status?: "recording" | "completed" | "error"
 
   // Recording mode (fixed for entire session)
-  recordingMode: "current-tab" | "browser-window" | "full-screen"
+  recordingMode: "current-tab" | /* "browser-window" | */ "full-screen"
 
-  // Reference information according to recording mode (undefined for full-screen)
+  // Reference information according to recording mode
   recordingReference?: {
     screen: ScreenInfo
     window: WindowInfo
+  }
+
+  // Actual content size (set when recording starts)
+  actualContentSize?: {
+    width: number
+    height: number
   }
 
   metadata?: {
@@ -186,6 +196,36 @@ export interface WindowState {
 
 export type StateSubscriber = (state: RecorderState) => void
 
+// Legacy types for backward compatibility
+export interface SyncMarker {
+  id: string
+  sessionId: string
+  timestamp: number
+  systemTimestamp: number
+  browserTimestamp: number
+  type: string
+  data?: Record<string, unknown>
+}
+
+export interface VideoChunk {
+  id: string
+  sessionId: string
+  timestamp: number
+  data: Blob
+  chunkIndex: number
+  duration: number
+}
+
+export interface ExperimentSession {
+  sessionId: string
+  participantId: string
+  experimentType: string
+  startTime: number
+  endTime?: number
+  config: RecordingConfig
+  status?: "recording" | "completed" | "error"
+}
+
 // Eye tracking configuration
 export interface EyeTrackingConfig {
   samplingRate?: number
@@ -261,6 +301,7 @@ export interface MetadataJSON {
 export type RecorderAction =
   | { type: "INITIALIZE" }
   | { type: "CREATE_SESSION"; payload: SessionInfo }
+  | { type: "UPDATE_SESSION"; payload: SessionInfo }
   | { type: "START_RECORDING" }
   | { type: "STOP_RECORDING" }
   | { type: "ADD_GAZE_DATA"; payload: GazePoint }

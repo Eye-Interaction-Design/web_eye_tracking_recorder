@@ -1,10 +1,12 @@
 import type {
-  ExperimentSession,
   GazePoint,
   SessionEvent,
+  SessionInfo,
+  VideoChunkInfo,
+  ExperimentSession,
   SyncMarker,
   VideoChunk,
-} from "../types"
+} from "../recorder/types"
 
 let db: IDBDatabase | null = null
 const DB_NAME = "ExperimentDB"

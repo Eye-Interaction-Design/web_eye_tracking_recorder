@@ -1,29 +1,26 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { 
   useEyeTracker, 
   useMouseGazeTracking
 } from '../../../../packages/react'
 import {
-  downloadSessionComponents,
-  downloadSessionZip,
-  saveExperimentData,
-  downloadSessionJSON,
+  downloadSession,
+  downloadSessionData,
   recordTaskInteraction,
   generateTimestamp,
-  isValidWebSocketUrl,
   getTrackingMode,
+  isValidWebSocketUrl,
   isEyeTrackingConnected,
   getCurrentEyeTrackingServerUrl,
-  createNewSession,
-  startRecordingSession,
-  stopRecordingSession,
-  type DemoConfig
-} from '../../../shared/demo-logic'
+  createSession,
+  startRecording,
+  stopRecording,
+  type ExperimentConfig
+} from '../../../../packages/eye-analysis'
 // Simple inline components to avoid circular import issues
 
 const EyeTrackingDemo: React.FC = () => {
   const {
-    isReady,
     isInitialized,
     isRecording,
     currentSession,
@@ -31,11 +28,7 @@ const EyeTrackingDemo: React.FC = () => {
     eventsCount,
     recordingDuration,
     error,
-    initialize,
-    createSession,
-    startRecording,
-    stopRecording,
-    addEvent
+    initialize
   } = useEyeTracker(false) // Don't auto-initialize
 
   const { startTracking, stopTracking } = useMouseGazeTracking(true)
@@ -44,21 +37,21 @@ const EyeTrackingDemo: React.FC = () => {
   const [participantId, setParticipantId] = useState('participant-001')
   const [eyeTrackingServerUrl, setEyeTrackingServerUrl] = useState('')
 
-  const log = (message: string) => {
+  const log = useCallback((message: string) => {
     const timestamp = generateTimestamp()
     setLogs(prev => [...prev, `[${timestamp}] ${message}`])
-  }
+  }, [])
 
   useEffect(() => {
     log('React Eye Tracking Demo loaded')
     log('This demo uses mock gaze data generated from mouse movements')
-  }, [])
+  }, [log])
 
   useEffect(() => {
     if (error) {
       log(`Error: ${error}`)
     }
-  }, [error])
+  }, [error, log])
 
   useEffect(() => {
     if (isRecording) {
@@ -67,7 +60,7 @@ const EyeTrackingDemo: React.FC = () => {
     } else {
       stopTracking()
     }
-  }, [isRecording, startTracking, stopTracking])
+  }, [isRecording, startTracking, stopTracking, log])
 
   const handleInitialize = async () => {
     try {
@@ -82,12 +75,13 @@ const EyeTrackingDemo: React.FC = () => {
   const handleCreateSession = async () => {
     try {
       log('Creating session...')
-      const config: DemoConfig = {
+      const config: ExperimentConfig = {
         participantId,
+        experimentType: eyeTrackingServerUrl.trim() ? 'eye-tracking' : 'mouse-simulation',
         eyeTrackingServerUrl: eyeTrackingServerUrl.trim()
       }
       
-      const sessionId = await createNewSession(config)
+      const sessionId = await createSession(config)
       log(`Session created: ${sessionId}`)
       
       if (config.eyeTrackingServerUrl) {
@@ -103,16 +97,13 @@ const EyeTrackingDemo: React.FC = () => {
   const handleStartRecording = async () => {
     try {
       log('Starting recording...')
-      const config: DemoConfig = {
-        participantId,
+      await startRecording({
         eyeTrackingServerUrl: eyeTrackingServerUrl.trim()
-      }
-      
-      await startRecordingSession(config)
+      })
       log('Recording started successfully')
       
-      if (config.eyeTrackingServerUrl && isValidWebSocketUrl(config.eyeTrackingServerUrl)) {
-        log(`Connecting to eye tracking server: ${config.eyeTrackingServerUrl}`)
+      if (eyeTrackingServerUrl.trim() && isValidWebSocketUrl(eyeTrackingServerUrl)) {
+        log(`Connecting to eye tracking server: ${eyeTrackingServerUrl}`)
       } else {
         log('Move your mouse around to generate mock gaze data')
       }
@@ -124,7 +115,7 @@ const EyeTrackingDemo: React.FC = () => {
   const handleStopRecording = async () => {
     try {
       log('Stopping recording...')
-      await stopRecordingSession()
+      await stopRecording()
       log('Recording stopped successfully')
     } catch (err) {
       log(`Recording stop failed: ${err}`)
@@ -147,7 +138,7 @@ const EyeTrackingDemo: React.FC = () => {
     
     try {
       log('Downloading session data as JSON...')
-      await downloadSessionJSON(currentSession.sessionId)
+      await downloadSessionData(currentSession.sessionId)
       log('JSON download completed')
     } catch (err) {
       log(`JSON download failed: ${err}`)
@@ -159,7 +150,7 @@ const EyeTrackingDemo: React.FC = () => {
     
     try {
       log('Downloading session components...')
-      await downloadSessionComponents(currentSession.sessionId)
+      await downloadSession(currentSession.sessionId, { asZip: false })
       log('Components download completed')
     } catch (err) {
       log(`Components download failed: ${err}`)
@@ -171,7 +162,7 @@ const EyeTrackingDemo: React.FC = () => {
     
     try {
       log('Downloading session as ZIP...')
-      await downloadSessionZip(currentSession.sessionId)
+      await downloadSession(currentSession.sessionId, { asZip: true })
       log('ZIP download completed')
     } catch (err) {
       log(`ZIP download failed: ${err}`)
@@ -183,12 +174,8 @@ const EyeTrackingDemo: React.FC = () => {
     
     try {
       log('Auto-saving experiment data...')
-      await saveExperimentData({
-        completedAt: new Date().toISOString(),
-        participantId,
-        trackingMode: getTrackingMode(),
-        eyeTrackingServerUrl: getCurrentEyeTrackingServerUrl()
-      }, currentSession.sessionId)
+      // Legacy function removed - using downloadSession instead
+      await downloadSession(currentSession.sessionId, { asZip: true })
       log('Experiment data auto-saved successfully')
     } catch (err) {
       log(`Auto-save failed: ${err}`)
@@ -220,7 +207,7 @@ const EyeTrackingDemo: React.FC = () => {
                 type="text"
                 value={participantId}
                 onChange={(e) => setParticipantId(e.target.value)}
-                disabled={!!state.currentSession}
+                disabled={!!currentSession}
                 style={{ padding: '5px', marginLeft: '10px', border: '1px solid #ccc', borderRadius: '3px' }}
               />
             </label>
@@ -232,7 +219,7 @@ const EyeTrackingDemo: React.FC = () => {
                 type="text"
                 value={eyeTrackingServerUrl}
                 onChange={(e) => setEyeTrackingServerUrl(e.target.value)}
-                disabled={!!state.currentSession}
+                disabled={!!currentSession}
                 placeholder="ws://localhost:8080 (leave empty for mouse simulation)"
                 style={{ padding: '5px', marginLeft: '10px', border: '1px solid #ccc', borderRadius: '3px', width: '300px' }}
               />
@@ -254,6 +241,7 @@ const EyeTrackingDemo: React.FC = () => {
         {/* Control Buttons */}
         <div style={{ margin: '15px 0' }}>
           <button
+            type="button"
             onClick={handleInitialize}
             disabled={isInitialized}
             style={{ backgroundColor: '#1976d2', color: 'white', border: 'none', padding: '12px 24px', margin: '5px', borderRadius: '5px', cursor: 'pointer', fontSize: '14px' }}
@@ -261,6 +249,7 @@ const EyeTrackingDemo: React.FC = () => {
             Initialize
           </button>
           <button
+            type="button"
             onClick={handleCreateSession}
             disabled={!isInitialized || !!currentSession}
             style={{ backgroundColor: '#1976d2', color: 'white', border: 'none', padding: '12px 24px', margin: '5px', borderRadius: '5px', cursor: 'pointer', fontSize: '14px' }}
@@ -268,6 +257,7 @@ const EyeTrackingDemo: React.FC = () => {
             Create Session
           </button>
           <button
+            type="button"
             onClick={handleStartRecording}
             disabled={!currentSession || isRecording}
             style={{ backgroundColor: '#1976d2', color: 'white', border: 'none', padding: '12px 24px', margin: '5px', borderRadius: '5px', cursor: 'pointer', fontSize: '14px' }}
@@ -275,6 +265,7 @@ const EyeTrackingDemo: React.FC = () => {
             Start Recording
           </button>
           <button
+            type="button"
             onClick={handleStopRecording}
             disabled={!isRecording}
             style={{ backgroundColor: '#d32f2f', color: 'white', border: 'none', padding: '12px 24px', margin: '5px', borderRadius: '5px', cursor: 'pointer', fontSize: '14px' }}
@@ -288,6 +279,7 @@ const EyeTrackingDemo: React.FC = () => {
           <h3>Download Options</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
             <button
+              type="button"
               onClick={handleDownloadJSON}
               disabled={!currentSession}
               style={{ backgroundColor: '#1976d2', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '5px', cursor: 'pointer', fontSize: '14px' }}
@@ -295,6 +287,7 @@ const EyeTrackingDemo: React.FC = () => {
               Download JSON Only
             </button>
             <button
+              type="button"
               onClick={handleDownloadComponents}
               disabled={!currentSession}
               style={{ backgroundColor: '#1976d2', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '5px', cursor: 'pointer', fontSize: '14px' }}
@@ -302,6 +295,7 @@ const EyeTrackingDemo: React.FC = () => {
               Download Components
             </button>
             <button
+              type="button"
               onClick={handleDownloadZip}
               disabled={!currentSession}
               style={{ backgroundColor: '#1976d2', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '5px', cursor: 'pointer', fontSize: '14px' }}
@@ -309,6 +303,7 @@ const EyeTrackingDemo: React.FC = () => {
               Download ZIP
             </button>
             <button
+              type="button"
               onClick={handleSaveExperiment}
               disabled={!currentSession}
               style={{ backgroundColor: '#1976d2', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '5px', cursor: 'pointer', fontSize: '14px' }}
@@ -343,16 +338,18 @@ const EyeTrackingDemo: React.FC = () => {
         </div>
 
         {/* Demo Area */}
-        <div 
+        <button 
+          type="button"
           onClick={() => currentSession && handleTaskClick('Demo Area Click')}
-          style={{ backgroundColor: '#f0f8ff', padding: '20px', margin: '20px 0', borderRadius: '10px', border: '2px dashed #1976d2', textAlign: 'center', position: 'relative', height: '200px', cursor: 'crosshair' }}
+          disabled={!currentSession}
+          style={{ backgroundColor: '#f0f8ff', padding: '20px', margin: '20px 0', borderRadius: '10px', border: '2px dashed #1976d2', textAlign: 'center', position: 'relative', height: '200px', cursor: 'crosshair', width: '100%' }}
         >
           <h3>Demo Area - {getTrackingMode() === 'eye-tracking' ? 'Eye tracking active' : 'Move your mouse to simulate gaze'}</h3>
           <p>Current mode: {getTrackingMode()}</p>
           {getTrackingMode() === 'eye-tracking' && (
             <p style={{ color: '#388e3c' }}>Connected to: {getCurrentEyeTrackingServerUrl()}</p>
           )}
-        </div>
+        </button>
 
         {/* Latest Gaze Data */}
         <div>
@@ -367,7 +364,7 @@ const EyeTrackingDemo: React.FC = () => {
           <h3>System Log:</h3>
           <div style={{ backgroundColor: '#f8f9fa', border: '1px solid #e9ecef', padding: '15px', margin: '15px 0', borderRadius: '5px', fontFamily: 'monospace', fontSize: '12px', maxHeight: '300px', overflowY: 'auto', whiteSpace: 'pre-wrap' }}>
             {logs.map((logEntry, index) => (
-              <div key={index} style={{ marginBottom: '5px' }}>
+              <div key={`log-${index}-${logEntry.slice(0, 10)}`} style={{ marginBottom: '5px' }}>
                 {logEntry}
               </div>
             ))}

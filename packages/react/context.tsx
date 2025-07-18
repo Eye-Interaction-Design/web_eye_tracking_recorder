@@ -1,11 +1,12 @@
 // React Context Provider for Web Eye Tracking Recorder
 
 import type {
-  DownloadSessionOptions,
   GazePointInput,
   RecordingConfig,
   SessionConfig,
-} from "../eye-analysis/dist/types"
+} from "../eye-analysis/types"
+
+import type { DownloadSessionOptions } from "../eye-analysis/recorder/export"
 import type React from "react"
 import type { ReactNode } from "react"
 import { createContext, useContext } from "react"

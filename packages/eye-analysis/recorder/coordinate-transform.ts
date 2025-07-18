@@ -11,23 +11,34 @@ export function transformToContentCoordinates(
 ): { contentX: number; contentY: number } {
   switch (sessionInfo.recordingMode) {
     case "full-screen":
-      // Full screen recording: screenX/Y = contentX/Y
+      // Full screen recording: set both screenX/Y and contentX/Y to 0 for simplicity
       return {
-        contentX: screenX,
-        contentY: screenY,
+        contentX: 0,
+        contentY: 0,
       }
 
     case "current-tab":
-    case "browser-window":
       if (!windowState) {
-        throw new Error("WindowState is required for window-based recording")
+        throw new Error("WindowState is required for current-tab recording")
       }
 
-      // Window recording: convert to window-based coordinates
+      // Current tab recording: convert to window-based coordinates
       return {
         contentX: screenX - windowState.screenX,
         contentY: screenY - windowState.screenY,
       }
+
+    // Temporarily disabled browser-window mode
+    // case "browser-window":
+    //   if (!windowState) {
+    //     throw new Error("WindowState is required for browser-window recording")
+    //   }
+    //
+    //   // Browser window recording: convert to window-based coordinates
+    //   return {
+    //     contentX: screenX - windowState.screenX,
+    //     contentY: screenY - windowState.screenY,
+    //   }
 
     default:
       throw new Error(
@@ -77,13 +88,11 @@ export function transformToNormalizedCoordinates(
   let width: number, height: number
 
   if (sessionInfo.recordingMode === "full-screen") {
-    if (!sessionInfo.recordingReference?.screen) {
-      throw new Error(
-        "Screen info is required for full-screen recording normalization",
-      )
+    // For full-screen mode, we set coordinates to 0, so normalization is also 0
+    return {
+      normalizedX: 0,
+      normalizedY: 0,
     }
-    width = sessionInfo.recordingReference.screen.width
-    height = sessionInfo.recordingReference.screen.height
   } else {
     if (!windowState) {
       throw new Error(

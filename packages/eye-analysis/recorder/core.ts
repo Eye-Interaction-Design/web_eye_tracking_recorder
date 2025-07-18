@@ -60,7 +60,7 @@ export const createSession = async (
   recordingConfig?: RecordingConfig,
   includeMetadata?: boolean,
   options?: {
-    recordingMode?: "current-tab" | "browser-window" | "full-screen"
+    recordingMode?: "current-tab" | /* "browser-window" | */ "full-screen"
     screenInfo?: ScreenInfo
     windowInfo?: WindowInfo
   },
@@ -78,12 +78,10 @@ export const createSession = async (
   const recordingMode = options?.recordingMode || "current-tab"
 
   // Set reference information according to recording mode
-  let recordingReference: SessionInfo["recordingReference"]
-  if (recordingMode !== "full-screen") {
-    recordingReference = {
-      screen: options?.screenInfo || getScreenInfo(),
-      window: options?.windowInfo || getBrowserWindowInfo(),
-    }
+  // Always save screen and window info for reference
+  const recordingReference: SessionInfo["recordingReference"] = {
+    screen: options?.screenInfo || getScreenInfo(),
+    window: options?.windowInfo || getBrowserWindowInfo(),
   }
 
   const sessionInfo: SessionInfo = {
@@ -274,6 +272,31 @@ export const startRecording = async (): Promise<void> => {
     await saveEvent(recordingStartEvent)
 
     dispatch({ type: "START_RECORDING" })
+
+    // Get actual content size from the recording stream
+    const videoTrack = recordingStream.getVideoTracks()[0]
+    if (videoTrack) {
+      const settings = videoTrack.getSettings()
+      const actualContentSize = {
+        width: settings.width || 0,
+        height: settings.height || 0,
+      }
+
+      // Update session info with actual content size
+      const updatedSession = {
+        ...state.currentSession,
+        actualContentSize,
+      }
+
+      // Update session in storage
+      await saveSession(updatedSession)
+
+      // Update state
+      dispatch({
+        type: "UPDATE_SESSION",
+        payload: updatedSession,
+      })
+    }
     dispatch({ type: "ADD_EVENT", payload: recordingStartEvent })
   } catch (error) {
     const errorMessage =
@@ -384,36 +407,44 @@ export const addGazeData = async (
       windowState,
     )
 
-    // Left eye coordinate transformation
-    const leftEyeContent = transformToContentCoordinates(
+    // Left eye coordinate transformation (if available)
+    const leftEyeContent = gazeInput.leftEye ? transformToContentCoordinates(
       gazeInput.leftEye.screenX,
       gazeInput.leftEye.screenY,
       session,
       windowState,
-    )
+    ) : { contentX: 0, contentY: 0 }
 
-    // Right eye coordinate transformation
-    const rightEyeContent = transformToContentCoordinates(
+    // Right eye coordinate transformation (if available)
+    const rightEyeContent = gazeInput.rightEye ? transformToContentCoordinates(
       gazeInput.rightEye.screenX,
       gazeInput.rightEye.screenY,
       session,
       windowState,
-    )
+    ) : { contentX: 0, contentY: 0 }
 
     // Create complete GazePoint with all required fields
     const completeGazePoint: GazePoint = {
       id: generateId(),
       sessionId: session.sessionId,
+      deviceTimeStamp: gazeInput.deviceTimeStamp,
       systemTimestamp: gazeInput.systemTimestamp || Date.now(),
       browserTimestamp: performance.now(),
-      screenX: gazeInput.screenX,
-      screenY: gazeInput.screenY,
+      normalized: gazeInput.normalized,
+      screenX: session.recordingMode === "full-screen" ? 0 : gazeInput.screenX,
+      screenY: session.recordingMode === "full-screen" ? 0 : gazeInput.screenY,
       contentX,
       contentY,
       confidence: gazeInput.confidence,
-      leftEye: {
-        screenX: gazeInput.leftEye.screenX,
-        screenY: gazeInput.leftEye.screenY,
+      leftEye: gazeInput.leftEye ? {
+        screenX:
+          session.recordingMode === "full-screen"
+            ? 0
+            : gazeInput.leftEye.screenX,
+        screenY:
+          session.recordingMode === "full-screen"
+            ? 0
+            : gazeInput.leftEye.screenY,
         contentX: leftEyeContent.contentX,
         contentY: leftEyeContent.contentY,
         positionX: gazeInput.leftEye.positionX,
@@ -423,10 +454,16 @@ export const addGazeData = async (
         rotateX: gazeInput.leftEye.rotateX,
         rotateY: gazeInput.leftEye.rotateY,
         rotateZ: gazeInput.leftEye.rotateZ,
-      },
-      rightEye: {
-        screenX: gazeInput.rightEye.screenX,
-        screenY: gazeInput.rightEye.screenY,
+      } : undefined,
+      rightEye: gazeInput.rightEye ? {
+        screenX:
+          session.recordingMode === "full-screen"
+            ? 0
+            : gazeInput.rightEye.screenX,
+        screenY:
+          session.recordingMode === "full-screen"
+            ? 0
+            : gazeInput.rightEye.screenY,
         contentX: rightEyeContent.contentX,
         contentY: rightEyeContent.contentY,
         positionX: gazeInput.rightEye.positionX,
@@ -436,7 +473,7 @@ export const addGazeData = async (
         rotateX: gazeInput.rightEye.rotateX,
         rotateY: gazeInput.rightEye.rotateY,
         rotateZ: gazeInput.rightEye.rotateZ,
-      },
+      } : undefined,
 
       // Window state (only when necessary)
       windowState,

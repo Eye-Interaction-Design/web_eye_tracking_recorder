@@ -41,6 +41,14 @@ const stateReducer = (
         lastUpdate: Date.now(),
       }
 
+    case "UPDATE_SESSION":
+      return {
+        ...state,
+        currentSession: action.payload,
+        error: null,
+        lastUpdate: Date.now(),
+      }
+
     case "START_RECORDING":
       return {
         ...state,

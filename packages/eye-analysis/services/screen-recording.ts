@@ -1,4 +1,8 @@
-import type { RecordingConfig, VideoChunk } from "../types"
+import type {
+  RecordingConfig,
+  VideoChunkInfo,
+  VideoChunk,
+} from "../recorder/types"
 import { saveVideoChunk } from "./database"
 
 interface RecordingState {
@@ -51,6 +55,29 @@ export const startRecording = async (sessionId: string): Promise<void> => {
     recordingState.isRecording = true
   } catch (error) {
     throw new Error(`Failed to start recording: ${error}`)
+  }
+}
+
+/**
+ * Get actual content size from the current recording stream
+ */
+export const getActualContentSize = (): {
+  width: number
+  height: number
+} | null => {
+  if (!recordingState.stream) {
+    return null
+  }
+
+  const videoTrack = recordingState.stream.getVideoTracks()[0]
+  if (!videoTrack) {
+    return null
+  }
+
+  const settings = videoTrack.getSettings()
+  return {
+    width: settings.width || 0,
+    height: settings.height || 0,
   }
 }
 

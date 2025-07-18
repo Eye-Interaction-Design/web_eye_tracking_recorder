@@ -1,5 +1,5 @@
 import { act, renderHook } from "@testing-library/react"
-import * as eyeAnalysis from "../../eye-analysis/dist/types"
+import * as eyeAnalysis from "../../eye-analysis"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { useGazeTracking, useRecorderState, useRecording } from "../hooks"
 
@@ -127,7 +127,16 @@ describe("React Hooks", () => {
     it("should stop recording", async () => {
       vi.mocked(eyeAnalysis.stopRecording).mockResolvedValue({
         sessionId: "test-session",
-        sessionInfo: null,
+        participantId: "participant1",
+        experimentType: "test",
+        startTime: Date.now(),
+        config: {
+          frameRate: 30,
+          quality: "medium",
+          chunkDuration: 5,
+          captureEntireScreen: false,
+        },
+        recordingMode: "current-tab",
       })
       vi.mocked(eyeAnalysis.getCurrentState).mockReturnValue({
         status: "idle" as const,
@@ -185,7 +194,13 @@ describe("React Hooks", () => {
     })
 
     it("should add user event", async () => {
-      vi.mocked(eyeAnalysis.addSessionEvent).mockResolvedValue(undefined)
+      vi.mocked(eyeAnalysis.addEvent).mockResolvedValue({
+        id: "event1",
+        sessionId: "test-session",
+        type: "user_event",
+        timestamp: Date.now(),
+        data: undefined,
+      })
       vi.mocked(eyeAnalysis.getCurrentState).mockReturnValue({
         status: "idle" as const,
         isRecording: false,
@@ -207,7 +222,7 @@ describe("React Hooks", () => {
         await result.current.addEvent("user_interaction", eventData)
       })
 
-      expect(eyeAnalysis.addSessionEvent).toHaveBeenCalledWith(
+      expect(eyeAnalysis.addEvent).toHaveBeenCalledWith(
         "user_interaction",
         eventData,
       )
