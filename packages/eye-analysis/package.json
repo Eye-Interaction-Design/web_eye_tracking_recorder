@@ -5,15 +5,15 @@
   "author": "shikibu9419",
   "license": "MIT",
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "module": "dist/index.js",
-  "browser": "dist/index.js",
+  "main": "dist/experiment.js",
+  "types": "dist/experiment.d.ts",
+  "module": "dist/experiment.js",
+  "browser": "dist/experiment.js",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
+      "types": "./dist/experiment.d.ts",
+      "import": "./dist/experiment.js",
+      "default": "./dist/experiment.js"
     },
     "./experiment": {
       "types": "./dist/experiment.d.ts",
@@ -21,14 +21,24 @@
       "default": "./dist/experiment.js"
     },
     "./tracking": {
-      "types": "./dist/tracking.d.ts",
-      "import": "./dist/tracking.js",
-      "default": "./dist/tracking.js"
+      "types": "./dist/tracking/index.d.ts",
+      "import": "./dist/tracking/index.js",
+      "default": "./dist/tracking/index.js"
+    },
+    "./tracking/adaptors": {
+      "types": "./dist/tracking/adaptors/index.d.ts",
+      "import": "./dist/tracking/adaptors/index.js",
+      "default": "./dist/tracking/adaptors/index.js"
     },
     "./utils": {
       "types": "./dist/utils.d.ts",
       "import": "./dist/utils.js",
       "default": "./dist/utils.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/types.js",
+      "default": "./dist/types.js"
     },
     "./recorder/*": {
       "types": "./dist/recorder/*.d.ts",
@@ -42,8 +52,8 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "bun build ./index.ts --outdir ./dist --target browser --format esm && bunx tsc --project tsconfig.json --emitDeclarationOnly --outDir ./dist",
-    "dev": "bun --hot ./index.ts",
+    "build": "bun build ./experiment.ts --outdir ./dist --target browser --format esm && bunx tsc --project tsconfig.json --emitDeclarationOnly --outDir ./dist",
+    "dev": "bun --hot ./experiment.ts",
     "test": "vitest",
     "test:watch": "vitest --watch",
     "lint": "bunx @biomejs/biome lint .",

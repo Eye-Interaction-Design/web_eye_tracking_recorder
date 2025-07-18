@@ -79,20 +79,31 @@ export const startRecording = async (config?: {
 }): Promise<void> => {
   await coreStartRecording()
 
-  // Set up gaze tracking - either real eye tracking or mouse simulation
-  const {
-    isValidWebSocketUrl,
-    connectToEyeTrackingServer,
-    startMouseTracking,
-  } = await import("./tracking")
+  // Set up gaze tracking using the new adaptor system
+  const { isValidWebSocketUrl } = await import("./utils")
+  const { connectTrackingAdaptor } = await import("./tracking/index")
+  const { websocketTrackingAdaptor, mouseTrackingAdaptor } = await import(
+    "./tracking/adaptors"
+  )
 
   if (
     config?.eyeTrackingServerUrl &&
     isValidWebSocketUrl(config?.eyeTrackingServerUrl)
   ) {
-    await connectToEyeTrackingServer(config?.eyeTrackingServerUrl)
+    // Use WebSocket adaptor for real eye tracking
+    const eyeTracker = websocketTrackingAdaptor(config.eyeTrackingServerUrl, {
+      autoReconnect: true,
+      timeout: 10000,
+    })
+    await connectTrackingAdaptor(eyeTracker)
   } else {
-    startMouseTracking()
+    // Use mouse adaptor for simulation
+    const mouseSimulator = mouseTrackingAdaptor({
+      confidenceRange: [0.7, 0.9],
+      saccadeSimulation: true,
+      blinkSimulation: true,
+    })
+    await connectTrackingAdaptor(mouseSimulator)
   }
 }
 
@@ -103,12 +114,9 @@ export const stopRecording = async (): Promise<{
   sessionId: string
   sessionInfo: SessionInfo | null
 }> => {
-  const { stopMouseTracking, disconnectFromEyeTrackingServer } = await import(
-    "./tracking"
-  )
-
-  stopMouseTracking()
-  disconnectFromEyeTrackingServer()
+  // Disconnect all tracking adaptors
+  const { disconnectAllTrackingAdaptors } = await import("./tracking/index")
+  await disconnectAllTrackingAdaptors()
 
   const sessionInfo = await coreStopRecording()
   const currentSession = getCurrentSession()

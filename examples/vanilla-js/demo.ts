@@ -15,10 +15,14 @@ import {
 import { addEvent } from "../../packages/eye-analysis/recorder/core";
 
 import {
-  getTrackingMode,
-  isEyeTrackingConnected,
-  getCurrentEyeTrackingServerUrl,
-} from "../../packages/eye-analysis/tracking";
+  connectTrackingAdaptor,
+  disconnectAllTrackingAdaptors,
+  getCurrentTrackingMode,
+  getTrackingQuality,
+  isTrackingActive,
+  websocketTrackingAdaptor,
+  mouseTrackingAdaptor,
+} from "../../packages/eye-analysis/tracking/index";
 
 import {
   formatDuration,
@@ -162,10 +166,26 @@ async function handleCreateSession(): Promise<void> {
     const sessionId = await createSession(config);
     log(`Session created: ${sessionId}`);
 
-    if (config.eyeTrackingServerUrl) {
-      log(`Eye tracking mode: ${config.eyeTrackingServerUrl}`);
+    // Set up tracking adaptor based on configuration
+    if (config.eyeTrackingServerUrl && isValidWebSocketUrl(config.eyeTrackingServerUrl)) {
+      log(`Setting up WebSocket eye tracker: ${config.eyeTrackingServerUrl}`);
+      const eyeTracker = websocketTrackingAdaptor(config.eyeTrackingServerUrl, {
+        autoReconnect: true,
+        timeout: 10000,
+        reconnectInterval: 5000,
+      });
+      await connectTrackingAdaptor(eyeTracker);
+      log("WebSocket eye tracker connected");
     } else {
-      log("Mouse simulation mode");
+      log("Setting up mouse simulation tracker");
+      const mouseSimulator = mouseTrackingAdaptor({
+        confidenceRange: [0.7, 0.9],
+        saccadeSimulation: true,
+        blinkSimulation: true,
+        noiseAmount: 2,
+      });
+      await connectTrackingAdaptor(mouseSimulator);
+      log("Mouse simulation tracker connected");
     }
 
     onGaze((gazeData) => {
@@ -180,18 +200,17 @@ async function handleStartRecording(): Promise<void> {
   try {
     log("Starting recording...");
 
-    await startRecording({
-      eyeTrackingServerUrl: appState.eyeTrackingServerUrl.trim(),
-    });
+    // The adaptor is already connected in createSession, so we just need to start recording
+    await startRecording({});
     log("Recording started successfully");
 
-    if (
-      appState.eyeTrackingServerUrl.trim() &&
-      isValidWebSocketUrl(appState.eyeTrackingServerUrl.trim())
-    ) {
-      log(`Connecting to eye tracking server: ${appState.eyeTrackingServerUrl.trim()}`);
+    const currentMode = getCurrentTrackingMode();
+    if (currentMode.includes("WebSocket")) {
+      log("WebSocket eye tracking is active");
+    } else if (currentMode.includes("Mouse")) {
+      log("Mouse simulation is active - move your mouse around to generate gaze data");
     } else {
-      log("Move your mouse around to generate mock gaze data");
+      log("Tracking system ready");
     }
   } catch (error) {
     log(`Recording start failed: ${error}`);
@@ -202,7 +221,10 @@ async function handleStopRecording(): Promise<void> {
   try {
     log("Stopping recording...");
     await stopRecording();
-    log("Recording stopped successfully");
+    
+    // Disconnect all tracking adaptors
+    await disconnectAllTrackingAdaptors();
+    log("Recording stopped and tracking adaptors disconnected");
   } catch (error) {
     log(`Recording stop failed: ${error}`);
   }
@@ -297,7 +319,7 @@ function setupEventListeners(): void {
 
 function setupDemoTasks(): void {
   // Just add a simple click handler for the demo area
-  elements.demoArea.addEventListener("click", (e) => {
+  elements.demoArea.addEventListener("click", () => {
     if (appState.experimentState.currentSession) {
       handleTaskClick("Demo Area Click");
     }
@@ -367,7 +389,7 @@ function updateTrackingMode(): void {
   const mode = url ? "Eye Tracking" : "Mouse Simulation";
   elements.modeText.textContent = mode;
 
-  if (isEyeTrackingConnected()) {
+  if (isTrackingActive()) {
     elements.connectionStatus.style.display = "inline";
   } else {
     elements.connectionStatus.style.display = "none";
@@ -375,18 +397,20 @@ function updateTrackingMode(): void {
 }
 
 function updateDemoArea(): void {
-  const trackingMode = getTrackingMode();
-  const currentServerUrl = getCurrentEyeTrackingServerUrl();
+  const trackingMode = getCurrentTrackingMode();
+  const trackingQuality = getTrackingQuality();
 
-  if (trackingMode === "eye-tracking") {
+  if (trackingMode.includes("WebSocket")) {
     elements.demoTitle.textContent = "Demo Area - Eye tracking active";
-    elements.demoDescription.textContent = `Current mode: ${trackingMode}`;
-    if (currentServerUrl) {
-      elements.serverInfo.textContent = `Connected to: ${currentServerUrl}`;
-      elements.serverInfo.style.display = "block";
-    }
-  } else {
+    elements.demoDescription.textContent = `Current mode: ${trackingMode} (Quality: ${trackingQuality})`;
+    elements.serverInfo.textContent = `Eye tracking server connected`;
+    elements.serverInfo.style.display = "block";
+  } else if (trackingMode.includes("Mouse")) {
     elements.demoTitle.textContent = "Demo Area - Move your mouse to simulate gaze";
+    elements.demoDescription.textContent = `Current mode: ${trackingMode} (Quality: ${trackingQuality})`;
+    elements.serverInfo.style.display = "none";
+  } else {
+    elements.demoTitle.textContent = "Demo Area - No tracking active";
     elements.demoDescription.textContent = `Current mode: ${trackingMode}`;
     elements.serverInfo.style.display = "none";
   }
