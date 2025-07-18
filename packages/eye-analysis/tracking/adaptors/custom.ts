@@ -198,6 +198,7 @@ export const createTimerAdaptor = (
     screenX: Math.random() * window.screen.width,
     screenY: Math.random() * window.screen.height,
     confidence: 0.7 + Math.random() * 0.3,
+    normalized: false, // Screen coordinates, not normalized
     leftEye: {
       screenX: Math.random() * window.screen.width,
       screenY: Math.random() * window.screen.height,
@@ -324,6 +325,7 @@ export const getExampleAdaptorConfigs = (): Array<{
             screenX: Math.random() * window.screen.width,
             screenY: Math.random() * window.screen.height,
             confidence: Math.random(),
+            normalized: false, // Screen coordinates, not normalized
             leftEye: {
               screenX: Math.random() * window.screen.width,
               screenY: Math.random() * window.screen.height,
@@ -371,6 +373,7 @@ export const getExampleAdaptorConfigs = (): Array<{
             screenX: x,
             screenY: y,
             confidence: 1.0,
+            normalized: false, // Screen coordinates, not normalized
             leftEye: { screenX: x - 5, screenY: y, pupilSize: 3 },
             rightEye: { screenX: x + 5, screenY: y, pupilSize: 3 },
           })

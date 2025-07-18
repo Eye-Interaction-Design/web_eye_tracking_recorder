@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,23 +13,41 @@
             padding: 20px;
             background-color: #f5f5f5;
         }
+
         .container {
             background-color: white;
             padding: 30px;
             border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
+
         .status {
             padding: 10px;
             margin: 10px 0;
             border-radius: 5px;
             font-weight: bold;
         }
-        .status.idle { background-color: #e3f2fd; color: #1976d2; }
-        .status.recording { background-color: #ffebee; color: #d32f2f; }
-        .status.completed { background-color: #e8f5e8; color: #388e3c; }
-        .status.error { background-color: #fff3e0; color: #f57c00; }
-        
+
+        .status.idle {
+            background-color: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .status.recording {
+            background-color: #ffebee;
+            color: #d32f2f;
+        }
+
+        .status.completed {
+            background-color: #e8f5e8;
+            color: #388e3c;
+        }
+
+        .status.error {
+            background-color: #fff3e0;
+            color: #f57c00;
+        }
+
         .button {
             background-color: #1976d2;
             color: white;
@@ -39,20 +58,24 @@
             cursor: pointer;
             font-size: 14px;
         }
+
         .button:hover {
             background-color: #1565c0;
         }
+
         .button:disabled {
             background-color: #ccc;
             cursor: not-allowed;
         }
+
         .button.danger {
             background-color: #d32f2f;
         }
+
         .button.danger:hover {
             background-color: #c62828;
         }
-        
+
         .log {
             background-color: #f8f9fa;
             border: 1px solid #e9ecef;
@@ -65,7 +88,7 @@
             overflow-y: auto;
             white-space: pre-wrap;
         }
-        
+
         .config-section {
             background-color: #f8f9fa;
             padding: 15px;
@@ -73,50 +96,51 @@
             border-radius: 5px;
             border-left: 4px solid #1976d2;
         }
-        
+
         .form-group {
             margin: 10px 0;
         }
-        
+
         .form-group label {
             display: inline-block;
             width: 150px;
             font-weight: bold;
         }
-        
-        .form-group input, .form-group select {
+
+        .form-group input,
+        .form-group select {
             padding: 5px;
             margin-left: 10px;
             border: 1px solid #ccc;
             border-radius: 3px;
         }
-        
+
         .metrics {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 15px;
             margin: 15px 0;
         }
-        
+
         .metric-card {
             background-color: #f8f9fa;
             padding: 15px;
             border-radius: 5px;
             text-align: center;
         }
-        
+
         .metric-value {
             font-size: 24px;
             font-weight: bold;
             color: #1976d2;
         }
-        
+
         .metric-label {
             font-size: 12px;
             color: #666;
             margin-top: 5px;
         }
-        
+
         .gaze-display {
             background-color: #e8f5e8;
             padding: 10px;
@@ -150,53 +174,73 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h1>Web Eye Tracking Recorder - Demo</h1>
         <p>This demo shows the Web Eye Tracking Recorder library with mock gaze data.</p>
-        <div style="background-color: #e3f2fd; padding: 15px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #1976d2;">
-            <strong>📹 Recording Target:</strong> When prompted to share your screen, please select <strong>"This tab"</strong> to record the current demo page. 
+        <div
+            style="background-color: #e3f2fd; padding: 15px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #1976d2;">
+            <strong>📹 Recording Target:</strong> The system will automatically request the appropriate recording mode based on your selection below. Current Tab mode will only show this tab option, Full Screen mode will show screen sharing options.
+        </div>
+
+        <div id="status" class="status idle">Status: Ready to initialize</div>
+
+        <div class="config-section">
+            <h3>Step 1: Initialize Tracking</h3>
+            <p><em>Configure your eye tracking setup, recording mode, and initialize the system.</em></p>
+            <div class="form-group">
+                <label for="eyeTrackingServerUrl">Eye Tracking Server URL:</label>
+                <input type="text" id="eyeTrackingServerUrl"
+                    placeholder="ws://localhost:8080 (leave empty for mouse simulation)" 
+                    value="ws://localhost:8000/eye_tracking" style="width: 300px;">
+                <div id="urlValidation" style="color: #d32f2f; font-size: 12px; margin-top: 5px; display: none;">Invalid
+                    WebSocket URL format. Use ws:// or wss://</div>
+            </div>
+            <div class="form-group">
+                <label for="recordingMode">Recording Mode:</label>
+                <select id="recordingMode">
+                    <option value="current-tab">Current Tab</option>
+                    <option value="full-screen">Full Screen</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <div id="trackingMode"
+                    style="background-color: #e8f5e8; padding: 10px; border-radius: 5px; font-size: 12px; margin-top: 10px;">
+                    <strong>Mode:</strong> <span id="modeText">Mouse Simulation</span>
+                    <span id="connectionStatus" style="color: #388e3c; margin-left: 10px; display: none;">✓
+                        Connected</span>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <button id="initBtn" class="button">Initialize Tracking</button>
         </div>
         
-        <div id="status" class="status idle">Status: Ready to initialize</div>
-        
         <div class="config-section">
-            <h3>Configuration</h3>
-            <p><em>Recording will capture the selected screen source. Please choose "This tab" when prompted.</em></p>
+            <h3>Step 2: Recording Session</h3>
+            <p><em>Set participant ID and record sessions. You can change participant ID between sessions.</em></p>
             <div class="form-group">
                 <label for="participantId">Participant ID:</label>
                 <input type="text" id="participantId" value="demo-participant-001">
             </div>
-            <div class="form-group">
-                <label for="eyeTrackingServerUrl">Eye Tracking Server URL:</label>
-                <input type="text" id="eyeTrackingServerUrl" placeholder="ws://localhost:8080 (leave empty for mouse simulation)" style="width: 300px;">
-                <div id="urlValidation" style="color: #d32f2f; font-size: 12px; margin-top: 5px; display: none;">Invalid WebSocket URL format. Use ws:// or wss://</div>
-            </div>
-            <div class="form-group">
-                <div id="trackingMode" style="background-color: #e8f5e8; padding: 10px; border-radius: 5px; font-size: 12px; margin-top: 10px;">
-                    <strong>Mode:</strong> <span id="modeText">Mouse Simulation</span>
-                    <span id="connectionStatus" style="color: #388e3c; margin-left: 10px; display: none;">✓ Connected</span>
-                </div>
+            <div>
+                <button id="startBtn" class="button" disabled>Start Recording</button>
+                <button id="stopBtn" class="button danger" disabled>Stop Recording</button>
             </div>
         </div>
-        
-        <div>
-            <button id="initBtn" class="button">Initialize</button>
-            <button id="createBtn" class="button" disabled>Create Session</button>
-            <button id="startBtn" class="button" disabled>Start Recording</button>
-            <button id="stopBtn" class="button danger" disabled>Stop Recording</button>
-        </div>
-        
+
         <div class="config-section">
-            <h3>Download Options</h3>
+            <h3>Step 3: Download Options</h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
                 <button id="downloadBtn" class="button" disabled>Download JSON Only</button>
                 <button id="downloadComponentsBtn" class="button" disabled>Download Components</button>
                 <button id="downloadZipBtn" class="button" disabled>Download ZIP</button>
-                <button id="autoSaveBtn" class="button" disabled>Auto Save</button>
+                <button id="exportAllBtn" class="button" disabled>Export All Sessions</button>
             </div>
         </div>
-        
+
         <div class="metrics">
             <div class="metric-card">
                 <div id="sessionDuration" class="metric-value">0s</div>
@@ -216,17 +260,27 @@
             </div>
         </div>
 
+        <div class="config-section">
+            <h3>Session Management</h3>
+            <div id="currentSessionInfo">
+                <p>No active session</p>
+            </div>
+            <div id="sessionsList">
+                <p>No completed sessions yet</p>
+            </div>
+        </div>
+
         <div class="demo-area" id="demoArea">
             <h3 id="demoTitle">Demo Area - Move your mouse to simulate gaze</h3>
             <p id="demoDescription">During recording, mouse movements will simulate gaze data points</p>
             <p id="serverInfo" style="color: #388e3c; display: none;"></p>
         </div>
-        
+
         <div>
             <h3>Latest Gaze Data:</h3>
             <div id="gazeData" class="gaze-display">No gaze data yet...</div>
         </div>
-        
+
         <div>
             <h3>System Log:</h3>
             <div id="log" class="log">Ready to start...</div>
@@ -235,4 +289,5 @@
 
     <script type="module" src="/demo.ts"></script>
 </body>
+
 </html>

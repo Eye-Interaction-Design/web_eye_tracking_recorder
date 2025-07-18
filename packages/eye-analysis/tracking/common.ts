@@ -102,9 +102,9 @@ export const startTrackingSession = (
 
   // Start buffer flushing with default handler
   startBufferFlush(
-    async (data: GazePoint[]) => {
-      // Default: just log the data (adaptors can override this)
-      console.log(`Flushing ${data.length} gaze points for ${adaptorId}`)
+    async (_data: GazePoint[]) => {
+      // Default: flush collected gaze data (adaptors can override this)
+      // Flushing data for adaptor
     },
     (error: Error, _data: GazePoint[]) => {
       handleTrackingError(adaptorId, error)

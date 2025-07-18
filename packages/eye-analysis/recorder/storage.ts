@@ -401,17 +401,15 @@ export const autoCleanupStorage = async (
     )
 
     // Clean up old video chunks (keep recent 12 hours)
-    const deletedChunks = await cleanupOldVideoChunks(12)
-    console.log(`Cleaned up ${deletedChunks} old video chunks`)
+    const _deletedChunks = await cleanupOldVideoChunks(12)
+    // Cleaned up old video chunks
 
     // Check if we need more aggressive cleanup
     const newUsage = await getStorageUsage()
     if (newUsage.percentage >= triggerPercentage) {
       // More aggressive cleanup - keep only 6 hours
-      const moreDeleted = await cleanupOldVideoChunks(6)
-      console.log(
-        `Performed aggressive cleanup, deleted ${moreDeleted} more chunks`,
-      )
+      const _moreDeleted = await cleanupOldVideoChunks(6)
+      // Performed aggressive cleanup
     }
   }
 }

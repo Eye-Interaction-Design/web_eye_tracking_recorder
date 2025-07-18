@@ -1,7 +1,4 @@
-import type {
-  RecordingConfig,
-  VideoChunk,
-} from "../recorder/types"
+import type { RecordingConfig, VideoChunk } from "../recorder/types"
 import { saveVideoChunk } from "./database"
 
 interface RecordingState {
@@ -171,7 +168,7 @@ const setupMediaRecorder = (): void => {
   }
 
   recordingState.mediaRecorder.onstop = () => {
-    console.log("Recording stopped")
+    // Recording stopped
   }
 }
 

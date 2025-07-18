@@ -1,5 +1,4 @@
 import type {
-  CalibrationResult,
   ExperimentSession,
   GazePoint,
   SessionEvent,
@@ -12,7 +11,6 @@ export interface ExperimentStore {
   sessionEvents: SessionEvent[]
   onGazeDataCallback?: (gazePoint: GazePoint) => void
   onSessionEventCallback?: (event: SessionEvent) => void
-  onCalibrationCallback?: (result: CalibrationResult) => void
 }
 
 let store: ExperimentStore = {
@@ -22,7 +20,6 @@ let store: ExperimentStore = {
   sessionEvents: [],
   onGazeDataCallback: undefined,
   onSessionEventCallback: undefined,
-  onCalibrationCallback: undefined,
 }
 
 export const getStore = (): ExperimentStore => store
@@ -39,7 +36,6 @@ export const resetStore = (): void => {
     sessionEvents: [],
     onGazeDataCallback: undefined,
     onSessionEventCallback: undefined,
-    onCalibrationCallback: undefined,
   }
 }
 
@@ -60,8 +56,4 @@ export const addSessionEvent = (event: SessionEvent): void => {
 
 export const emitGazeData = (gazePoint: GazePoint): void => {
   store.onGazeDataCallback?.(gazePoint)
-}
-
-export const emitCalibrationResult = (result: CalibrationResult): void => {
-  store.onCalibrationCallback?.(result)
 }

@@ -200,21 +200,26 @@ export const exportExperimentDataset = async (
   }
 
   for (const sessionId of sessionIds) {
-    const sessionFolder = `session_${sessionId}`
-    const filesToDownload = await collectSessionFiles(sessionId, {
-      includeOptions,
-      prefix: sessionFolder,
-    })
+    try {
+      const sessionFolder = `session_${sessionId}`
+      const filesToDownload = await collectSessionFiles(sessionId, {
+        includeOptions,
+        prefix: sessionFolder,
+      })
 
-    // Add files to the ZIP with session folder prefix
-    for (const file of filesToDownload) {
-      if (file.content instanceof Blob) {
-        allFiles[file.filename] = new Uint8Array(
-          await file.content.arrayBuffer(),
-        )
-      } else {
-        allFiles[file.filename] = strToU8(file.content)
+      // Add files to the ZIP with session folder prefix
+      for (const file of filesToDownload) {
+        if (file.content instanceof Blob) {
+          allFiles[file.filename] = new Uint8Array(
+            await file.content.arrayBuffer(),
+          )
+        } else {
+          allFiles[file.filename] = strToU8(file.content)
+        }
       }
+    } catch (error) {
+      console.error(`Failed to process session ${sessionId}:`, error)
+      // Continue with next session instead of stopping
     }
   }
 
@@ -280,7 +285,13 @@ const collectSessionFiles = async (
     mimeType: string
   }>
 > => {
-  const sessionData = await getSessionData(sessionId)
+  let sessionData: SessionData
+  try {
+    sessionData = await getSessionData(sessionId)
+  } catch (error) {
+    console.error(`Failed to get session data for ${sessionId}:`, error)
+    throw error
+  }
   const sessionName = getSessionName(sessionId)
   const filesToDownload: Array<{
     content: string | Blob
@@ -310,7 +321,7 @@ const collectSessionFiles = async (
     const gazeDataCSV = gazeDataToCSV(sessionData.gazeData)
     filesToDownload.push({
       content: gazeDataCSV,
-      filename: getFilename("gaze-data.csv"),
+      filename: getFilename("gaze.csv"),
       mimeType: "text/csv",
     })
   }
@@ -442,7 +453,7 @@ export const downloadCompleteSessionData = async (
   // 2. Download gaze data as CSV
   if (sessionData.gazeData.length > 0) {
     const gazeCSV = gazeDataToCSV(sessionData.gazeData)
-    downloadFile(gazeCSV, `${sessionName}-gaze-data.csv`, "text/csv")
+    downloadFile(gazeCSV, `${sessionName}-gaze.csv`, "text/csv")
   }
 
   // 3. Download events as CSV

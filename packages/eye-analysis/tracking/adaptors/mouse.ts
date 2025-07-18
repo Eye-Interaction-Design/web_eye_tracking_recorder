@@ -88,6 +88,7 @@ export const mouseTrackingAdaptor = (
           screenX: event.screenX + noiseX,
           screenY: event.screenY + noiseY,
           confidence: Math.max(0.1, Math.min(1.0, baseConfidence)),
+          normalized: false, // Screen coordinates, not normalized
           leftEye: {
             screenX: event.screenX - 2 + noiseX + Math.random() * 2,
             screenY: event.screenY + noiseY + Math.random() * 2,

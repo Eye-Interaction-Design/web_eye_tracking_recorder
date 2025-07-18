@@ -1,7 +1,7 @@
 // Tracking adaptor manager - function-based implementation
 
 import { interactionState } from "../interaction"
-import { addGazeData } from "../recorder/core"
+import { addGazeData, getCurrentSession } from "../recorder/core"
 import type { GazePointInput } from "../recorder/types"
 import type {
   AdaptorManagerState,
@@ -44,8 +44,6 @@ export const connectTrackingAdaptor = async (
 
   await adaptor.connect()
   managerState.activeAdaptors.add(adaptor.id)
-
-  console.log(`Connected adaptor: ${adaptor.name}`)
 }
 
 /**
@@ -60,7 +58,6 @@ export const disconnectTrackingAdaptor = async (
     managerState.activeAdaptors.delete(adaptorId)
     managerState.gazeCallbacks.delete(adaptorId)
     managerState.statusCallbacks.delete(adaptorId)
-    console.log(`Disconnected adaptor: ${adaptor.name}`)
   }
 }
 
@@ -121,6 +118,13 @@ export const handleGazeData = async (
   gazeInput: GazePointInput,
   adaptorId: string,
 ): Promise<void> => {
+  // Only process gaze data if a session exists
+  const currentSession = getCurrentSession()
+  if (!currentSession) {
+    // No session available, skip processing
+    return
+  }
+
   try {
     const gazePoint = await addGazeData(gazeInput)
 

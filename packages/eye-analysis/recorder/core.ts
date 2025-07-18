@@ -17,6 +17,7 @@ import type {
   GazePoint,
   GazePointInput,
   RecordingConfig,
+  RecordingMode,
   SessionConfig,
   SessionEvent,
   SessionInfo,
@@ -60,7 +61,7 @@ export const createSession = async (
   recordingConfig?: RecordingConfig,
   includeMetadata?: boolean,
   options?: {
-    recordingMode?: "current-tab" | /* "browser-window" | */ "full-screen"
+    recordingMode?: RecordingMode
     screenInfo?: ScreenInfo
     windowInfo?: WindowInfo
   },
@@ -165,7 +166,8 @@ export const startRecording = async (): Promise<void> => {
   }
 
   try {
-    // Request screen capture - prefer current tab
+    // Request screen capture with recording mode constraints
+    const recordingMode = state.currentSession.recordingMode
     const constraints = {
       video: {
         frameRate: state.currentSession.config.frameRate || 30,
@@ -173,20 +175,23 @@ export const startRecording = async (): Promise<void> => {
       audio: false,
     }
 
-    // Try to get current tab first, fallback to display media
-    try {
-      // Use getDisplayMedia but with preference for current tab
+    // Apply recording mode constraints
+    if (recordingMode === "current-tab") {
+      // Force current tab selection with Chrome-specific hints
       const extendedConstraints = {
         ...constraints,
-        // Chrome-specific hints (ignored in other browsers)
         preferCurrentTab: true,
         selfBrowserSurface: "include",
         surfaceSwitching: "exclude",
-      } as MediaStreamConstraints // Chrome-specific properties not in standard types
+      } as MediaStreamConstraints & {
+        preferCurrentTab?: boolean
+        selfBrowserSurface?: string
+        surfaceSwitching?: string
+      }
       recordingStream =
         await navigator.mediaDevices.getDisplayMedia(extendedConstraints)
-    } catch (_error) {
-      // Fallback to standard display media
+    } else {
+      // Standard display media for full-screen
       recordingStream =
         await navigator.mediaDevices.getDisplayMedia(constraints)
     }

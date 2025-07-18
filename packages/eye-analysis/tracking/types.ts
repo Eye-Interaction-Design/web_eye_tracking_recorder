@@ -1,10 +1,6 @@
 // Tracking adaptor types and interfaces
 
-import type {
-  CalibrationResult,
-  GazePoint,
-  GazePointInput,
-} from "../recorder/types"
+import type { GazePoint, GazePointInput } from "../recorder/types"
 
 // Tracking status
 export interface TrackingStatus {
@@ -33,7 +29,6 @@ export interface TrackingAdaptor {
   getStatus(): TrackingStatus
   onStatusChange?: (status: TrackingStatus) => void
   onError?: (error: Error) => void
-  onCalibration?: (result: CalibrationResult) => void
 }
 
 // Data processing adaptor interface

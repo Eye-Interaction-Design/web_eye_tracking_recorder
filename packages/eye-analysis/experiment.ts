@@ -18,31 +18,48 @@ import {
 } from "./recorder/export"
 import { subscribe } from "./recorder/state"
 import type {
-  CalibrationResult,
   ExperimentConfig,
-  EyeTrackingConfig,
   GazePoint,
   GazePointInput,
   QualityMetrics,
   RecorderState,
   RecordingConfig,
+  RecordingMode,
   SessionConfig,
   SessionEvent,
   SessionInfo,
 } from "./recorder/types"
+import { connectTrackingAdaptor } from "./tracking"
+import type { TrackingAdaptor } from "./tracking/types"
 
 // Callback types for experiment API
 export type GazeDataCallback = (gazePoint: GazePoint) => void
 export type SessionEventCallback = (event: SessionEvent) => void
-export type CalibrationCallback = (result: CalibrationResult) => void
 
 /**
- * Initialize the experiment system
+ * Initialize the experiment system with tracking adaptor
  */
-export const initialize = async (): Promise<void> => {
+export const initialize = async (config?: {
+  trackingAdaptor?: TrackingAdaptor
+  onlyCurrentTabAvailable?: boolean
+}): Promise<void> => {
   await coreInitialize()
 
-  // TODO: eye tracking server url etc. should be configured here
+  // Connect tracking adaptor if provided
+  if (config?.trackingAdaptor) {
+    await connectTrackingAdaptor(config.trackingAdaptor)
+  }
+
+  // Store recording mode config for later use
+  const { dispatch } = await import("./recorder/state")
+  dispatch({
+    type: "SET_RECORDING_CONFIG",
+    payload: {
+      availableRecordingModes: config?.onlyCurrentTabAvailable
+        ? ["current-tab"]
+        : ["current-tab", "full-screen"],
+    },
+  })
 }
 
 /**
@@ -65,50 +82,40 @@ export const createSession = async (
     ...config.recording,
   }
 
-  // Create session with metadata (default is current-tab)
+  // Create session with metadata
   return await coreCreateSession(sessionConfig, recordingConfig, true, {
-    recordingMode: "current-tab",
+    recordingMode: config.recording?.captureEntireScreen
+      ? "full-screen"
+      : "current-tab",
   })
 }
 
 /**
- * Start experiment recording with automatic gaze tracking setup
+ * Start experiment recording (tracking adaptors should already be connected)
+ * If no session exists, creates a default session automatically
  */
-export const startRecording = async (config?: {
-  eyeTrackingServerUrl?: string
-}): Promise<void> => {
-  await coreStartRecording()
+export const startRecording = async (
+  config?: ExperimentConfig,
+): Promise<string> => {
+  // Check if a session already exists
+  const currentSession = getCurrentSession()
 
-  // Set up gaze tracking using the new adaptor system
-  const { isValidWebSocketUrl } = await import("./utils")
-  const { connectTrackingAdaptor } = await import("./tracking/index")
-  const { websocketTrackingAdaptor, mouseTrackingAdaptor } = await import(
-    "./tracking/adaptors"
-  )
-
-  if (
-    config?.eyeTrackingServerUrl &&
-    isValidWebSocketUrl(config?.eyeTrackingServerUrl)
-  ) {
-    // Use WebSocket adaptor for real eye tracking
-    const eyeTracker = websocketTrackingAdaptor(config.eyeTrackingServerUrl, {
-      autoReconnect: true,
-      timeout: 10000,
-    })
-    await connectTrackingAdaptor(eyeTracker)
+  if (!currentSession && config) {
+    // Create a session if none exists and config is provided
+    const sessionId = await createSession(config)
+    await coreStartRecording()
+    return sessionId
+  } else if (!currentSession) {
+    throw new Error("No active session and no config provided to create one")
   } else {
-    // Use mouse adaptor for simulation
-    const mouseSimulator = mouseTrackingAdaptor({
-      confidenceRange: [0.7, 0.9],
-      saccadeSimulation: true,
-      blinkSimulation: true,
-    })
-    await connectTrackingAdaptor(mouseSimulator)
+    // Session exists, just start recording
+    await coreStartRecording()
+    return currentSession.sessionId
   }
 }
 
 /**
- * Stop experiment recording
+ * Stop experiment recording and end session
  */
 export const stopRecording = async (): Promise<{
   sessionId: string
@@ -118,8 +125,13 @@ export const stopRecording = async (): Promise<{
   const { disconnectAllTrackingAdaptors } = await import("./tracking/index")
   await disconnectAllTrackingAdaptors()
 
+  // Stop recording and get session info
   const sessionInfo = await coreStopRecording()
   const currentSession = getCurrentSession()
+
+  // Clear the session after stopping to allow creating new sessions
+  const { dispatch } = await import("./recorder/state")
+  dispatch({ type: "CLEAR_SESSION" })
 
   return {
     sessionId: currentSession?.sessionId || "",
@@ -160,6 +172,16 @@ export const onStateChanged = (
 ): (() => void) => {
   return subscribe(callback)
 }
+
+/**
+ * Subscribe to state changes (alias for onStateChanged)
+ */
+export { subscribe } from "./recorder/state"
+
+/**
+ * Add event (alias for addSessionEvent)
+ */
+export const addEvent = addSessionEvent
 
 /**
  * Get current experiment state
@@ -206,13 +228,12 @@ export const downloadSession = async (
 export type {
   SessionConfig,
   RecordingConfig,
+  RecordingMode,
   SessionInfo,
   SessionEvent,
   GazePoint,
   GazePointInput,
   RecorderState,
   ExperimentConfig,
-  CalibrationResult,
   QualityMetrics,
-  EyeTrackingConfig,
 }

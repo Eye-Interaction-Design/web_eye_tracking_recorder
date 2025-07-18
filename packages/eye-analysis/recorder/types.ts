@@ -86,6 +86,8 @@ export interface RecordingConfig {
   videoCodec?: "vp8" | "vp9" | "h264"
 }
 
+export type RecordingMode = "current-tab" | "full-screen"
+
 export interface RecorderState {
   status: "idle" | "initialized" | "recording" | "stopped" | "error"
   currentSession: SessionInfo | null
@@ -96,6 +98,9 @@ export interface RecorderState {
   videoChunksCount: number
   error: string | null
   lastUpdate: number
+  recordingConfig?: {
+    availableRecordingModes?: RecordingMode[]
+  }
 }
 
 export interface SessionInfo {
@@ -108,7 +113,7 @@ export interface SessionInfo {
   status?: "recording" | "completed" | "error"
 
   // Recording mode (fixed for entire session)
-  recordingMode: "current-tab" | /* "browser-window" | */ "full-screen"
+  recordingMode: RecordingMode
 
   // Reference information according to recording mode
   recordingReference?: {
@@ -131,7 +136,6 @@ export interface SessionInfo {
     duration?: number
     settings?: {
       screenRecording?: RecordingConfig
-      eyeTracking?: EyeTrackingConfig
     }
     environment?: {
       browser?: string
@@ -229,27 +233,6 @@ export interface ExperimentSession {
   status?: "recording" | "completed" | "error"
 }
 
-// Eye tracking configuration
-export interface EyeTrackingConfig {
-  samplingRate?: number
-  serverUrl?: string
-  calibrationPoints?: number
-  trackingMode?: "mouse" | "webgazer" | "external"
-}
-
-// Calibration result
-export interface CalibrationResult {
-  success: boolean
-  accuracy?: number
-  precision?: number
-  errorMessage?: string
-  points?: Array<{
-    x: number
-    y: number
-    accuracy: number
-  }>
-}
-
 // Quality metrics
 export interface QualityMetrics {
   recordingQuality: {
@@ -275,8 +258,6 @@ export interface ExperimentConfig {
   experimentType: string
   sessionId?: string
   recording?: RecordingConfig
-  eyeTracking?: EyeTrackingConfig
-  eyeTrackingServerUrl?: string
   enableEyeTracking?: boolean
 }
 
@@ -313,3 +294,8 @@ export type RecorderAction =
   | { type: "SET_ERROR"; payload: string }
   | { type: "CLEAR_ERROR" }
   | { type: "RESET" }
+  | { type: "CLEAR_SESSION" }
+  | {
+      type: "SET_RECORDING_CONFIG"
+      payload: { availableRecordingModes?: RecordingMode[] }
+    }

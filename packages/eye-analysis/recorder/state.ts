@@ -13,6 +13,7 @@ const getInitialState = (): RecorderState => ({
   videoChunksCount: 0,
   error: null,
   lastUpdate: Date.now(),
+  recordingConfig: undefined,
 })
 
 // Global state and subscribers
@@ -101,6 +102,25 @@ const stateReducer = (
       return {
         ...state,
         error: null,
+        lastUpdate: Date.now(),
+      }
+
+    case "CLEAR_SESSION":
+      return {
+        ...state,
+        status: "initialized", // Reset status to initialized to allow new sessions
+        currentSession: null,
+        gazeDataCount: 0,
+        eventsCount: 0,
+        videoChunksCount: 0,
+        recordingDuration: 0,
+        lastUpdate: Date.now(),
+      }
+
+    case "SET_RECORDING_CONFIG":
+      return {
+        ...state,
+        recordingConfig: action.payload,
         lastUpdate: Date.now(),
       }
 
