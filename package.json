@@ -28,7 +28,8 @@
     "install:all": "bun install && cd packages/eye-analysis && bun install && cd ../react && bun install",
     "publish:all": "bun run publish:core && bun run publish:react",
     "publish:core": "cd packages/eye-analysis && npm publish",
-    "publish:react": "cd packages/react && npm publish"
+    "publish:react": "cd packages/react && npm publish",
+    "prepare": "husky"
   },
   "keywords": [
     "eye-tracking",
@@ -56,11 +57,23 @@
   "engines": {
     "node": ">=18.0.0"
   },
+  "lint-staged": {
+    "packages/eye-analysis/**/*.{js,ts}": [
+      "cd packages/eye-analysis && bun run lint --write",
+      "cd packages/eye-analysis && bun run format"
+    ],
+    "packages/react/**/*.{js,ts,tsx}": [
+      "cd packages/react && bun run lint --write",
+      "cd packages/react && bun run format"
+    ]
+  },
   "devDependencies": {
-    "@types/bun": "latest",
     "@biomejs/biome": "latest",
+    "@types/bun": "latest",
+    "happy-dom": "^18.0.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.2",
     "vite": "^6.0.7",
-    "vitest": "^3.2.4",
-    "happy-dom": "^18.0.1"
+    "vitest": "^3.2.4"
   }
 }
