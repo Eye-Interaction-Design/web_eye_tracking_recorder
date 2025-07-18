@@ -9,7 +9,6 @@ from time import sleep
 
 from .tobii_pro_eye_tracker import TobiiProEyeTracker, GazePoint, tr
 from .models import TobiiGazeData
-from .config import SCREEN_WIDTH, SCREEN_HEIGHT, DEFAULT_CONFIDENCE, DEFAULT_PUPIL_SIZE
 
 app = FastAPI()
 app.add_middleware(
@@ -52,10 +51,10 @@ def broadcast_gaze_data(gaze_data: TobiiGazeData):
         return
 
     # Get individual eye gaze points from the structured data
-    left_eye_screen_x = gaze_data.left_eye.gaze_point_on_display_area[0] * SCREEN_WIDTH
-    left_eye_screen_y = gaze_data.left_eye.gaze_point_on_display_area[1] * SCREEN_HEIGHT
-    right_eye_screen_x = gaze_data.right_eye.gaze_point_on_display_area[0] * SCREEN_WIDTH
-    right_eye_screen_y = gaze_data.right_eye.gaze_point_on_display_area[1] * SCREEN_HEIGHT
+    left_eye_screen_x = gaze_data.left_eye.gaze_point_on_display_area[0]
+    left_eye_screen_y = gaze_data.left_eye.gaze_point_on_display_area[1]
+    right_eye_screen_x = gaze_data.right_eye.gaze_point_on_display_area[0]
+    right_eye_screen_y = gaze_data.right_eye.gaze_point_on_display_area[1]
 
     # Calculate average gaze point
     screen_x = (left_eye_screen_x + right_eye_screen_x) / 2
@@ -75,7 +74,6 @@ def broadcast_gaze_data(gaze_data: TobiiGazeData):
         "normalized": True,  # Tobii provides normalized coordinates
         "screenX": screen_x,
         "screenY": screen_y,
-        "confidence": DEFAULT_CONFIDENCE,
         "leftEye": {
             "screenX": left_eye_screen_x,
             "screenY": left_eye_screen_y,
