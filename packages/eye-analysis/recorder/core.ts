@@ -328,16 +328,17 @@ export const stopRecording = async (): Promise<SessionInfo | null> => {
 
     if (state.currentSession) {
       // Update session end time and status
+      const endBrowserTime = performance.now()
       const updatedSession = {
         ...state.currentSession,
         endTime: Date.now(),
         status: "completed" as const,
-      }
-
-      // Update metadata duration if it exists
-      if (updatedSession.metadata) {
-        updatedSession.metadata.duration =
-          updatedSession.endTime - updatedSession.startTime
+        metadata: {
+          ...state.currentSession.metadata,
+          duration: Date.now() - state.currentSession.startTime,
+          startBrowserTime: state.startBrowserTime,
+          endBrowserTime,
+        },
       }
 
       await saveSession(updatedSession)

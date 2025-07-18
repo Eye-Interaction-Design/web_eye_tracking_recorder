@@ -215,6 +215,10 @@ export const saveVideoChunk = (chunk: {
 // Get complete session data
 export const getSessionData = async (
   sessionId: string,
+  options?: {
+    startBrowserTime?: number
+    endBrowserTime?: number
+  },
 ): Promise<SessionData> => {
   if (!db) {
     throw new Error("Database not initialized")
@@ -302,6 +306,8 @@ export const getSessionData = async (
       eventsCount: events.length,
       chunksCount: videoChunks.length,
       exportedAt: new Date().toISOString(),
+      startBrowserTime: options?.startBrowserTime ?? session.metadata?.startBrowserTime,
+      endBrowserTime: options?.endBrowserTime ?? session.metadata?.endBrowserTime,
     },
   }
 

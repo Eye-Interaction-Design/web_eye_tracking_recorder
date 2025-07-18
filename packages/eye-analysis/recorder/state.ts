@@ -14,6 +14,7 @@ const getInitialState = (): RecorderState => ({
   error: null,
   lastUpdate: Date.now(),
   recordingConfig: undefined,
+  startBrowserTime: undefined,
 })
 
 // Global state and subscribers
@@ -58,6 +59,7 @@ const stateReducer = (
         recordingDuration: 0,
         error: null,
         lastUpdate: Date.now(),
+        startBrowserTime: performance.now(),
       }
 
     case "STOP_RECORDING":
@@ -67,6 +69,7 @@ const stateReducer = (
         isRecording: false,
         error: null,
         lastUpdate: Date.now(),
+        startBrowserTime: undefined,
       }
 
     case "ADD_GAZE_DATA":
@@ -114,6 +117,7 @@ const stateReducer = (
         eventsCount: 0,
         videoChunksCount: 0,
         recordingDuration: 0,
+        startBrowserTime: undefined,
         lastUpdate: Date.now(),
       }
 

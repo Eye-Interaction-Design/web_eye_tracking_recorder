@@ -101,6 +101,7 @@ export interface RecorderState {
   recordingConfig?: {
     availableRecordingModes?: RecordingMode[]
   }
+  startBrowserTime?: number // performance.now() when recording started
 }
 
 export interface SessionInfo {
@@ -144,6 +145,9 @@ export interface SessionInfo {
       displayHeight?: number
       userAgent?: string
     }
+    // Browser timestamp synchronization
+    startBrowserTime?: number // performance.now() when recording started
+    endBrowserTime?: number // performance.now() when recording ended
   }
 }
 
@@ -158,6 +162,9 @@ export interface SessionData {
     eventsCount: number
     chunksCount: number
     exportedAt: string
+    // Browser timestamp synchronization
+    startBrowserTime?: number // performance.now() when recording started
+    endBrowserTime?: number // performance.now() when recording ended
   }
 }
 
@@ -270,6 +277,8 @@ export interface MetadataJSON {
     eventsCount: number
     chunksCount: number
     exportedAt: string
+    startBrowserTime?: number
+    endBrowserTime?: number
   }
   videoChunks: Array<VideoChunkInfo & { note: string }>
   summary: {
@@ -279,6 +288,10 @@ export interface MetadataJSON {
     sessionDuration: number
     recordingStartTime: string
     recordingEndTime: string | null
+    // Browser timestamp synchronization info
+    startBrowserTime?: number
+    endBrowserTime?: number
+    browserTimestampNote: string
   }
 }
 

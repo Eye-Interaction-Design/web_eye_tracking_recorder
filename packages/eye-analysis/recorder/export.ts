@@ -84,16 +84,37 @@ const fieldExtractors: FieldExtractor[] = [
 ]
 
 /**
+ * Enhanced field extractors with relative time calculation
+ */
+const createFieldExtractors = (startBrowserTime?: number): FieldExtractor[] => [
+  ...fieldExtractors,
+  // Relative browser timestamp (if startBrowserTime is available)
+  {
+    header: "relativeBrowserTimestamp",
+    getValue: (p) => 
+      startBrowserTime && p.browserTimestamp 
+        ? p.browserTimestamp - startBrowserTime 
+        : undefined,
+  },
+]
+
+/**
  * Convert gaze data to CSV format
  * Automatically removes columns that contain only undefined/null values
  */
-export const gazeDataToCSV = (gazeData: GazePoint[]): string => {
+export const gazeDataToCSV = (
+  gazeData: GazePoint[],
+  startBrowserTime?: number,
+): string => {
   if (gazeData.length === 0) {
     return ""
   }
 
+  // Use enhanced field extractors with relative timestamp
+  const extractors = createFieldExtractors(startBrowserTime)
+  
   // Filter to only extractors that have data in at least one row
-  const activeExtractors = fieldExtractors.filter((extractor) =>
+  const activeExtractors = extractors.filter((extractor) =>
     gazeData.some((point) => {
       const value = extractor.getValue(point)
       return value !== null && value !== undefined
@@ -157,6 +178,12 @@ export const createMetadataJSON = (sessionData: SessionData): MetadataJSON => {
       recordingEndTime: sessionData.session.endTime
         ? new Date(sessionData.session.endTime).toISOString()
         : null,
+      // Browser timestamp synchronization info
+      startBrowserTime: sessionData.metadata.startBrowserTime,
+      endBrowserTime: sessionData.metadata.endBrowserTime,
+      browserTimestampNote: sessionData.metadata.startBrowserTime
+        ? "relativeBrowserTimestamp = browserTimestamp - startBrowserTime"
+        : "Browser timestamp synchronization not available",
     },
   }
 }
@@ -318,7 +345,10 @@ const collectSessionFiles = async (
 
   // Add gaze data if requested and available
   if (options.includeOptions.gaze && sessionData.gazeData.length > 0) {
-    const gazeDataCSV = gazeDataToCSV(sessionData.gazeData)
+    const gazeDataCSV = gazeDataToCSV(
+      sessionData.gazeData,
+      sessionData.metadata.startBrowserTime,
+    )
     filesToDownload.push({
       content: gazeDataCSV,
       filename: getFilename("gaze.csv"),
@@ -452,7 +482,10 @@ export const downloadCompleteSessionData = async (
 
   // 2. Download gaze data as CSV
   if (sessionData.gazeData.length > 0) {
-    const gazeCSV = gazeDataToCSV(sessionData.gazeData)
+    const gazeCSV = gazeDataToCSV(
+      sessionData.gazeData,
+      sessionData.metadata.startBrowserTime,
+    )
     downloadFile(gazeCSV, `${sessionName}-gaze.csv`, "text/csv")
   }
 

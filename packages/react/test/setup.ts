@@ -25,6 +25,7 @@ vi.mock("eye-analysis", () => ({
     error: null,
     lastUpdate: Date.now(),
     recordingConfig: undefined,
+    startBrowserTime: undefined,
   })),
   isRecording: vi.fn(() => false),
 }))
@@ -42,6 +43,7 @@ vi.mock("../../eye-analysis/recorder/state", () => ({
     error: null,
     lastUpdate: Date.now(),
     recordingConfig: undefined,
+    startBrowserTime: undefined,
   })),
   subscribe: vi.fn(),
 }))
