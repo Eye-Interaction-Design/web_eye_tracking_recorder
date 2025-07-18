@@ -1,6 +1,5 @@
 import type {
   RecordingConfig,
-  VideoChunkInfo,
   VideoChunk,
 } from "../recorder/types"
 import { saveVideoChunk } from "./database"

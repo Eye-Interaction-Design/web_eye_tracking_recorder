@@ -15,7 +15,6 @@ import {
   handleTrackingError,
   sendTrackingMessage,
   normalizeWebSocketURL,
-  getTrackingStats,
 } from "../common"
 
 /**

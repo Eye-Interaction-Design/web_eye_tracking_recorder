@@ -45,7 +45,7 @@ export interface DataProcessingAdaptor extends TrackingAdaptor {
 export interface FunctionBasedAdaptor extends TrackingAdaptor {
   setupFunction: (
     onGaze: (gazePoint: GazePointInput) => void,
-  ) => (() => void) | void
+  ) => (() => void) | undefined
 }
 
 // Adaptor factory function type

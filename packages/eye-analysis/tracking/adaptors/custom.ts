@@ -9,7 +9,6 @@ import {
   startTrackingSession,
   stopTrackingSession,
   handleTrackingError,
-  getTrackingStats,
 } from "../common"
 
 /**
@@ -17,7 +16,7 @@ import {
  */
 export type CustomAdaptorSetupFunction = (
   onGaze: (gazePoint: GazePointInput) => void,
-) => void | (() => void)
+) => undefined | (() => void)
 
 /**
  * Custom adaptor options

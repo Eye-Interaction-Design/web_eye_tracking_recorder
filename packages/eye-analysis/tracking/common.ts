@@ -106,7 +106,7 @@ export const startTrackingSession = (
       // Default: just log the data (adaptors can override this)
       console.log(`Flushing ${data.length} gaze points for ${adaptorId}`)
     },
-    (error: Error, data: GazePoint[]) => {
+    (error: Error, _data: GazePoint[]) => {
       handleTrackingError(adaptorId, error)
     },
   )

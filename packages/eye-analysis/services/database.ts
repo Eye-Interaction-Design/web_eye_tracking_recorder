@@ -1,8 +1,6 @@
 import type {
   GazePoint,
   SessionEvent,
-  SessionInfo,
-  VideoChunkInfo,
   ExperimentSession,
   SyncMarker,
   VideoChunk,

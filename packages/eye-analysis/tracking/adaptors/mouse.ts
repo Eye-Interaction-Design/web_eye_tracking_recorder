@@ -3,14 +3,6 @@
 import type { GazePointInput } from "../../recorder/types"
 import { handleGazeData } from "../manager"
 import type { FunctionBasedAdaptor, TrackingStatus } from "../types"
-import {
-  initializeAdaptorState,
-  updateAdaptorStatus,
-  startTrackingSession,
-  stopTrackingSession,
-  handleTrackingError,
-  getTrackingStats,
-} from "../common"
 
 /**
  * Mouse tracking adaptor options
@@ -33,7 +25,7 @@ export const mouseTrackingAdaptor = (
   let isActive = false
   let cleanup: (() => void) | null = null
   let lastMousePosition = { x: 0, y: 0 }
-  let velocity = { x: 0, y: 0 }
+  let _velocity = { x: 0, y: 0 }
   let status: TrackingStatus = {
     connected: false,
     tracking: false,
@@ -63,7 +55,7 @@ export const mouseTrackingAdaptor = (
         // Calculate velocity for saccade simulation
         const deltaX = event.screenX - lastMousePosition.x
         const deltaY = event.screenY - lastMousePosition.y
-        velocity = { x: deltaX, y: deltaY }
+        _velocity = { x: deltaX, y: deltaY }
         lastMousePosition = { x: event.screenX, y: event.screenY }
 
         // Generate confidence based on movement speed

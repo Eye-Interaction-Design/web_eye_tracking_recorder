@@ -1,4 +1,4 @@
-import type { SessionEvent, SyncMarker } from "../recorder/types"
+import type { SyncMarker } from "../recorder/types"
 
 interface SynchronizationState {
   sessionStartTime: number

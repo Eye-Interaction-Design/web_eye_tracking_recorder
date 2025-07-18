@@ -11,7 +11,7 @@ interface BufferState {
   onError: (error: Error, data: GazePoint[]) => void
 }
 
-let bufferState: BufferState = {
+const bufferState: BufferState = {
   buffer: [],
   flushInterval: null,
   flushIntervalMs: 1000, // 1 second
