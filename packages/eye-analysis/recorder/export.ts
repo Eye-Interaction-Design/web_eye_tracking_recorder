@@ -91,9 +91,9 @@ const createFieldExtractors = (startBrowserTime?: number): FieldExtractor[] => [
   // Relative browser timestamp (if startBrowserTime is available)
   {
     header: "relativeBrowserTimestamp",
-    getValue: (p) => 
-      startBrowserTime && p.browserTimestamp 
-        ? p.browserTimestamp - startBrowserTime 
+    getValue: (p) =>
+      startBrowserTime && p.browserTimestamp
+        ? p.browserTimestamp - startBrowserTime
         : undefined,
   },
 ]
@@ -112,7 +112,7 @@ export const gazeDataToCSV = (
 
   // Use enhanced field extractors with relative timestamp
   const extractors = createFieldExtractors(startBrowserTime)
-  
+
   // Filter to only extractors that have data in at least one row
   const activeExtractors = extractors.filter((extractor) =>
     gazeData.some((point) => {

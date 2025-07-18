@@ -306,8 +306,10 @@ export const getSessionData = async (
       eventsCount: events.length,
       chunksCount: videoChunks.length,
       exportedAt: new Date().toISOString(),
-      startBrowserTime: options?.startBrowserTime ?? session.metadata?.startBrowserTime,
-      endBrowserTime: options?.endBrowserTime ?? session.metadata?.endBrowserTime,
+      startBrowserTime:
+        options?.startBrowserTime ?? session.metadata?.startBrowserTime,
+      endBrowserTime:
+        options?.endBrowserTime ?? session.metadata?.endBrowserTime,
     },
   }
 

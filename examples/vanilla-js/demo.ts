@@ -72,7 +72,7 @@ const appState: AppState = {
 interface Elements {
   status: HTMLElement;
   log: HTMLElement;
-  gazeData: HTMLElement;
+  gazeDataCount: HTMLElement;
   demoArea: HTMLElement;
   initBtn: HTMLButtonElement;
   startBtn: HTMLButtonElement;
@@ -128,7 +128,7 @@ function initializeDOMElements(): void {
   elements = {
     status: document.getElementById("status")!,
     log: document.getElementById("log")!,
-    gazeData: document.getElementById("gazeData")!,
+    gazeDataCount: document.getElementById("gazeDataCount")!,
     demoArea: document.getElementById("demoArea")!,
 
     // Control buttons
@@ -201,13 +201,9 @@ async function handleInitialize(): Promise<void> {
     appState.adaptorType = type;
 
     // Initialize the experiment system with recording mode constraints
-    await initialize({ 
+    await initialize({
       trackingAdaptor: adaptor,
       onlyCurrentTabAvailable: appState.recordingMode === "current-tab", // recording modeに基づいて制約
-      onGazeDataCallback: (gazePoint) => {
-        latestGazePoint = gazePoint;
-        updateDebugInfo();
-      }
     });
 
     log(`Recorder initialized successfully with ${type} adaptor`);
@@ -236,11 +232,16 @@ async function handleStartRecording(): Promise<void> {
     // Start recording (will create session automatically if needed)
     const sessionId = await startRecording(config);
     log(`Session created and recording started: ${sessionId}`);
-    log(`Config used: participantId=${config.participantId}, experimentType=${config.experimentType}`);
+    log(
+      `Config used: participantId=${config.participantId}, experimentType=${config.experimentType}`
+    );
 
     // Set up gaze data logging
-    onGaze((gazeData) => {
+    onGaze((gazePoint) => {
       // Gaze data is being processed
+      console.log("gazePoint", gazePoint);
+      latestGazePoint = gazePoint;
+      updateDebugInfo();
     });
 
     const currentMode = getCurrentTrackingMode();
@@ -260,18 +261,22 @@ async function handleStopRecording(): Promise<void> {
   try {
     log("Stopping recording and ending session...");
     const result = await stopRecording();
-    
-    log(`Stop recording result: sessionId=${result.sessionId}, sessionInfo=${result.sessionInfo ? 'exists' : 'null'}`);
+
+    log(
+      `Stop recording result: sessionId=${result.sessionId}, sessionInfo=${
+        result.sessionInfo ? "exists" : "null"
+      }`
+    );
 
     // Store completed session
     if (result.sessionInfo) {
       appState.sessions.set(result.sessionId, result.sessionInfo);
       log(`Session ${result.sessionId} completed and stored`);
       log(`Total sessions in store: ${appState.sessions.size}`);
-      
+
       // Debug: List all session IDs in store
       const allIds = Array.from(appState.sessions.keys());
-      log(`All session IDs in store: ${allIds.join(', ')}`);
+      log(`All session IDs in store: ${allIds.join(", ")}`);
     } else {
       log(`Warning: No session info returned for ${result.sessionId}`);
     }
@@ -358,7 +363,7 @@ async function handleExportAll(): Promise<void> {
     log(`Found ${sessionIds.length} session(s) to export`);
     log(`Session IDs: ${sessionIds.join(", ")}`);
     log(`Session store size: ${appState.sessions.size}`);
-    
+
     // Debug: Show all sessions in store
     appState.sessions.forEach((session, id) => {
       log(`Session ${id}: ${session.participantId} (${session.experimentType})`);
@@ -462,9 +467,9 @@ function updateStatus(state: typeof appState.experimentState): void {
 
 function updateGazeData(state: typeof appState.experimentState): void {
   if (state.gazeDataCount > 0) {
-    elements.gazeData.textContent = `Collecting gaze data... (${state.gazeDataCount} points)`;
+    elements.gazeDataCount.textContent = `${state.gazeDataCount}`;
   } else {
-    elements.gazeData.textContent = "No gaze data yet";
+    elements.gazeDataCount.textContent = "0";
   }
 }
 
@@ -612,19 +617,19 @@ innerWidth: ${windowState.innerWidth}
 innerHeight: ${windowState.innerHeight}
 outerWidth: ${windowState.outerWidth}
 outerHeight: ${windowState.outerHeight}
-  `.trim();
+  `;
 
   // Display latest gaze point
   if (latestGazePoint) {
     elements.gazePointInfo.innerHTML = `
-screenX: ${latestGazePoint.screenX ?? 'N/A'}
-screenY: ${latestGazePoint.screenY ?? 'N/A'}
-contentX: ${latestGazePoint.contentX ?? 'N/A'}
-contentY: ${latestGazePoint.contentY ?? 'N/A'}
-confidence: ${latestGazePoint.confidence ?? 'N/A'}
-browserTimestamp: ${latestGazePoint.browserTimestamp ?? 'N/A'}
-systemTimestamp: ${latestGazePoint.systemTimestamp ?? 'N/A'}
-    `.trim();
+screenX: ${latestGazePoint.screenX ?? "N/A"}
+screenY: ${latestGazePoint.screenY ?? "N/A"}
+contentX: ${latestGazePoint.contentX ?? "N/A"}
+contentY: ${latestGazePoint.contentY ?? "N/A"}
+confidence: ${latestGazePoint.confidence ?? "N/A"}
+browserTimestamp: ${latestGazePoint.browserTimestamp ?? "N/A"}
+systemTimestamp: ${latestGazePoint.systemTimestamp ?? "N/A"}
+    `;
   } else {
     elements.gazePointInfo.innerHTML = "No gaze data yet";
   }
@@ -636,14 +641,14 @@ function initializeApp(): void {
   setupEventListeners();
   setupStateSubscription();
   updateUI();
-  
+
   // Update debug info periodically to show window state changes
   setInterval(() => {
     if (elements.windowStateInfo) {
       updateDebugInfo();
     }
   }, 100); // Update every 100ms
-  
+
   log("Web Eye Tracking Recorder Demo loaded");
   log("Multiple session management enabled - create, record, and export sessions");
 }
