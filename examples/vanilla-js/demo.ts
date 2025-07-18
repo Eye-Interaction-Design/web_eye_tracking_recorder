@@ -93,9 +93,12 @@ interface Elements {
   serverInfo: HTMLElement;
   sessionsList: HTMLElement;
   currentSessionInfo: HTMLElement;
+  gazePointInfo: HTMLElement;
+  windowStateInfo: HTMLElement;
 }
 
 let elements: Elements;
+let latestGazePoint: any = null;
 
 // Utility functions
 async function recordTaskInteraction(taskName: string): Promise<void> {
@@ -152,6 +155,8 @@ function initializeDOMElements(): void {
     serverInfo: document.getElementById("serverInfo")!,
     sessionsList: document.getElementById("sessionsList")!,
     currentSessionInfo: document.getElementById("currentSessionInfo")!,
+    gazePointInfo: document.getElementById("gazePointInfo")!,
+    windowStateInfo: document.getElementById("windowStateInfo")!,
   };
 }
 
@@ -198,7 +203,11 @@ async function handleInitialize(): Promise<void> {
     // Initialize the experiment system with recording mode constraints
     await initialize({ 
       trackingAdaptor: adaptor,
-      onlyCurrentTabAvailable: appState.recordingMode === "current-tab" // recording modeに基づいて制約
+      onlyCurrentTabAvailable: appState.recordingMode === "current-tab", // recording modeに基づいて制約
+      onGazeDataCallback: (gazePoint) => {
+        latestGazePoint = gazePoint;
+        updateDebugInfo();
+      }
     });
 
     log(`Recorder initialized successfully with ${type} adaptor`);
@@ -435,6 +444,7 @@ function updateUI(): void {
   updateDemoArea();
   updateSessionsList();
   updateCurrentSessionInfo();
+  updateDebugInfo();
 }
 
 function updateStatus(state: typeof appState.experimentState): void {
@@ -575,6 +585,49 @@ function setupStateSubscription(): void {
   updateUrlValidation();
   updateTrackingMode();
   updateDemoArea();
+  updateDebugInfo();
+}
+
+// Update debug information display
+function updateDebugInfo(): void {
+  // Get current window state
+  const windowState = {
+    screenX: window.screenX,
+    screenY: window.screenY,
+    scrollX: window.scrollX,
+    scrollY: window.scrollY,
+    innerWidth: window.innerWidth,
+    innerHeight: window.innerHeight,
+    outerWidth: window.outerWidth,
+    outerHeight: window.outerHeight,
+  };
+
+  // Display window state
+  elements.windowStateInfo.innerHTML = `
+screenX: ${windowState.screenX}
+screenY: ${windowState.screenY}
+scrollX: ${windowState.scrollX}
+scrollY: ${windowState.scrollY}
+innerWidth: ${windowState.innerWidth}
+innerHeight: ${windowState.innerHeight}
+outerWidth: ${windowState.outerWidth}
+outerHeight: ${windowState.outerHeight}
+  `.trim();
+
+  // Display latest gaze point
+  if (latestGazePoint) {
+    elements.gazePointInfo.innerHTML = `
+screenX: ${latestGazePoint.screenX ?? 'N/A'}
+screenY: ${latestGazePoint.screenY ?? 'N/A'}
+contentX: ${latestGazePoint.contentX ?? 'N/A'}
+contentY: ${latestGazePoint.contentY ?? 'N/A'}
+confidence: ${latestGazePoint.confidence ?? 'N/A'}
+browserTimestamp: ${latestGazePoint.browserTimestamp ?? 'N/A'}
+systemTimestamp: ${latestGazePoint.systemTimestamp ?? 'N/A'}
+    `.trim();
+  } else {
+    elements.gazePointInfo.innerHTML = "No gaze data yet";
+  }
 }
 
 // Initialize the application
@@ -583,6 +636,14 @@ function initializeApp(): void {
   setupEventListeners();
   setupStateSubscription();
   updateUI();
+  
+  // Update debug info periodically to show window state changes
+  setInterval(() => {
+    if (elements.windowStateInfo) {
+      updateDebugInfo();
+    }
+  }, 100); // Update every 100ms
+  
   log("Web Eye Tracking Recorder Demo loaded");
   log("Multiple session management enabled - create, record, and export sessions");
 }

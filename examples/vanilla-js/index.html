@@ -218,6 +218,25 @@
             <button id="initBtn" class="button">Initialize Tracking</button>
         </div>
         
+        <!-- Debug Info Section -->
+        <div class="config-section" style="background-color: #fff3cd; border-left-color: #ffc107;">
+            <h3>Debug Information</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-family: monospace; font-size: 12px;">
+                <div>
+                    <strong>Latest Gaze Point:</strong>
+                    <div id="gazePointInfo" style="background-color: #f8f9fa; padding: 10px; border-radius: 3px; margin-top: 5px;">
+                        No gaze data yet
+                    </div>
+                </div>
+                <div>
+                    <strong>Window State:</strong>
+                    <div id="windowStateInfo" style="background-color: #f8f9fa; padding: 10px; border-radius: 3px; margin-top: 5px;">
+                        No window state data yet
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <div class="config-section">
             <h3>Step 2: Recording Session</h3>
             <p><em>Set participant ID and record sessions. You can change participant ID between sessions.</em></p>
