@@ -11,6 +11,8 @@ vi.mock("eye-analysis", () => ({
   stopRecording: vi.fn(),
   addGazeData: vi.fn(),
   addEvent: vi.fn(),
+  downloadSession: vi.fn(),
+  getCurrentSession: vi.fn(() => null),
   subscribe: vi.fn(),
   getCurrentState: vi.fn(() => ({
     status: "idle",
@@ -22,9 +24,31 @@ vi.mock("eye-analysis", () => ({
     videoChunksCount: 0,
     error: null,
     lastUpdate: Date.now(),
+    recordingConfig: undefined,
   })),
   isRecording: vi.fn(() => false),
-  getCurrentSession: vi.fn(() => null),
+}))
+
+// Mock the getState and subscribe functions from state module
+vi.mock("../../eye-analysis/recorder/state", () => ({
+  getState: vi.fn(() => ({
+    status: "idle",
+    isRecording: false,
+    currentSession: null,
+    recordingDuration: 0,
+    gazeDataCount: 0,
+    eventsCount: 0,
+    videoChunksCount: 0,
+    error: null,
+    lastUpdate: Date.now(),
+    recordingConfig: undefined,
+  })),
+  subscribe: vi.fn(),
+}))
+
+// Mock the addEvent function from core module
+vi.mock("../../eye-analysis/recorder/core", () => ({
+  addEvent: vi.fn(),
 }))
 
 // Mock React

@@ -83,7 +83,7 @@ export const getScreenDetails = async (): Promise<ScreenDetails | null> => {
 
   screenDetailsPromise = (async () => {
     try {
-      const screenDetails = await window.getScreenDetails?.()
+      const screenDetails = await (window as any).getScreenDetails?.()
       if (screenDetails) {
         cachedScreenDetails = screenDetails
         return screenDetails
