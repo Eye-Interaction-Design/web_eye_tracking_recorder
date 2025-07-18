@@ -416,9 +416,10 @@ function updateUI(): void {
   // Update download buttons
   const hasSession = !!state.currentSession;
   const hasCompletedSessions = appState.sessions.size > 0;
-  elements.downloadBtn.disabled = !hasSession;
-  elements.downloadComponentsBtn.disabled = !hasSession;
-  elements.downloadZipBtn.disabled = !hasSession;
+  const canDownloadCurrentSession = hasSession && !state.isRecording; // Can download if session exists and not recording
+  elements.downloadBtn.disabled = !canDownloadCurrentSession;
+  elements.downloadComponentsBtn.disabled = !canDownloadCurrentSession;
+  elements.downloadZipBtn.disabled = !canDownloadCurrentSession;
   elements.exportAllBtn.disabled = !hasCompletedSessions;
 
   // Update input fields
