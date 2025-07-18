@@ -3,6 +3,14 @@
 import type { GazePointInput } from "../../recorder/types"
 import { handleGazeData } from "../manager"
 import type { FunctionBasedAdaptor, TrackingStatus } from "../types"
+import {
+  initializeAdaptorState,
+  updateAdaptorStatus,
+  startTrackingSession,
+  stopTrackingSession,
+  handleTrackingError,
+  getTrackingStats,
+} from "../common"
 
 /**
  * Custom adaptor setup function type
@@ -32,13 +40,14 @@ export const createCustomAdaptor = (
 ): FunctionBasedAdaptor => {
   let isActive = false
   let cleanup: (() => void) | null = null
-  let status: TrackingStatus = {
-    connected: false,
-    tracking: false,
+
+  const state = initializeAdaptorState(id)
+  // Initialize with custom options
+  updateAdaptorStatus(id, {
     quality: options.initialQuality || "good",
     message: options.description,
     metadata: options.metadata,
-  }
+  })
 
   const adaptor: FunctionBasedAdaptor = {
     id,
@@ -49,22 +58,28 @@ export const createCustomAdaptor = (
 
       try {
         isActive = true
-        status = {
+
+        updateAdaptorStatus(id, {
           connected: true,
           tracking: true,
           quality: options.initialQuality || "good",
           message: options.description || "Custom adaptor active",
           metadata: options.metadata,
-        }
-        adaptor.onStatusChange?.(status)
+        })
+
+        // Start tracking session
+        startTrackingSession(id, `custom-session-${Date.now()}`, {
+          trackingMode: "custom",
+          adaptorType: name,
+          ...options.metadata,
+        })
+
+        adaptor.onStatusChange?.(state.status)
 
         const result = setupFunction((gazePoint: GazePointInput) => {
           if (isActive) {
             handleGazeData(gazePoint, adaptor.id).catch((error) => {
-              console.error(
-                `Failed to handle gaze data from ${adaptor.name}:`,
-                error,
-              )
+              handleTrackingError(id, error as Error)
               adaptor.onError?.(error)
             })
           }
@@ -75,16 +90,20 @@ export const createCustomAdaptor = (
         }
       } catch (error) {
         isActive = false
-        status = {
+        const trackingError = error as Error
+        handleTrackingError(id, trackingError)
+
+        updateAdaptorStatus(id, {
           connected: false,
           tracking: false,
           quality: "unavailable",
           message: `Connection failed: ${error}`,
           metadata: options.metadata,
-        }
-        adaptor.onStatusChange?.(status)
-        adaptor.onError?.(error as Error)
-        throw error
+        })
+
+        adaptor.onStatusChange?.(state.status)
+        adaptor.onError?.(trackingError)
+        throw trackingError
       }
     },
 
@@ -92,14 +111,17 @@ export const createCustomAdaptor = (
       isActive = false
       cleanup?.()
       cleanup = null
-      status = {
+
+      stopTrackingSession(id)
+      updateAdaptorStatus(id, {
         connected: false,
         tracking: false,
         quality: "unavailable",
         message: "Disconnected",
         metadata: options.metadata,
-      }
-      adaptor.onStatusChange?.(status)
+      })
+
+      adaptor.onStatusChange?.(state.status)
     },
 
     isConnected(): boolean {
@@ -107,7 +129,7 @@ export const createCustomAdaptor = (
     },
 
     getStatus(): TrackingStatus {
-      return status
+      return state.status
     },
 
     setupFunction,

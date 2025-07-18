@@ -3,6 +3,14 @@
 import type { GazePointInput } from "../../recorder/types"
 import { handleGazeData } from "../manager"
 import type { FunctionBasedAdaptor, TrackingStatus } from "../types"
+import {
+  initializeAdaptorState,
+  updateAdaptorStatus,
+  startTrackingSession,
+  stopTrackingSession,
+  handleTrackingError,
+  getTrackingStats,
+} from "../common"
 
 /**
  * Mouse tracking adaptor options

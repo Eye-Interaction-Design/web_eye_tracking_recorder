@@ -7,6 +7,16 @@ import type {
   DataProcessingAdaptor,
   TrackingStatus,
 } from "../types"
+import {
+  initializeAdaptorState,
+  updateAdaptorStatus,
+  startTrackingSession,
+  stopTrackingSession,
+  handleTrackingError,
+  sendTrackingMessage,
+  normalizeWebSocketURL,
+  getTrackingStats,
+} from "../common"
 
 /**
  * WebSocket tracking adaptor options
@@ -14,6 +24,13 @@ import type {
 export interface WebSocketAdaptorOptions extends ConnectionOptions {
   dataProcessor?: (rawData: unknown) => GazePointInput | null
   reconnectInterval?: number
+  sessionId?: string
+  config?: {
+    samplingRate?: number
+    calibrationPoints?: number
+    trackingMode?: string
+  }
+  urlSuffix?: string // e.g., '/eye_tracking'
 }
 
 /**
@@ -31,41 +48,41 @@ export const defaultWebSocketDataProcessor = (
 
   // Extract left eye data
   const leftEyeData = data.leftEye as Record<string, unknown> | undefined
-  const leftEye = {
-    screenX: (leftEyeData?.screenX as number) || (data.screenX as number) || 0,
-    screenY: (leftEyeData?.screenY as number) || (data.screenY as number) || 0,
-    positionX: leftEyeData?.positionX as number | undefined,
-    positionY: leftEyeData?.positionY as number | undefined,
-    positionZ: leftEyeData?.positionZ as number | undefined,
-    pupilSize: (leftEyeData?.pupilSize as number) || 3,
-    rotateX: leftEyeData?.rotateX as number | undefined,
-    rotateY: leftEyeData?.rotateY as number | undefined,
-    rotateZ: leftEyeData?.rotateZ as number | undefined,
+  const leftEye = leftEyeData && {
+    screenX: leftEyeData.screenX as number,
+    screenY: leftEyeData.screenY as number,
+    positionX: leftEyeData.positionX as number | undefined,
+    positionY: leftEyeData.positionY as number | undefined,
+    positionZ: leftEyeData.positionZ as number | undefined,
+    pupilSize: leftEyeData.pupilSize as number | undefined,
+    rotateX: leftEyeData.rotateX as number | undefined,
+    rotateY: leftEyeData.rotateY as number | undefined,
+    rotateZ: leftEyeData.rotateZ as number | undefined,
   }
 
   // Extract right eye data
   const rightEyeData = data.rightEye as Record<string, unknown> | undefined
-  const rightEye = {
-    screenX: (rightEyeData?.screenX as number) || (data.screenX as number) || 0,
-    screenY: (rightEyeData?.screenY as number) || (data.screenY as number) || 0,
-    positionX: rightEyeData?.positionX as number | undefined,
-    positionY: rightEyeData?.positionY as number | undefined,
-    positionZ: rightEyeData?.positionZ as number | undefined,
-    pupilSize: (rightEyeData?.pupilSize as number) || 3,
-    rotateX: rightEyeData?.rotateX as number | undefined,
-    rotateY: rightEyeData?.rotateY as number | undefined,
-    rotateZ: rightEyeData?.rotateZ as number | undefined,
+  const rightEye = rightEyeData && {
+    screenX: rightEyeData.screenX as number,
+    screenY: rightEyeData.screenY as number,
+    positionX: rightEyeData.positionX as number | undefined,
+    positionY: rightEyeData.positionY as number | undefined,
+    positionZ: rightEyeData.positionZ as number | undefined,
+    pupilSize: rightEyeData.pupilSize as number | undefined,
+    rotateX: rightEyeData.rotateX as number | undefined,
+    rotateY: rightEyeData.rotateY as number | undefined,
+    rotateZ: rightEyeData.rotateZ as number | undefined,
   }
 
   return {
     deviceTimeStamp: data.deviceTimeStamp as number | undefined,
     systemTimestamp: data.systemTimestamp as number | undefined,
     normalized: data.normalized as boolean | undefined,
-    screenX: (data.screenX as number) || 0,
-    screenY: (data.screenY as number) || 0,
-    confidence: (data.confidence as number) || 0.5,
-    leftEye: leftEyeData ? leftEye : undefined,
-    rightEye: rightEyeData ? rightEye : undefined,
+    screenX: data.screenX as number,
+    screenY: data.screenY as number,
+    confidence: data.confidence as number,
+    leftEye,
+    rightEye,
   }
 }
 
@@ -78,11 +95,12 @@ export const websocketTrackingAdaptor = (
 ): DataProcessingAdaptor => {
   let websocket: WebSocket | null = null
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null
-  let status: TrackingStatus = {
-    connected: false,
-    tracking: false,
-    quality: "unavailable",
-  }
+
+  const adaptorId = `websocket-${url}`
+  const wsUrl = normalizeWebSocketURL(url, options.urlSuffix)
+
+  // Initialize common state
+  const state = initializeAdaptorState(adaptorId)
 
   const adaptor: DataProcessingAdaptor = {
     id: `websocket-${url}`,
@@ -91,7 +109,7 @@ export const websocketTrackingAdaptor = (
     async connect(): Promise<void> {
       return new Promise((resolve, reject) => {
         try {
-          websocket = new WebSocket(url)
+          websocket = new WebSocket(wsUrl)
 
           const timeout = setTimeout(() => {
             websocket?.close()
@@ -100,22 +118,44 @@ export const websocketTrackingAdaptor = (
 
           websocket.onopen = () => {
             clearTimeout(timeout)
-            status = { connected: true, tracking: true, quality: "good" }
-            adaptor.onStatusChange?.(status)
+
+            updateAdaptorStatus(adaptorId, {
+              connected: true,
+              tracking: true,
+              quality: "good",
+            })
+
+            // Start tracking session if sessionId is provided
+            if (options.sessionId) {
+              startTrackingSession(adaptorId, options.sessionId, options.config)
+              sendTrackingMessage(
+                websocket,
+                "start_tracking",
+                options.sessionId,
+                options.config,
+              )
+            }
+
+            adaptor.onStatusChange?.(state.status)
             resolve()
           }
 
           websocket.onerror = () => {
             clearTimeout(timeout)
-            status = {
+
+            const error = new Error("WebSocket connection failed")
+            handleTrackingError(adaptorId, error)
+
+            updateAdaptorStatus(adaptorId, {
               connected: false,
               tracking: false,
               quality: "unavailable",
               message: "Connection failed",
-            }
-            adaptor.onStatusChange?.(status)
-            adaptor.onError?.(new Error("WebSocket connection failed"))
-            reject(new Error("WebSocket connection failed"))
+            })
+
+            adaptor.onStatusChange?.(state.status)
+            adaptor.onError?.(error)
+            reject(error)
           }
 
           websocket.onmessage = async (event) => {
@@ -126,18 +166,20 @@ export const websocketTrackingAdaptor = (
                 await handleGazeData(gazeInput, adaptor.id)
               }
             } catch (error) {
-              console.error("Failed to process WebSocket message:", error)
+              handleTrackingError(adaptorId, error as Error)
             }
           }
 
           websocket.onclose = () => {
-            status = {
+            updateAdaptorStatus(adaptorId, {
               connected: false,
               tracking: false,
               quality: "unavailable",
               message: "Disconnected",
-            }
-            adaptor.onStatusChange?.(status)
+            })
+
+            stopTrackingSession(adaptorId)
+            adaptor.onStatusChange?.(state.status)
 
             // Auto-reconnect if enabled
             if (options.autoReconnect && reconnectTimer === null) {
@@ -160,12 +202,22 @@ export const websocketTrackingAdaptor = (
       }
 
       if (websocket) {
+        // Send stop tracking message if sessionId is provided
+        if (options.sessionId) {
+          sendTrackingMessage(websocket, "stop_tracking", options.sessionId)
+        }
+
         websocket.close()
         websocket = null
       }
 
-      status = { connected: false, tracking: false, quality: "unavailable" }
-      adaptor.onStatusChange?.(status)
+      stopTrackingSession(adaptorId)
+      updateAdaptorStatus(adaptorId, {
+        connected: false,
+        tracking: false,
+        quality: "unavailable",
+      })
+      adaptor.onStatusChange?.(state.status)
     },
 
     isConnected(): boolean {
@@ -173,7 +225,7 @@ export const websocketTrackingAdaptor = (
     },
 
     getStatus(): TrackingStatus {
-      return status
+      return state.status
     },
 
     async processRawData(rawData: unknown): Promise<GazePointInput | null> {
