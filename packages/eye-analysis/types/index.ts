@@ -1,26 +1,33 @@
 export interface GazePoint {
+  sessionId: string
+  deviceTimeStamp?: number
   systemTimestamp: number
   browserTimestamp: number
-  screenX: number
-  screenY: number
-  windowX?: number
-  windowY?: number
-  confidence: number
-  leftEye: EyeData
-  rightEye: EyeData
-  browserWindow: WindowInfo
-  screen: ScreenInfo
+  normalized?: boolean
+  screenX: number | undefined
+  screenY: number | undefined
+  screenWidth: number
+  screenHeight: number
+  contentX: number
+  contentY: number
+  confidence: number | undefined
+  leftEye?: EyeData
+  rightEye?: EyeData
+  windowState?: WindowState
 }
 
 export interface EyeData {
-  screenX: number
-  screenY: number
-  windowX?: number
-  windowY?: number
-  positionX: number
-  positionY: number
-  positionZ: number
-  pupilSize: number
+  screenX?: number
+  screenY?: number
+  contentX?: number
+  contentY?: number
+  positionX?: number
+  positionY?: number
+  positionZ?: number
+  pupilSize?: number
+  rotateX?: number
+  rotateY?: number
+  rotateZ?: number
 }
 
 export interface WindowInfo {
@@ -31,6 +38,17 @@ export interface WindowInfo {
   devicePixelRatio: number
   screenX: number
   screenY: number
+  outerWidth: number
+  outerHeight: number
+}
+
+export interface WindowState {
+  screenX: number
+  screenY: number
+  scrollX: number
+  scrollY: number
+  innerWidth: number
+  innerHeight: number
   outerWidth: number
   outerHeight: number
 }

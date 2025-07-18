@@ -452,7 +452,7 @@ export const addGazeData = async (
       sessionId: session.sessionId,
       deviceTimeStamp: gazeInput.deviceTimeStamp,
       systemTimestamp: gazeInput.systemTimestamp ?? Date.now(),
-      browserTimestamp: performance.now(),
+      browserTimestamp: performance.now(), // Always use current performance.now() for consistency
       normalized: gazeInput.normalized,
       screenX: session.recordingMode === "full-screen" ? 0 : gazeInput.screenX,
       screenY: session.recordingMode === "full-screen" ? 0 : gazeInput.screenY,
