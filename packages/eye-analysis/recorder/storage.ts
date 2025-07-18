@@ -73,7 +73,7 @@ const setupDatabase = (
     // Gaze data store
     if (!database.objectStoreNames.contains("gazeData")) {
       const gazeStore = database.createObjectStore("gazeData", {
-        keyPath: "id",
+        autoIncrement: true,
       })
       gazeStore.createIndex("sessionId", "sessionId", { unique: false })
       gazeStore.createIndex("systemTimestamp", "systemTimestamp", {
