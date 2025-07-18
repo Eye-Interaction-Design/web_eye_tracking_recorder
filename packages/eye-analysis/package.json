@@ -1,6 +1,6 @@
 {
   "name": "eye-analysis",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Eye Analysis - Browser-based eye tracking and screen recording library for research and experiments",
   "author": "shikibu9419",
   "license": "MIT",
@@ -52,7 +52,9 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "bun build ./experiment.ts --outdir ./dist --target browser --format esm && bunx tsc --project tsconfig.json --emitDeclarationOnly --outDir ./dist",
+    "build": "bun run build:js && bun run build:types",
+    "build:js": "bun build ./experiment.ts ./tracking/index.ts ./utils.ts --outdir ./dist --target browser --format esm",
+    "build:types": "bunx tsc --project tsconfig.json --emitDeclarationOnly --outDir ./dist",
     "dev": "bun --hot ./experiment.ts",
     "test": "vitest",
     "test:watch": "vitest --watch",
