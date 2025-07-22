@@ -24,7 +24,6 @@ const fieldExtractors: FieldExtractor[] = [
   { header: "sessionId", getValue: (p) => p.sessionId },
   { header: "deviceTimeStamp", getValue: (p) => p.deviceTimeStamp },
   { header: "systemTimestamp", getValue: (p) => p.systemTimestamp },
-  { header: "browserTimestamp", getValue: (p) => p.browserTimestamp },
   { header: "screenX", getValue: (p) => p.screenX },
   { header: "screenY", getValue: (p) => p.screenY },
   { header: "screenWidth", getValue: (p) => p.screenWidth },
@@ -84,18 +83,21 @@ const fieldExtractors: FieldExtractor[] = [
 ]
 
 /**
- * Enhanced field extractors with relative time calculation
+ * Enhanced field extractors with mandatory elapsed time calculation
  */
-const createFieldExtractors = (startBrowserTime?: number): FieldExtractor[] => [
-  ...fieldExtractors,
-  // Relative browser timestamp (if startBrowserTime is available)
+const createFieldExtractors = (startBrowserTime: number): FieldExtractor[] => [
+  // Add sessionId first
+  { header: "sessionId", getValue: (p) => p.sessionId },
+  // Add elapsedTime as the second field
   {
-    header: "relativeBrowserTimestamp",
+    header: "elapsedTime",
     getValue: (p) =>
-      startBrowserTime && p.browserTimestamp
+      p.browserTimestamp !== undefined
         ? p.browserTimestamp - startBrowserTime
-        : undefined,
+        : null,
   },
+  // Add remaining fields (skip sessionId since we already added it)
+  ...fieldExtractors.slice(1),
 ]
 
 /**
@@ -106,11 +108,14 @@ export const gazeDataToCSV = (
   gazeData: GazePoint[],
   startBrowserTime?: number,
 ): string => {
+  if (startBrowserTime === undefined) {
+    throw new Error("startBrowserTime is required for elapsedTime calculation")
+  }
   if (gazeData.length === 0) {
     return ""
   }
 
-  // Use enhanced field extractors with relative timestamp
+  // Use enhanced field extractors with mandatory elapsed time
   const extractors = createFieldExtractors(startBrowserTime)
 
   // Filter to only extractors that have data in at least one row
@@ -139,16 +144,35 @@ export const gazeDataToCSV = (
 /**
  * Convert events data to CSV format
  */
-export const eventsToCSV = (events: SessionEvent[]): string => {
-  const headers = ["id", "sessionId", "type", "timestamp", "data"]
+export const eventsToCSV = (
+  events: SessionEvent[],
+  startBrowserTime?: number,
+): string => {
+  if (startBrowserTime === undefined) {
+    throw new Error("startBrowserTime is required for elapsedTime calculation")
+  }
+  const headers = [
+    "id",
+    "sessionId",
+    "type",
+    "timestamp",
+    "elapsedTime",
+    "data",
+  ]
   const csvRows = [headers.join(",")]
 
   for (const event of events) {
+    const elapsedTime =
+      event.browserTimestamp !== undefined
+        ? event.browserTimestamp - startBrowserTime
+        : null
+
     const row = [
       event.id,
       event.sessionId,
       event.type,
       event.timestamp,
+      elapsedTime !== null ? elapsedTime : "",
       event.data ? JSON.stringify(event.data).replace(/"/g, '""') : "",
     ]
     csvRows.push(row.map((field) => `"${field}"`).join(","))
@@ -181,9 +205,10 @@ export const createMetadataJSON = (sessionData: SessionData): MetadataJSON => {
       // Browser timestamp synchronization info
       startBrowserTime: sessionData.metadata.startBrowserTime,
       endBrowserTime: sessionData.metadata.endBrowserTime,
-      browserTimestampNote: sessionData.metadata.startBrowserTime
-        ? "relativeBrowserTimestamp = browserTimestamp - startBrowserTime"
-        : "Browser timestamp synchronization not available",
+      elapsedTimeNote:
+        sessionData.metadata.startBrowserTime !== undefined
+          ? "elapsedTime = browserTimestamp - startBrowserTime (in milliseconds)"
+          : "elapsedTime not available - recording was never started",
     },
   }
 }
@@ -315,6 +340,17 @@ const collectSessionFiles = async (
   // Ensure database is initialized before accessing session data
   await initializeStorage()
   const sessionData = await getSessionData(sessionId)
+
+  // Validate that startBrowserTime is available for CSV exports with elapsedTime
+  if (
+    (options.includeOptions.gaze || options.includeOptions.events) &&
+    sessionData.metadata.startBrowserTime === undefined
+  ) {
+    throw new Error(
+      "Cannot export CSV data: startBrowserTime is required for elapsedTime calculation but is not available. This usually means recording was never started.",
+    )
+  }
+
   const sessionName = getSessionName(sessionId)
   const filesToDownload: Array<{
     content: string | Blob
@@ -354,7 +390,10 @@ const collectSessionFiles = async (
 
   // Add events if requested and available
   if (options.includeOptions.events && sessionData.events.length > 0) {
-    const eventsCSV = eventsToCSV(sessionData.events)
+    const eventsCSV = eventsToCSV(
+      sessionData.events,
+      sessionData.metadata.startBrowserTime,
+    )
     filesToDownload.push({
       content: eventsCSV,
       filename: getFilename("events.csv"),
@@ -466,6 +505,17 @@ export const downloadCompleteSessionData = async (
   sessionId: string,
 ): Promise<void> => {
   const sessionData = await getSessionData(sessionId)
+
+  // Validate that startBrowserTime is available for CSV exports with elapsedTime
+  if (
+    (sessionData.gazeData.length > 0 || sessionData.events.length > 0) &&
+    sessionData.metadata.startBrowserTime === undefined
+  ) {
+    throw new Error(
+      "Cannot export CSV data: startBrowserTime is required for elapsedTime calculation but is not available. This usually means recording was never started.",
+    )
+  }
+
   const sessionName = `session-${sessionId}-${new Date().toISOString().split("T")[0]}`
 
   // 1. Download metadata as JSON
@@ -487,7 +537,10 @@ export const downloadCompleteSessionData = async (
 
   // 3. Download events as CSV
   if (sessionData.events.length > 0) {
-    const eventsCSV = eventsToCSV(sessionData.events)
+    const eventsCSV = eventsToCSV(
+      sessionData.events,
+      sessionData.metadata.startBrowserTime,
+    )
     downloadFile(eventsCSV, `${sessionName}-events.csv`, "text/csv")
   }
 

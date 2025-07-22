@@ -342,21 +342,91 @@ export const getSessionData = async (
     },
   )
 
+  // Auto-detect recording start/stop times from events if not provided
+  let startBrowserTime =
+    options?.startBrowserTime ?? session.metadata?.startBrowserTime
+  let endBrowserTime =
+    options?.endBrowserTime ?? session.metadata?.endBrowserTime
+
+  if (!startBrowserTime || !endBrowserTime) {
+    const recordingStartEvent = events.find((e) => e.type === "recording_start")
+    const recordingStopEvent = events.find((e) => e.type === "recording_stop")
+
+    if (recordingStartEvent) {
+      startBrowserTime =
+        startBrowserTime ?? recordingStartEvent.browserTimestamp
+    }
+    if (recordingStopEvent) {
+      endBrowserTime = endBrowserTime ?? recordingStopEvent.browserTimestamp
+    }
+  }
+
+  // Filter gaze data and events by browser timestamp range
+  let filteredGazeData = gazeData
+  let filteredEvents = events
+
+  if (startBrowserTime !== undefined || endBrowserTime !== undefined) {
+    // Filter gaze data within recording period
+    filteredGazeData = gazeData.filter((gaze) => {
+      if (
+        startBrowserTime !== undefined &&
+        gaze.browserTimestamp < startBrowserTime
+      ) {
+        return false
+      }
+      if (
+        endBrowserTime !== undefined &&
+        gaze.browserTimestamp > endBrowserTime
+      ) {
+        return false
+      }
+      return true
+    })
+
+    // Filter events within recording period (but keep session_start, session_stop, recording_start, recording_stop)
+    filteredEvents = events.filter((event) => {
+      // Always keep system events
+      if (
+        [
+          "session_start",
+          "session_stop",
+          "recording_start",
+          "recording_stop",
+        ].includes(event.type)
+      ) {
+        return true
+      }
+
+      // Filter user events by browser timestamp
+      if (
+        startBrowserTime !== undefined &&
+        event.browserTimestamp < startBrowserTime
+      ) {
+        return false
+      }
+      if (
+        endBrowserTime !== undefined &&
+        event.browserTimestamp > endBrowserTime
+      ) {
+        return false
+      }
+      return true
+    })
+  }
+
   const sessionData: SessionData = {
     session,
-    events,
-    gazeData,
+    events: filteredEvents,
+    gazeData: filteredGazeData,
     videoChunks,
     metadata: {
       totalDuration: session.endTime ? session.endTime - session.startTime : 0,
-      gazeDataPoints: gazeData.length,
-      eventsCount: events.length,
+      gazeDataPoints: filteredGazeData.length,
+      eventsCount: filteredEvents.length,
       chunksCount: videoChunks.length,
       exportedAt: new Date().toISOString(),
-      startBrowserTime:
-        options?.startBrowserTime ?? session.metadata?.startBrowserTime,
-      endBrowserTime:
-        options?.endBrowserTime ?? session.metadata?.endBrowserTime,
+      startBrowserTime,
+      endBrowserTime,
     },
   }
 

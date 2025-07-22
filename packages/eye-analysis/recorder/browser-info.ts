@@ -1,5 +1,7 @@
 // Browser and screen information collection utilities
 
+/// <reference path="../types/browser.d.ts" />
+
 import type { ScreenInfo, WindowInfo } from "./types"
 
 // Screen details interface for Window Management API
@@ -83,7 +85,7 @@ export const getScreenDetails = async (): Promise<ScreenDetails | null> => {
 
   screenDetailsPromise = (async () => {
     try {
-      const screenDetails = await (window as any).getScreenDetails?.()
+      const screenDetails = await window.getScreenDetails?.()
       if (screenDetails) {
         cachedScreenDetails = screenDetails
         return screenDetails

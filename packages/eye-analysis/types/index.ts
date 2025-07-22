@@ -136,6 +136,7 @@ export interface SessionEvent {
   sessionId: string
   type: EventType
   timestamp: number
+  browserTimestamp: number // performance.now() when event occurred
   data?: Record<string, unknown>
 }
 

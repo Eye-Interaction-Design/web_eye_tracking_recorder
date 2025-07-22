@@ -1,6 +1,6 @@
 {
   "name": "eye-analysis",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Eye Analysis - Browser-based eye tracking and screen recording library for research and experiments",
   "author": "shikibu9419",
   "license": "MIT",

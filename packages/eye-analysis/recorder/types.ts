@@ -69,6 +69,7 @@ export interface SessionEvent {
     | "recording_stop"
     | "user_event"
   timestamp: number
+  browserTimestamp: number // performance.now() when event occurred
   data?: Record<string, unknown>
 }
 
@@ -147,7 +148,7 @@ export interface SessionInfo {
       userAgent?: string
     }
     // Browser timestamp synchronization
-    startBrowserTime?: number // performance.now() when recording started
+    startBrowserTime?: number // performance.now() when recording started (set when recording actually starts)
     endBrowserTime?: number // performance.now() when recording ended
   }
 }
@@ -164,7 +165,7 @@ export interface SessionData {
     chunksCount: number
     exportedAt: string
     // Browser timestamp synchronization
-    startBrowserTime?: number // performance.now() when recording started
+    startBrowserTime?: number // performance.now() when recording started (set when recording actually starts)
     endBrowserTime?: number // performance.now() when recording ended
   }
 }
@@ -292,7 +293,7 @@ export interface MetadataJSON {
     // Browser timestamp synchronization info
     startBrowserTime?: number
     endBrowserTime?: number
-    browserTimestampNote: string
+    elapsedTimeNote: string
   }
 }
 

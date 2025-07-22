@@ -2,43 +2,24 @@
 
 import type { SessionInfo, WindowState } from "./types"
 
-// Conversion to recording video coordinates (contentX/Y)
+// Conversion from screen coordinates to recording video coordinates (contentX/Y)
 export function transformToContentCoordinates(
   screenX: number,
   screenY: number,
   sessionInfo: SessionInfo,
   windowState?: WindowState,
-  isNormalized?: boolean,
-  screenWidth?: number,
-  screenHeight?: number,
 ): { contentX: number; contentY: number } {
   switch (sessionInfo.recordingMode) {
     case "full-screen":
-      // Full screen recording: set both screenX/Y and contentX/Y to 0 for simplicity
+      // Full screen recording: contentX/Y equals screenX/Y
       return {
-        contentX: 0,
-        contentY: 0,
+        contentX: screenX,
+        contentY: screenY,
       }
 
     case "current-tab":
       if (!windowState) {
         throw new Error("WindowState is required for current-tab recording")
-      }
-
-      // Handle normalized coordinates
-      if (isNormalized) {
-        if (!screenWidth || !screenHeight) {
-          throw new Error(
-            "Screen dimensions are required for normalized coordinates",
-          )
-        }
-        // Convert normalized (0-1) to screen coordinates, then to content coordinates
-        const actualScreenX = screenX * screenWidth
-        const actualScreenY = screenY * screenHeight
-        return {
-          contentX: actualScreenX - windowState.screenX,
-          contentY: actualScreenY - windowState.screenY,
-        }
       }
 
       // Current tab recording: convert to window-based coordinates
@@ -66,15 +47,12 @@ export function transformToContentCoordinates(
   }
 }
 
-// Conversion to web page coordinates (only for current-tab case)
+// Conversion from screen coordinates to web page coordinates (only for current-tab case)
 export function transformToPageCoordinates(
   screenX: number,
   screenY: number,
   sessionInfo: SessionInfo,
   windowState?: WindowState,
-  isNormalized?: boolean,
-  screenWidth?: number,
-  screenHeight?: number,
 ): { pageX: number; pageY: number } | null {
   if (sessionInfo.recordingMode !== "current-tab" || !windowState) {
     return null
@@ -85,9 +63,6 @@ export function transformToPageCoordinates(
     screenY,
     sessionInfo,
     windowState,
-    isNormalized,
-    screenWidth,
-    screenHeight,
   )
 
   return {
@@ -96,68 +71,63 @@ export function transformToPageCoordinates(
   }
 }
 
-// Conversion to normalized coordinates (0-1)
+// Conversion from screen coordinates to normalized coordinates (0-1)
 export function transformToNormalizedCoordinates(
   screenX: number,
   screenY: number,
   sessionInfo: SessionInfo,
   windowState?: WindowState,
-  isNormalized?: boolean,
-  screenWidth?: number,
-  screenHeight?: number,
 ): { normalizedX: number; normalizedY: number } {
+  let contentWidth: number
+  let contentHeight: number
+
+  if (sessionInfo.recordingMode === "full-screen") {
+    // For full-screen, use screen dimensions from sessionInfo
+    contentWidth = sessionInfo.recordingReference?.screen?.width ?? 1920
+    contentHeight = sessionInfo.recordingReference?.screen?.height ?? 1080
+  } else if (sessionInfo.recordingMode === "current-tab") {
+    if (!windowState) {
+      throw new Error(
+        "WindowState is required for current-tab recording normalization",
+      )
+    }
+    contentWidth = windowState.innerWidth
+    contentHeight = windowState.innerHeight
+  } else {
+    throw new Error(`Unsupported recording mode: ${sessionInfo.recordingMode}`)
+  }
+
   const contentCoords = transformToContentCoordinates(
     screenX,
     screenY,
     sessionInfo,
     windowState,
-    isNormalized,
-    screenWidth,
-    screenHeight,
   )
 
-  let width: number, height: number
-
-  if (sessionInfo.recordingMode === "full-screen") {
-    // For full-screen mode, we set coordinates to 0, so normalization is also 0
-    return {
-      normalizedX: 0,
-      normalizedY: 0,
-    }
-  } else {
-    if (!windowState) {
-      throw new Error(
-        "WindowState is required for window-based recording normalization",
-      )
-    }
-    width = windowState.innerWidth
-    height = windowState.innerHeight
-  }
-
   return {
-    normalizedX: Math.max(0, Math.min(1, contentCoords.contentX / width)),
-    normalizedY: Math.max(0, Math.min(1, contentCoords.contentY / height)),
+    normalizedX: Math.max(
+      0,
+      Math.min(1, contentCoords.contentX / contentWidth),
+    ),
+    normalizedY: Math.max(
+      0,
+      Math.min(1, contentCoords.contentY / contentHeight),
+    ),
   }
 }
 
-// Determine if gaze data is within range
+// Determine if gaze data is within recording bounds
 export function isGazeWithinRecordingBounds(
   screenX: number,
   screenY: number,
   sessionInfo: SessionInfo,
   windowState?: WindowState,
-  isNormalized?: boolean,
-  screenWidth?: number,
-  screenHeight?: number,
 ): boolean {
   const contentCoords = transformToContentCoordinates(
     screenX,
     screenY,
     sessionInfo,
     windowState,
-    isNormalized,
-    screenWidth,
-    screenHeight,
   )
 
   if (sessionInfo.recordingMode === "full-screen") {
@@ -178,51 +148,36 @@ export function isGazeWithinRecordingBounds(
   }
 }
 
-// Batch conversion to multiple coordinate systems
+// Batch conversion to multiple coordinate systems for screen coordinates
 export function transformGazeCoordinates(
   screenX: number,
   screenY: number,
   sessionInfo: SessionInfo,
   windowState?: WindowState,
-  isNormalized?: boolean,
-  screenWidth?: number,
-  screenHeight?: number,
 ) {
   const contentCoords = transformToContentCoordinates(
     screenX,
     screenY,
     sessionInfo,
     windowState,
-    isNormalized,
-    screenWidth,
-    screenHeight,
   )
   const pageCoords = transformToPageCoordinates(
     screenX,
     screenY,
     sessionInfo,
     windowState,
-    isNormalized,
-    screenWidth,
-    screenHeight,
   )
   const normalizedCoords = transformToNormalizedCoordinates(
     screenX,
     screenY,
     sessionInfo,
     windowState,
-    isNormalized,
-    screenWidth,
-    screenHeight,
   )
   const isWithinBounds = isGazeWithinRecordingBounds(
     screenX,
     screenY,
     sessionInfo,
     windowState,
-    isNormalized,
-    screenWidth,
-    screenHeight,
   )
 
   return {

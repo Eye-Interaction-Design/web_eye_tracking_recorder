@@ -139,6 +139,7 @@ export const createSession = async (
       sessionId,
       type: "session_start",
       timestamp: Date.now(),
+      browserTimestamp: performance.now(),
       data: {
         participantId: config.participantId,
         experimentType: config.experimentType,
@@ -280,10 +281,15 @@ export const startRecording = async (): Promise<void> => {
       sessionId: state.currentSession.sessionId,
       type: "recording_start",
       timestamp: Date.now(),
+      browserTimestamp: performance.now(),
     }
     await saveEvent(recordingStartEvent)
 
     dispatch({ type: "START_RECORDING" })
+
+    // Get the updated state after START_RECORDING dispatch
+    const updatedState = getState()
+    const startBrowserTime = updatedState.startBrowserTime || performance.now()
 
     // Get actual content size from the recording stream
     const videoTrack = recordingStream.getVideoTracks()[0]
@@ -294,10 +300,32 @@ export const startRecording = async (): Promise<void> => {
         height: settings.height || 0,
       }
 
-      // Update session info with actual content size
+      // Update session info with actual content size and startBrowserTime
       const updatedSession = {
         ...state.currentSession,
         actualContentSize,
+        metadata: {
+          ...state.currentSession?.metadata,
+          startBrowserTime,
+        },
+      }
+
+      // Update session in storage
+      await saveSession(updatedSession)
+
+      // Update state
+      dispatch({
+        type: "UPDATE_SESSION",
+        payload: updatedSession,
+      })
+    } else {
+      // Update session with startBrowserTime even if no video track
+      const updatedSession = {
+        ...state.currentSession,
+        metadata: {
+          ...state.currentSession?.metadata,
+          startBrowserTime,
+        },
       }
 
       // Update session in storage
@@ -336,6 +364,10 @@ export const stopRecording = async (): Promise<SessionInfo | null> => {
     if (state.currentSession) {
       // Update session end time and status
       const endBrowserTime = performance.now()
+      const startBrowserTime =
+        state.currentSession.metadata?.startBrowserTime ??
+        state.startBrowserTime ??
+        0
       const updatedSession = {
         ...state.currentSession,
         endTime: Date.now(),
@@ -343,7 +375,7 @@ export const stopRecording = async (): Promise<SessionInfo | null> => {
         metadata: {
           ...state.currentSession.metadata,
           duration: Date.now() - state.currentSession.startTime,
-          startBrowserTime: state.startBrowserTime,
+          startBrowserTime,
           endBrowserTime,
         },
       }
@@ -356,6 +388,7 @@ export const stopRecording = async (): Promise<SessionInfo | null> => {
         sessionId: state.currentSession.sessionId,
         type: "recording_stop",
         timestamp: Date.now(),
+        browserTimestamp: performance.now(),
       }
       await saveEvent(recordingStopEvent)
 
@@ -418,40 +451,62 @@ export const addGazeData = async (
     const screenInfo = getScreenInfo()
 
     // Coordinate transformation (screenX/Y → contentX/Y)
+    let screenX = gazeInput.screenX ?? 0
+    let screenY = gazeInput.screenY ?? 0
+
+    // If normalized coordinates, convert to screen coordinates first
+    if (gazeInput.normalized) {
+      screenX = screenX * screenInfo.width
+      screenY = screenY * screenInfo.height
+    }
+
     const { contentX, contentY } = transformToContentCoordinates(
-      gazeInput.screenX ?? 0,
-      gazeInput.screenY ?? 0,
+      screenX,
+      screenY,
       session,
       windowState,
-      gazeInput.normalized,
-      screenInfo.width,
-      screenInfo.height,
     )
 
     // Left eye coordinate transformation (if available)
     const leftEyeContent = gazeInput.leftEye
-      ? transformToContentCoordinates(
-          gazeInput.leftEye.screenX ?? 0,
-          gazeInput.leftEye.screenY ?? 0,
-          session,
-          windowState,
-          gazeInput.normalized,
-          screenInfo.width,
-          screenInfo.height,
-        )
+      ? (() => {
+          let leftScreenX = gazeInput.leftEye.screenX ?? 0
+          let leftScreenY = gazeInput.leftEye.screenY ?? 0
+
+          // If normalized coordinates, convert to screen coordinates first
+          if (gazeInput.normalized) {
+            leftScreenX = leftScreenX * screenInfo.width
+            leftScreenY = leftScreenY * screenInfo.height
+          }
+
+          return transformToContentCoordinates(
+            leftScreenX,
+            leftScreenY,
+            session,
+            windowState,
+          )
+        })()
       : undefined
 
     // Right eye coordinate transformation (if available)
     const rightEyeContent = gazeInput.rightEye
-      ? transformToContentCoordinates(
-          gazeInput.rightEye.screenX ?? 0,
-          gazeInput.rightEye.screenY ?? 0,
-          session,
-          windowState,
-          gazeInput.normalized,
-          screenInfo.width,
-          screenInfo.height,
-        )
+      ? (() => {
+          let rightScreenX = gazeInput.rightEye.screenX ?? 0
+          let rightScreenY = gazeInput.rightEye.screenY ?? 0
+
+          // If normalized coordinates, convert to screen coordinates first
+          if (gazeInput.normalized) {
+            rightScreenX = rightScreenX * screenInfo.width
+            rightScreenY = rightScreenY * screenInfo.height
+          }
+
+          return transformToContentCoordinates(
+            rightScreenX,
+            rightScreenY,
+            session,
+            windowState,
+          )
+        })()
       : undefined
 
     // Create complete GazePoint with all required fields
@@ -461,8 +516,8 @@ export const addGazeData = async (
       systemTimestamp: gazeInput.systemTimestamp ?? Date.now(),
       browserTimestamp: performance.now(), // Always use current performance.now() for consistency
       normalized: gazeInput.normalized,
-      screenX: session.recordingMode === "full-screen" ? 0 : gazeInput.screenX,
-      screenY: session.recordingMode === "full-screen" ? 0 : gazeInput.screenY,
+      screenX: gazeInput.screenX,
+      screenY: gazeInput.screenY,
       screenWidth: screenInfo.width,
       screenHeight: screenInfo.height,
       contentX,
@@ -470,14 +525,8 @@ export const addGazeData = async (
       confidence: gazeInput.confidence,
       leftEye: gazeInput.leftEye
         ? {
-            screenX:
-              session.recordingMode === "full-screen"
-                ? 0
-                : gazeInput.leftEye.screenX,
-            screenY:
-              session.recordingMode === "full-screen"
-                ? 0
-                : gazeInput.leftEye.screenY,
+            screenX: gazeInput.leftEye.screenX,
+            screenY: gazeInput.leftEye.screenY,
             contentX: leftEyeContent?.contentX || 0,
             contentY: leftEyeContent?.contentY || 0,
             positionX: gazeInput.leftEye.positionX,
@@ -491,14 +540,8 @@ export const addGazeData = async (
         : undefined,
       rightEye: gazeInput.rightEye
         ? {
-            screenX:
-              session.recordingMode === "full-screen"
-                ? 0
-                : gazeInput.rightEye.screenX,
-            screenY:
-              session.recordingMode === "full-screen"
-                ? 0
-                : gazeInput.rightEye.screenY,
+            screenX: gazeInput.rightEye.screenX,
+            screenY: gazeInput.rightEye.screenY,
             contentX: rightEyeContent?.contentX || 0,
             contentY: rightEyeContent?.contentY || 0,
             positionX: gazeInput.rightEye.positionX,
@@ -547,6 +590,7 @@ export const addEvent = async (
       sessionId: state.currentSession.sessionId,
       type: "user_event",
       timestamp: Date.now(),
+      browserTimestamp: performance.now(),
       data: { eventType: type, ...data },
     }
 

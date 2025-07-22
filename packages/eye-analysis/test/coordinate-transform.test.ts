@@ -95,8 +95,8 @@ describe("Coordinate Transform Functions", () => {
       )
 
       expect(result).toEqual({
-        contentX: 0,
-        contentY: 0,
+        contentX: 500,
+        contentY: 300,
       })
     })
 
@@ -112,35 +112,6 @@ describe("Coordinate Transform Functions", () => {
         contentX: 500, // 600 - 100 (windowState.screenX)
         contentY: 300, // 350 - 50 (windowState.screenY)
       })
-    })
-
-    it("should handle normalized coordinates for current-tab recording", () => {
-      const result = transformToContentCoordinates(
-        0.5, // normalized X (50% of screen)
-        0.25, // normalized Y (25% of screen)
-        mockSessionCurrentTab,
-        mockWindowState,
-        true, // isNormalized
-        1920, // screenWidth
-        1080, // screenHeight
-      )
-
-      expect(result).toEqual({
-        contentX: 860, // (0.5 * 1920) - 100 = 960 - 100 = 860
-        contentY: 220, // (0.25 * 1080) - 50 = 270 - 50 = 220
-      })
-    })
-
-    it("should throw error for normalized coordinates without screen dimensions", () => {
-      expect(() => {
-        transformToContentCoordinates(
-          0.5,
-          0.25,
-          mockSessionCurrentTab,
-          mockWindowState,
-          true,
-        )
-      }).toThrow("Screen dimensions are required for normalized coordinates")
     })
 
     it("should throw error for window-based recording without windowState", () => {
@@ -177,29 +148,6 @@ describe("Coordinate Transform Functions", () => {
       })
     })
 
-    it("should handle normalized coordinates for page transformation", () => {
-      const windowStateWithScroll: WindowState = {
-        ...mockWindowState,
-        scrollX: 200,
-        scrollY: 100,
-      }
-
-      const result = transformToPageCoordinates(
-        0.5, // normalized X
-        0.25, // normalized Y
-        mockSessionCurrentTab,
-        windowStateWithScroll,
-        true, // isNormalized
-        1920, // screenWidth
-        1080, // screenHeight
-      )
-
-      expect(result).toEqual({
-        pageX: 1060, // (0.5 * 1920) - 100 + 200 = 960 - 100 + 200 = 1060
-        pageY: 320, // (0.25 * 1080) - 50 + 100 = 270 - 50 + 100 = 320
-      })
-    })
-
     // Temporarily disabled browser-window mode
     // it("should return null for browser-window recording without windowState", () => {
     //   const result = transformToPageCoordinates(500, 300, {
@@ -219,8 +167,8 @@ describe("Coordinate Transform Functions", () => {
         mockSessionFullScreen,
       )
 
-      expect(result.normalizedX).toBeCloseTo(0)
-      expect(result.normalizedY).toBeCloseTo(0)
+      expect(result.normalizedX).toBeCloseTo(0.5) // 960 / 1920 = 0.5
+      expect(result.normalizedY).toBeCloseTo(0.5) // 540 / 1080 = 0.5
     })
 
     it("should normalize coordinates for current-tab recording", () => {
@@ -315,7 +263,7 @@ describe("Coordinate Transform Functions", () => {
       const result = transformGazeCoordinates(960, 540, mockSessionFullScreen)
 
       expect(result.screen).toEqual({ x: 960, y: 540 })
-      expect(result.content).toEqual({ contentX: 0, contentY: 0 })
+      expect(result.content).toEqual({ contentX: 960, contentY: 540 })
       expect(result.page).toBeNull()
       expect(result.isWithinBounds).toBe(true)
     })
