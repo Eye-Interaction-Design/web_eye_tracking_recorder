@@ -15,6 +15,7 @@ const getInitialState = (): RecorderState => ({
   lastUpdate: Date.now(),
   recordingConfig: undefined,
   startBrowserTime: undefined,
+  recordingStream: null,
 })
 
 // Global state and subscribers with singleton pattern
@@ -93,6 +94,7 @@ const stateReducer = (
         error: null,
         lastUpdate: Date.now(),
         startBrowserTime: undefined,
+        recordingStream: null,
       }
 
     case "ADD_GAZE_DATA":
@@ -141,6 +143,7 @@ const stateReducer = (
         videoChunksCount: 0,
         recordingDuration: 0,
         startBrowserTime: undefined,
+        recordingStream: null,
         lastUpdate: Date.now(),
       }
 
@@ -148,6 +151,13 @@ const stateReducer = (
       return {
         ...state,
         recordingConfig: action.payload,
+        lastUpdate: Date.now(),
+      }
+
+    case "SET_RECORDING_STREAM":
+      return {
+        ...state,
+        recordingStream: action.payload,
         lastUpdate: Date.now(),
       }
 

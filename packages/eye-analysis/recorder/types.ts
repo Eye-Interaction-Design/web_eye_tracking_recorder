@@ -104,6 +104,7 @@ export interface RecorderState {
     availableRecordingModes?: RecordingMode[]
   }
   startBrowserTime?: number // performance.now() when recording started
+  recordingStream: MediaStream | null // Current recording stream
 }
 
 export interface SessionInfo {
@@ -314,3 +315,4 @@ export type RecorderAction =
       type: "SET_RECORDING_CONFIG"
       payload: { availableRecordingModes?: RecordingMode[] }
     }
+  | { type: "SET_RECORDING_STREAM"; payload: MediaStream | null }

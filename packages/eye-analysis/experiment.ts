@@ -11,6 +11,7 @@ import {
   isRecording as getCoreRecording,
   getCurrentSession as getCoreSession,
   getCurrentState as getCoreState,
+  getRecordingStream as getCoreRecordingStream,
 } from "./recorder/core"
 import {
   downloadSession as coreDownloadSession,
@@ -204,6 +205,13 @@ export const isRecording = (): boolean => {
   return getCoreRecording()
 }
 
+/**
+ * Get current recording stream
+ */
+export const getRecordingStream = (): MediaStream | null => {
+  return getCoreRecordingStream()
+}
+
 // Download and export functions with improved interface
 
 /**
@@ -234,6 +242,7 @@ export {
   isRecording as getCoreRecording,
   getCurrentSession as getCoreSession,
   getCurrentState as getCoreState,
+  getRecordingStream as getCoreRecordingStream,
 } from "./recorder/core"
 
 // Re-export export functions

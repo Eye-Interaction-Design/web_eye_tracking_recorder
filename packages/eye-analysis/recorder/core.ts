@@ -286,6 +286,7 @@ export const startRecording = async (): Promise<void> => {
     await saveEvent(recordingStartEvent)
 
     dispatch({ type: "START_RECORDING" })
+    dispatch({ type: "SET_RECORDING_STREAM", payload: recordingStream })
 
     // Get the updated state after START_RECORDING dispatch
     const updatedState = getState()
@@ -743,4 +744,11 @@ export const isRecording = (): boolean => getState().isRecording
  */
 export const getCurrentSession = (): SessionInfo | null => {
   return getState().currentSession
+}
+
+/**
+ * Get current recording stream
+ */
+export const getRecordingStream = (): MediaStream | null => {
+  return getState().recordingStream
 }
