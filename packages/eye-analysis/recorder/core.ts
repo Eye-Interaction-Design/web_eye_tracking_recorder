@@ -13,6 +13,7 @@ import {
   saveSession,
   saveVideoChunk,
 } from "./storage"
+// import { initializeDatabase } from "../services/database" // Temporarily disabled
 import type {
   GazePoint,
   GazePointInput,
@@ -44,10 +45,16 @@ export const initialize = async (): Promise<void> => {
 
   try {
     await initializeStorage()
+
+    // NOTE: ExperimentDB initialization temporarily disabled to prevent conflicts
+    // TODO: Remove duplicate database system or clarify purpose
+    // await initializeDatabase()
+
     dispatch({ type: "INITIALIZE" })
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Unknown initialization error"
+    console.error("Initialization failed:", errorMessage)
     dispatch({ type: "SET_ERROR", payload: errorMessage })
     throw error
   }
@@ -690,5 +697,6 @@ export const isRecording = (): boolean => getState().isRecording
 /**
  * Get current session info
  */
-export const getCurrentSession = (): SessionInfo | null =>
-  getState().currentSession
+export const getCurrentSession = (): SessionInfo | null => {
+  return getState().currentSession
+}

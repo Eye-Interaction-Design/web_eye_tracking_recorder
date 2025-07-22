@@ -46,7 +46,7 @@ def wait_for_device():
 
 
 def broadcast_gaze_data(gaze_data: TobiiGazeData):
-    print("[GazeData]", gaze_data)
+    # print("[GazeData]", gaze_data)
     if not connected_clients or not main_loop:
         return
 

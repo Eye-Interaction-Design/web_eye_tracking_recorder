@@ -224,6 +224,55 @@ export const downloadSession = async (
   await coreDownloadSession(targetSessionId, options)
 }
 
+// Re-export core recorder functions for direct access
+export {
+  addEvent as coreAddEvent,
+  createSession as coreCreateSession,
+  initialize as coreInitialize,
+  startRecording as coreStartRecording,
+  stopRecording as coreStopRecording,
+  isRecording as getCoreRecording,
+  getCurrentSession as getCoreSession,
+  getCurrentState as getCoreState,
+} from "./recorder/core"
+
+// Re-export export functions
+export {
+  downloadSession as coreDownloadSession,
+  exportExperimentDataset,
+  gazeDataToCSV,
+  eventsToCSV,
+  createMetadataJSON,
+  downloadFile,
+  createSessionSummaryText,
+  type DownloadSessionOptions as CoreDownloadSessionOptions,
+} from "./recorder/export"
+
+// Re-export state management
+export {
+  subscribe as coreSubscribe,
+  dispatch as coreDispatch,
+  getState as getCoreRecorderState,
+} from "./recorder/state"
+
+// Re-export storage functions
+export {
+  initializeStorage,
+  saveGazeData,
+  saveEvent,
+  saveVideoChunk,
+  getSessionData,
+  getAllSessions,
+  deleteSession,
+  resetDatabase,
+  saveSession,
+  getSession,
+  getVideoChunkData,
+  getStorageUsage,
+  cleanupOldVideoChunks,
+  autoCleanupStorage,
+} from "./recorder/storage"
+
 // Export all types for convenience
 export type {
   SessionConfig,

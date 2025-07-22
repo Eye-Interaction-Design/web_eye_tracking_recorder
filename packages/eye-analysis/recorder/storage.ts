@@ -8,28 +8,31 @@ import type {
   VideoChunkInfo,
 } from "./types"
 
-const DB_NAME = "RecorderDB"
+const DB_NAME = "EyeAnalysisDB"
 const DB_VERSION = 4
 
-let db: IDBDatabase | null = null
+// Use globalThis to ensure database instance is shared across all modules
+declare global {
+  var __eyeAnalysisDB: IDBDatabase | null
+}
+
+const getDb = (): IDBDatabase | null => {
+  return globalThis.__eyeAnalysisDB || null
+}
+
+const setDb = (database: IDBDatabase | null): void => {
+  globalThis.__eyeAnalysisDB = database
+}
 
 export const initializeStorage = (): Promise<void> => {
   return new Promise((resolve, reject) => {
-    if (db) {
+    const currentDb = getDb()
+    if (currentDb) {
       resolve()
       return
     }
-
-    // Force delete existing database to ensure clean schema
-    const deleteRequest = indexedDB.deleteDatabase(DB_NAME)
-    deleteRequest.onsuccess = () => {
-      const request = indexedDB.open(DB_NAME, DB_VERSION)
-      setupDatabase(request, resolve, reject)
-    }
-    deleteRequest.onerror = () => {
-      const request = indexedDB.open(DB_NAME, DB_VERSION)
-      setupDatabase(request, resolve, reject)
-    }
+    const request = indexedDB.open(DB_NAME, DB_VERSION)
+    setupDatabase(request, resolve, reject)
   })
 }
 
@@ -43,7 +46,7 @@ const setupDatabase = (
   }
 
   request.onsuccess = () => {
-    db = request.result
+    setDb(request.result)
     resolve()
   }
 
@@ -96,9 +99,10 @@ const setupDatabase = (
 export const resetDatabase = (): Promise<void> => {
   return new Promise((resolve, reject) => {
     // Close existing connection
-    if (db) {
-      db.close()
-      db = null
+    const currentDb = getDb()
+    if (currentDb) {
+      currentDb.close()
+      setDb(null)
     }
 
     // Delete the database
@@ -113,14 +117,16 @@ export const resetDatabase = (): Promise<void> => {
 }
 
 // Session operations
-export const saveSession = (session: SessionInfo): Promise<void> => {
+export const saveSession = async (session: SessionInfo): Promise<void> => {
+  await ensureDatabaseReady()
   return new Promise((resolve, reject) => {
-    if (!db) {
+    const currentDb = getDb()
+    if (!currentDb) {
       reject(new Error("Database not initialized"))
       return
     }
 
-    const transaction = db.transaction(["sessions"], "readwrite")
+    const transaction = currentDb.transaction(["sessions"], "readwrite")
     const store = transaction.objectStore("sessions")
     const request = store.put(session)
 
@@ -129,14 +135,18 @@ export const saveSession = (session: SessionInfo): Promise<void> => {
   })
 }
 
-export const getSession = (sessionId: string): Promise<SessionInfo | null> => {
+export const getSession = async (
+  sessionId: string,
+): Promise<SessionInfo | null> => {
+  await ensureDatabaseReady()
   return new Promise((resolve, reject) => {
-    if (!db) {
+    const currentDb = getDb()
+    if (!currentDb) {
       reject(new Error("Database not initialized"))
       return
     }
 
-    const transaction = db.transaction(["sessions"], "readonly")
+    const transaction = currentDb.transaction(["sessions"], "readonly")
     const store = transaction.objectStore("sessions")
     const request = store.get(sessionId)
 
@@ -148,12 +158,13 @@ export const getSession = (sessionId: string): Promise<SessionInfo | null> => {
 // Event operations
 export const saveEvent = (event: SessionEvent): Promise<void> => {
   return new Promise((resolve, reject) => {
-    if (!db) {
+    const currentDb = getDb()
+    if (!currentDb) {
       reject(new Error("Database not initialized"))
       return
     }
 
-    const transaction = db.transaction(["events"], "readwrite")
+    const transaction = currentDb.transaction(["events"], "readwrite")
     const store = transaction.objectStore("events")
     const request = store.add(event)
 
@@ -168,7 +179,8 @@ export const saveGazeData = (
   gazePoint: GazePoint,
 ): Promise<void> => {
   return new Promise((resolve, reject) => {
-    if (!db) {
+    const currentDb = getDb()
+    if (!currentDb) {
       reject(new Error("Database not initialized"))
       return
     }
@@ -179,7 +191,7 @@ export const saveGazeData = (
       storageId: `${sessionId}-${gazePoint.systemTimestamp}-${Math.random()}`,
     }
 
-    const transaction = db.transaction(["gazeData"], "readwrite")
+    const transaction = currentDb.transaction(["gazeData"], "readwrite")
     const store = transaction.objectStore("gazeData")
     const request = store.add(dataWithSession)
 
@@ -198,17 +210,45 @@ export const saveVideoChunk = (chunk: {
   duration: number
 }): Promise<void> => {
   return new Promise((resolve, reject) => {
-    if (!db) {
+    const currentDb = getDb()
+    if (!currentDb) {
       reject(new Error("Database not initialized"))
       return
     }
 
-    const transaction = db.transaction(["videoChunks"], "readwrite")
+    const transaction = currentDb.transaction(["videoChunks"], "readwrite")
     const store = transaction.objectStore("videoChunks")
     const request = store.add(chunk)
 
     request.onsuccess = () => resolve()
     request.onerror = () => reject(new Error("Failed to save video chunk"))
+  })
+}
+
+// Database readiness check with retry mechanism
+const ensureDatabaseReady = (retries = 10, delay = 500): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    const check = (attemptsLeft: number) => {
+      const currentDb = getDb()
+
+      if (currentDb && currentDb.version === DB_VERSION) {
+        resolve()
+        return
+      }
+
+      if (attemptsLeft === 0) {
+        reject(
+          new Error(
+            `Database not initialized or ready after ${retries} attempts. Current db: ${currentDb ? `version ${currentDb.version}` : "null"}`,
+          ),
+        )
+        return
+      }
+
+      setTimeout(() => check(attemptsLeft - 1), delay)
+    }
+
+    check(retries)
   })
 }
 
@@ -220,7 +260,11 @@ export const getSessionData = async (
     endBrowserTime?: number
   },
 ): Promise<SessionData> => {
-  if (!db) {
+  // Wait for database to be ready before proceeding
+  await ensureDatabaseReady()
+
+  const currentDb = getDb()
+  if (!currentDb) {
     throw new Error("Database not initialized")
   }
 
@@ -232,11 +276,12 @@ export const getSessionData = async (
   // Get events
   const events = await new Promise<SessionEvent[]>(
     (resolveEvents, rejectEvents) => {
-      if (!db) {
+      const currentDb = getDb()
+      if (!currentDb) {
         rejectEvents(new Error("Database not initialized"))
         return
       }
-      const transaction = db.transaction(["events"], "readonly")
+      const transaction = currentDb.transaction(["events"], "readonly")
       const store = transaction.objectStore("events")
       const index = store.index("sessionId")
       const request = index.getAll(sessionId)
@@ -248,11 +293,12 @@ export const getSessionData = async (
 
   // Get gaze data
   const gazeData = await new Promise<GazePoint[]>((resolveGaze, rejectGaze) => {
-    if (!db) {
+    const currentDb = getDb()
+    if (!currentDb) {
       rejectGaze(new Error("Database not initialized"))
       return
     }
-    const transaction = db.transaction(["gazeData"], "readonly")
+    const transaction = currentDb.transaction(["gazeData"], "readonly")
     const store = transaction.objectStore("gazeData")
     const index = store.index("sessionId")
     const request = index.getAll(sessionId)
@@ -270,11 +316,12 @@ export const getSessionData = async (
   // Get video chunks info
   const videoChunks = await new Promise<VideoChunkInfo[]>(
     (resolveVideo, rejectVideo) => {
-      if (!db) {
+      const currentDb = getDb()
+      if (!currentDb) {
         rejectVideo(new Error("Database not initialized"))
         return
       }
-      const transaction = db.transaction(["videoChunks"], "readonly")
+      const transaction = currentDb.transaction(["videoChunks"], "readonly")
       const store = transaction.objectStore("videoChunks")
       const index = store.index("sessionId")
       const request = index.getAll(sessionId)
@@ -317,14 +364,18 @@ export const getSessionData = async (
 }
 
 // Get video chunk blob data
-export const getVideoChunkData = (chunkId: string): Promise<Blob | null> => {
+export const getVideoChunkData = async (
+  chunkId: string,
+): Promise<Blob | null> => {
+  await ensureDatabaseReady()
   return new Promise((resolve, reject) => {
-    if (!db) {
+    const currentDb = getDb()
+    if (!currentDb) {
       reject(new Error("Database not initialized"))
       return
     }
 
-    const transaction = db.transaction(["videoChunks"], "readonly")
+    const transaction = currentDb.transaction(["videoChunks"], "readonly")
     const store = transaction.objectStore("videoChunks")
     const request = store.get(chunkId)
 
@@ -363,7 +414,8 @@ export const getStorageUsage = async (): Promise<{
 export const cleanupOldVideoChunks = async (
   keepRecentHours: number = 24,
 ): Promise<number> => {
-  if (!db) {
+  const currentDb = getDb()
+  if (!currentDb) {
     throw new Error("Database not initialized")
   }
 
@@ -371,11 +423,12 @@ export const cleanupOldVideoChunks = async (
   let deletedCount = 0
 
   return new Promise((resolve, reject) => {
-    if (!db) {
+    const currentDb = getDb()
+    if (!currentDb) {
       reject(new Error("Database not available"))
       return
     }
-    const transaction = db.transaction(["videoChunks"], "readwrite")
+    const transaction = currentDb.transaction(["videoChunks"], "readwrite")
     const store = transaction.objectStore("videoChunks")
     const index = store.index("timestamp")
     const request = index.openCursor(IDBKeyRange.upperBound(cutoffTime))
@@ -409,15 +462,13 @@ export const autoCleanupStorage = async (
     )
 
     // Clean up old video chunks (keep recent 12 hours)
-    const _deletedChunks = await cleanupOldVideoChunks(12)
-    // Cleaned up old video chunks
+    await cleanupOldVideoChunks(12)
 
     // Check if we need more aggressive cleanup
     const newUsage = await getStorageUsage()
     if (newUsage.percentage >= triggerPercentage) {
       // More aggressive cleanup - keep only 6 hours
-      const _moreDeleted = await cleanupOldVideoChunks(6)
-      // Performed aggressive cleanup
+      await cleanupOldVideoChunks(6)
     }
   }
 }
@@ -427,12 +478,13 @@ export const autoCleanupStorage = async (
  */
 export const getAllSessions = (): Promise<SessionInfo[]> => {
   return new Promise((resolve, reject) => {
-    if (!db) {
+    const currentDb = getDb()
+    if (!currentDb) {
       reject(new Error("Database not initialized"))
       return
     }
 
-    const transaction = db.transaction(["sessions"], "readonly")
+    const transaction = currentDb.transaction(["sessions"], "readonly")
     const store = transaction.objectStore("sessions")
     const request = store.getAll()
 
@@ -445,11 +497,12 @@ export const getAllSessions = (): Promise<SessionInfo[]> => {
  * Delete a complete session and all its data
  */
 export const deleteSession = async (sessionId: string): Promise<void> => {
-  if (!db) {
+  const currentDb = getDb()
+  if (!currentDb) {
     throw new Error("Database not initialized")
   }
 
-  const transaction = db?.transaction(
+  const transaction = currentDb.transaction(
     ["sessions", "events", "gazeData", "videoChunks"],
     "readwrite",
   )

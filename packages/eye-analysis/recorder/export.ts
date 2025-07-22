@@ -1,7 +1,7 @@
 // Data export utilities for improved data structure
 
 import { strToU8, zipSync } from "fflate"
-import { getSessionData, getVideoChunkData } from "./storage"
+import { getSessionData, getVideoChunkData, initializeStorage } from "./storage"
 import type {
   GazePoint,
   MetadataJSON,
@@ -312,13 +312,9 @@ const collectSessionFiles = async (
     mimeType: string
   }>
 > => {
-  let sessionData: SessionData
-  try {
-    sessionData = await getSessionData(sessionId)
-  } catch (error) {
-    console.error(`Failed to get session data for ${sessionId}:`, error)
-    throw error
-  }
+  // Ensure database is initialized before accessing session data
+  await initializeStorage()
+  const sessionData = await getSessionData(sessionId)
   const sessionName = getSessionName(sessionId)
   const filesToDownload: Array<{
     content: string | Blob

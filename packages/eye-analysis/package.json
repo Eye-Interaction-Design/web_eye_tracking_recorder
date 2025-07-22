@@ -1,6 +1,6 @@
 {
   "name": "eye-analysis",
-  "version": "0.0.4",
+  "version": "0.1.0",
   "description": "Eye Analysis - Browser-based eye tracking and screen recording library for research and experiments",
   "author": "shikibu9419",
   "license": "MIT",
@@ -36,9 +36,34 @@
       "default": "./dist/utils.js"
     },
     "./types": {
-      "types": "./dist/types.d.ts",
-      "import": "./dist/types.js",
-      "default": "./dist/types.js"
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/types/index.js",
+      "default": "./dist/types/index.js"
+    },
+    "./recorder/core": {
+      "types": "./dist/recorder/core.d.ts",
+      "import": "./dist/recorder/core.js",
+      "default": "./dist/recorder/core.js"
+    },
+    "./recorder/export": {
+      "types": "./dist/recorder/export.d.ts",
+      "import": "./dist/recorder/export.js",
+      "default": "./dist/recorder/export.js"
+    },
+    "./recorder/state": {
+      "types": "./dist/recorder/state.d.ts",
+      "import": "./dist/recorder/state.js",
+      "default": "./dist/recorder/state.js"
+    },
+    "./recorder/storage": {
+      "types": "./dist/recorder/storage.d.ts",
+      "import": "./dist/recorder/storage.js",
+      "default": "./dist/recorder/storage.js"
+    },
+    "./recorder/types": {
+      "types": "./dist/recorder/types.d.ts",
+      "import": "./dist/recorder/types.js",
+      "default": "./dist/recorder/types.js"
     },
     "./recorder/*": {
       "types": "./dist/recorder/*.d.ts",
@@ -53,7 +78,7 @@
   ],
   "scripts": {
     "build": "bun run build:js && bun run build:types",
-    "build:js": "bun build ./experiment.ts ./tracking/index.ts ./utils.ts --outdir ./dist --target browser --format esm",
+    "build:js": "bun build ./experiment.ts ./interaction.ts ./tracking/index.ts ./tracking/adaptors/index.ts ./utils.ts ./types/index.ts ./recorder/export.ts ./recorder/core.ts ./recorder/state.ts ./recorder/storage.ts ./recorder/types.ts --outdir ./dist --target browser --format esm",
     "build:types": "bunx tsc --project tsconfig.json --emitDeclarationOnly --outDir ./dist",
     "dev": "bun --hot ./experiment.ts",
     "test": "vitest",

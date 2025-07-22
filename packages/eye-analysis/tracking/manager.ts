@@ -121,7 +121,6 @@ export const handleGazeData = async (
   // Only process gaze data if a session exists
   const currentSession = getCurrentSession()
   if (!currentSession) {
-    // No session available, skip processing
     return
   }
 

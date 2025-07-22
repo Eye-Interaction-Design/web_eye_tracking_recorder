@@ -17,9 +17,32 @@ const getInitialState = (): RecorderState => ({
   startBrowserTime: undefined,
 })
 
-// Global state and subscribers
-let currentState: RecorderState = getInitialState()
-const subscribers = new Set<StateSubscriber>()
+// Global state and subscribers with singleton pattern
+declare global {
+  var __eyeAnalysisRecorderState: RecorderState
+  var __eyeAnalysisStateSubscribers: Set<StateSubscriber>
+}
+
+const ensureGlobalState = () => {
+  if (!globalThis.__eyeAnalysisRecorderState) {
+    globalThis.__eyeAnalysisRecorderState = getInitialState()
+  }
+  if (!globalThis.__eyeAnalysisStateSubscribers) {
+    globalThis.__eyeAnalysisStateSubscribers = new Set<StateSubscriber>()
+  }
+}
+
+ensureGlobalState()
+
+const getCurrentState = (): RecorderState => {
+  ensureGlobalState()
+  return globalThis.__eyeAnalysisRecorderState
+}
+
+const getSubscribers = (): Set<StateSubscriber> => {
+  ensureGlobalState()
+  return globalThis.__eyeAnalysisStateSubscribers
+}
 
 // State reducer (pure function)
 const stateReducer = (
@@ -140,18 +163,20 @@ const stateReducer = (
 }
 
 // State management functions
-export const getState = (): RecorderState => currentState
+export const getState = (): RecorderState => getCurrentState()
 
 export const dispatch = (action: RecorderAction): void => {
+  const currentState = getCurrentState()
   const newState = stateReducer(currentState, action)
 
   if (newState !== currentState) {
-    currentState = newState
+    globalThis.__eyeAnalysisRecorderState = newState
 
     // Notify all subscribers
+    const subscribers = getSubscribers()
     subscribers.forEach((subscriber) => {
       try {
-        subscriber(currentState)
+        subscriber(newState)
       } catch (error) {
         console.error("State subscriber error:", error)
       }
@@ -160,6 +185,7 @@ export const dispatch = (action: RecorderAction): void => {
 }
 
 export const subscribe = (subscriber: StateSubscriber): (() => void) => {
+  const subscribers = getSubscribers()
   subscribers.add(subscriber)
 
   // Return unsubscribe function
@@ -168,7 +194,7 @@ export const subscribe = (subscriber: StateSubscriber): (() => void) => {
   }
 }
 
-export const getSubscriberCount = (): number => subscribers.size
+export const getSubscriberCount = (): number => getSubscribers().size
 
 // Reset state (useful for testing)
 export const resetState = (): void => {
