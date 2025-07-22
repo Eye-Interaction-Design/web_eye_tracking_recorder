@@ -4,7 +4,7 @@
     "": {
       "name": "eye-analysis-client-example",
       "dependencies": {
-        "eye-analysis": "0.0.23",
+        "eye-analysis": "0.1.5",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
         "typescript": "^5",
@@ -195,7 +195,7 @@
 
     "escalade": ["escalade@3.2.0", "", {}, "sha512-WUj2qlxaQtO4g6Pq5c29GTcWGDyd8itL8zTlipgECz3JesAiiOKotd8JU6otB3PACgG6xkJUyVhboMS+bje/jA=="],
 
-    "eye-analysis": ["eye-analysis@0.0.23", "", { "dependencies": { "fflate": "^0.8.2" }, "peerDependencies": { "typescript": "^5" } }, "sha512-l3X/tZsHbyYuK7HniRo8A6ShRz1InfdrgwbGr9981v0z4FvELRPcZSILca8skCWrRMCZxTlR5jcWXmiXiyjZoA=="],
+    "eye-analysis": ["eye-analysis@0.1.5", "", { "dependencies": { "fflate": "^0.8.2" }, "peerDependencies": { "typescript": "^5" } }, "sha512-vgfPTEmCABwM6WcxLHa4XEpNgVIzlBAG1AyaR4OPbRwDLs9VPdrM7bEGz/TICeqyWQTsTuX9ohU6TbqsdEOxqg=="],
 
     "fflate": ["fflate@0.8.2", "", {}, "sha512-cPJU47OaAoCbg0pBvzsgpTPhmhqI5eJjh/JIu8tPj5q+T7iLvW/JAYUqmE7KOB4R1ZyEhzBaIQpQpardBF5z8A=="],
 

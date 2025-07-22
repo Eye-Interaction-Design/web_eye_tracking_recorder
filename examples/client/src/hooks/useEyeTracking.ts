@@ -14,7 +14,6 @@ import { exportExperimentDataset } from "eye-analysis/recorder/export";
 import {
   getCurrentTrackingMode,
   getTrackingQuality,
-  isTrackingActive,
   websocketTrackingAdaptor,
   mouseTrackingAdaptor,
   type TrackingAdaptor,
@@ -94,7 +93,6 @@ export const useEyeTracking = (
 
       // Set up gaze data callback
       onGaze((gazePoint: GazePoint) => {
-        console.log(gazePoint);
         setLatestGazePoint(gazePoint);
       });
 
